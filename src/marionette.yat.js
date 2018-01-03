@@ -1,3 +1,4 @@
+import Mn from 'backbone.marionette';
 import YatPage from './YatPage';
 import YatApp from './YatApp';
 import YatObject from './YatObject';
@@ -13,5 +14,7 @@ const marionetteYat = {
   App: YatApp,
   Page : YatPage,
 };
+
+Mn.Yat = marionetteYat;
 
 export default marionetteYat;
