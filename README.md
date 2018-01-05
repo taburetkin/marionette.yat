@@ -3,7 +3,7 @@
 Marionette Yet Another Toolkit
 
 ## Examples
-* [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ)
+* [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ) - simple application with pages.
 
 ## Table of content
 * [Helpers](./docs/helpers/readme.md)
