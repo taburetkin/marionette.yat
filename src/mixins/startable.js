@@ -43,12 +43,11 @@ export default (Base) => {
 		}
 
 		initializeStartable(){
-			//console.log('initialize Startable', this.constructor.Startable)
+			
 			if(!(this.constructor.Startable && this.constructor.Stateable)) return;
 
 			this._registerStartableLifecycleListeners();
 			this._setLifeState(STATES.INITIALIZED);
-			//console.log('initialize Startable END')
 		}	
 
 		start(options){
