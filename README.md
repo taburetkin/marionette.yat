@@ -6,6 +6,7 @@ the goal is
 * extend default functionality with some useful things
 
 Simple App with pages, modals*, popovers*, and common ui*.
+
 marked with asterisk is not yet implemented.
 
 
