@@ -2,7 +2,7 @@
 extends marionette radio functionality.
 
 differences from marionette functionality
-* radio functionality do not initialized by default.
+* radio functionality is not initialized by default.
 * understand `channel` option. You can pass `channelName` as usual or a `channel` with radio channel
 * has method `radioTrigger`
 * has method `radioRequest`
