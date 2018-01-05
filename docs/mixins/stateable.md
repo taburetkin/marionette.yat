@@ -15,8 +15,10 @@ has static field `Stateable` equal to `true`
 
 `key` can be a hash of state fields, in that case second argument is ignored.
 
-also triggers 
+also triggers: 
+
 `state:[keyValue]` with value as argument
+
 `state` with hash of changed state fields
 
 ## example
