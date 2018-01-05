@@ -21,7 +21,7 @@ export default class extends mixin(App).with(GetNameLabel) {
 		this._tryProxyToRadio();
 	}
 
-	getLayout(opts = {}){
+	getLayout(opts = {rebuild: false}){
 		if(!this._layoutView || opts.rebuild || (this._layoutView && this._layoutView.isDestroyed && this._layoutView.isDestroyed())){
 			this.buildLayout();
 		}
