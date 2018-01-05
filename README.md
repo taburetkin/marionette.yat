@@ -13,12 +13,12 @@ Marionette Yet Another Toolkit
 	* [Stateable](./docs/mixins/Stateable.md)
 	* [Startable](./docs/mixins/Startable.md)
 	* [Childrenable](./docs/mixins/Childrenable.md)
-* [YatError][./docs/YatError.md]
-* [YatObject][./docs/YatObject.md]
-* [YatApp][./docs/YatApp.md]
-* [YatPage][./docs/YatPage.md]
-* [YatPageManager][./docs/YatPageManager.md]
-* [YatRouter][./docs/YatRouter.md]
+* [YatError](./docs/YatError.md)
+* [YatObject](./docs/YatObject.md)
+* [YatApp](./docs/YatApp.md)
+* [YatPage](./docs/YatPage.md)
+* [YatPageManager](./docs/YatPageManager.md)
+* [YatRouter](./docs/YatRouter.md)
 
 [![Travis build status](http://img.shields.io/travis/taburetkin/marionette.yat.svg?style=flat)](https://travis-ci.org/taburetkin/marionette.yat)
 [![Code Climate](https://codeclimate.com/github/taburetkin/marionette.yat/badges/gpa.svg)](https://codeclimate.com/github/taburetkin/marionette.yat)
