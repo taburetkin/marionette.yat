@@ -8,7 +8,7 @@ Marionette Yet Another Toolkit
 ## Table of content
 * [Helpers](./docs/helpers/readme.md)
 	* [mixin](./docs/helpers/mixin.md)
-	* [isKnowCtor](./docs/helpers/mixin.md)	
+	* [isKnowCtor](./docs/helpers/isKnowCtor.md)	
 * [Mixins](./docs/mixins/readme.md)	
 	* [GetNameLabel](./docs/mixins/get-name-label.md)
 	* [GetOptionProperty](./docs/mixins/get-option-property.md)
