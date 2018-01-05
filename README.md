@@ -1,7 +1,6 @@
 # marionette.yat
 
-Marionette Yet Another Toolkit
-the goal is
+The goal of Marionette Yet Another Toolkit is
 * allow to make things via mixins.
 * extend default functionality with some useful things
 
