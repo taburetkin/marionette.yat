@@ -21,7 +21,8 @@ Marionette Yet Another Toolkit
 * [YatRouter](./docs/YatRouter.md)
 
 
-[codepen_embed height="349" theme_id="0" slug_hash="opGPoQ" default_tab="result" user="dimatabu"]See the Pen <a href='https://codepen.io/dimatabu/pen/opGPoQ/'>marionette.yat: Page and PageManager</a> by dimatabu (<a href='https://codepen.io/dimatabu'>@dimatabu</a>) on <a href='https://codepen.io'>CodePen</a>.[/codepen_embed]
+<p data-height="265" data-theme-id="0" data-slug-hash="opGPoQ" data-default-tab="result" data-user="dimatabu" data-embed-version="2" data-pen-title="marionette.yat: Page and PageManager" class="codepen">See the Pen <a href="https://codepen.io/dimatabu/pen/opGPoQ/">marionette.yat: Page and PageManager</a> by dimatabu (<a href="https://codepen.io/dimatabu">@dimatabu</a>) on <a href="https://codepen.io">CodePen</a>.</p>
+<script async src="https://production-assets.codepen.io/assets/embed/ei.js"></script>
 
 [![Travis build status](http://img.shields.io/travis/taburetkin/marionette.yat.svg?style=flat)](https://travis-ci.org/taburetkin/marionette.yat)
 [![Code Climate](https://codeclimate.com/github/taburetkin/marionette.yat/badges/gpa.svg)](https://codeclimate.com/github/taburetkin/marionette.yat)
