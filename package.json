@@ -64,6 +64,7 @@
   },
   "babelBoilerplateOptions": {
     "entryFileName": "marionette.yat.js",
-    "mainVarName": "marionetteYat"
+	"mainVarName": "marionetteYat",
+	"exportVarName": "Marionette.Yat"
   }
 }

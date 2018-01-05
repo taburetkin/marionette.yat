@@ -58,11 +58,11 @@ function build() {
       },
       // Add your own externals here. For instance,
       externals:{
-		jquery: true,
-		underscore: true,
-		backbone:true,
-		'backbone.radio':true,
-		'backbone.marionette':true,
+		'jquery': '$',
+		'underscore': '_',
+		'backbone':'Backbone',
+		'backbone.radio':'Backbone.Radio',
+		'backbone.marionette':'Marionette',
       },
       // would externalize the `jquery` module.
       //externals: {},

@@ -8,21 +8,11 @@ export default (Base) => {
 			super(...args);
 			this.initializeChildrenable(...args);
 		}
-	
-
-		//static get Childrenable() {return true;};
-
 		initializeChildrenable(options = {}){
 			this._initializeParrent(options);
 			this._initializeChildren(options);
 		}
-		
-		getName(){
-			return this.getProperty('name') || this.cid;
-		}
-		getLabel(){
-			return this.getProperty('label') || this.getName();
-		}
+
 		hasChildren(){
 			let children = this.getChildren();
 			return this[CHILDREN_FIELD].length > 0;
@@ -45,7 +35,12 @@ export default (Base) => {
 				let childContext = this._normalizeChildContext(child);
 				if(childContext == null || !_.isFunction(childContext.Child)) return;
 				
-				let opts = _.extend({parent:this}, childContext);
+				let opts = _.extend({}, childContext);
+				if(this.getOption('passToChildren') === true){
+					_.extend(opts, this.options);
+				}
+				opts.parent = this;
+					
 				delete opts.Child;
 
 				return new childContext.Child(opts);
@@ -53,15 +48,24 @@ export default (Base) => {
 			}).filter((f) => f != null);
 		}
 		_normalizeChildContext(child){
-			if(_.isFunction(child) && child.Childrenable){
-				return { Child: child };
-			}else if(_.isFunction(child)){
-				return this._normalizeChildContext(child.call(this));
-			}
-			else if(_.isObject(child))
-				return child;
-		}
+			let childOptions = this.getChildOptions();
+			let childContext = {};
 
+			if(_.isFunction(child) && child.Childrenable){
+				_.extend(childContext, { Child: child }, childOptions);
+			}else if(_.isFunction(child)){
+				childContext = this._normalizeChildContext(child.call(this));
+			}
+			else if(_.isObject(child)){
+				childContext = child;
+			}
+
+			return childContext;
+		}
+		getChildOptions(){
+			let opts = this.getProperty('childOptions');
+			return opts;
+		}
 		_initializeParrent(opts){
 			if(this.parent == null && opts.parent != null)
 				this.parent = opts.parent;

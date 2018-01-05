@@ -5,7 +5,7 @@ import Childrenable from '../../../src/mixins/childrenable.js';
 
 let Obj = YatObject.extend({
 	initialize(){
-		console.log(this.getName());
+		//console.log(this.getName());
 	}
 });
 

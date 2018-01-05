@@ -26,7 +26,7 @@ describe('Startable mixin', function(){
 		let testObject = null;
 		beforeEach(() => { 
 			testObject = new TestClass()
-			spy(testObject, '_getStartPromises');
+			spy(testObject, '_getStartPromise');
 			spy(testObject, 'triggerStart');
 			spy(testObject, 'triggerStop');
 		});

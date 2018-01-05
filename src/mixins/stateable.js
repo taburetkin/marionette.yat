@@ -1,12 +1,13 @@
 import _ from 'underscore';
 
-export default (BaseClass) => class extends BaseClass {
+export default (BaseClass) => {
+	class Mixin extends BaseClass {
 		constructor(...args){
 			super(...args);
 			this.initializeStateable();
 		}
 		
-		static get Stateable() { return true; }
+		//static get Stateable() { return true; }
 
 		initializeStateable(){
 			this._state = {};
@@ -49,3 +50,8 @@ export default (BaseClass) => class extends BaseClass {
 			}
 		}
 	}
+
+	Mixin.Stateable = true;
+
+	return Mixin;
+}
