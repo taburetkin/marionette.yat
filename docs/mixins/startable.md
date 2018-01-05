@@ -24,7 +24,9 @@
   * `stopping` (process)
 * `waiting` (idle)
 
-there is a `destroyed` state. instance get this state after `destroy()`.
+there is a `destroyed` state. Instance get this state after `destroy()`.
+
+
 by default instance can not start if its not in idle or already started
 
 instance can not stop if its not `running`.
