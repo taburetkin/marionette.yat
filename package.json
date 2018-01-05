@@ -1,6 +1,6 @@
 {
   "name": "marionette.yat",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Marionette Yet Another Toolkit",
   "main": "dist/marionette.yat.js",
   "scripts": {
@@ -64,7 +64,7 @@
   },
   "babelBoilerplateOptions": {
     "entryFileName": "marionette.yat.js",
-	"mainVarName": "marionetteYat",
-	"exportVarName": "Marionette.Yat"
+    "mainVarName": "marionetteYat",
+    "exportVarName": "Marionette.Yat"
   }
 }
