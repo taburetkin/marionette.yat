@@ -1,3 +1,4 @@
+import _ from 'underscore';
 import App from './YatApp';
 import GetNameLabel from './mixins/get-name-label';
 import Router from './YatRouter';
@@ -30,6 +31,11 @@ class YatPageManager extends mixin(App).with(GetNameLabel) {
 	}
 	getRouter(){
 		return this.router;
+	}
+	getLinks(){
+		let children = this.getChildren();
+		if(!children) return;
+		return _(children).map((child) => child.getLinkModel());
 	}
 	_initializeYatPageManager(opts = {}){
 		this.mergeOptions(opts, ['id','name','label']);

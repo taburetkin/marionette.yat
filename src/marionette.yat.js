@@ -9,7 +9,7 @@ import Mixins from './mixins/Mixins';
 import Helpers from './helpers/Helpers';
 
 const marionetteYat = {
-	Helpers: helpers,
+	Helpers: Helpers,
 	Mixins: Mixins,
 	Error: YatError,
 	Object: YatObject,

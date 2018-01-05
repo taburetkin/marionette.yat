@@ -5,6 +5,7 @@ import GetOptionProperty from './mixins/get-option-property.js';
 import RadioMixin from './mixins/radioable.js';
 import Startable from './mixins/startable.js';
 import Childrenable from './mixins/childrenable.js';
+import {Collection} from 'backbone';
 
 export default class extends mixin(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable){
 	constructor(...args){
@@ -36,5 +37,15 @@ export default class extends mixin(Mn.Application).with(GetOptionProperty, Radio
 			this.triggerMethod(prefixedEventName, ...args);
 		});
 
+	}
+	hasPageManagers(){
+		return this._pageManagers && this._pageManagers.length > 0;
+	}
+	getMenuTree(opts = {rebuild:false}){
+		if(this._menuTree && !opts.rebuild) return this._menuTree;
+		let managers = this._pageManagers || [];
+		let links = _(managers).chain().map((manager) => manager.getLinks()).flatten().value();
+		this._menuTree = new Collection(links);
+		return this._menuTree;
 	}
 }

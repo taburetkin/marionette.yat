@@ -4,6 +4,8 @@ import Startable from './mixins/startable';
 import GetNameLabel from './mixins/get-name-label';
 import Router from './YatRouter.js';
 import Radio from 'backbone.radio';
+import LinkModel from './models/link';
+import {Collection} from 'backbone';
 
 export default class extends mixin(App).with(GetNameLabel) {
 	constructor(...args){
@@ -56,6 +58,7 @@ export default class extends mixin(App).with(GetNameLabel) {
 			this.addStartPromise(model.fetch(opts));
 		}
 	}
+
 	addCollection(collection, opts = {}){
 		if(!collection) return;
 		this.collection = collection;
@@ -78,6 +81,34 @@ export default class extends mixin(App).with(GetNameLabel) {
 		return _.isObject(this.getRouteHash())
 	}
 
+	getLinkModel(level = 0){
+		if(this._linkModel) return this._linkModel;
+		let url = this.getRoute();
+		let label = this.getLabel();
+		let children = this._getSublinks(level);
+		this._linkModel = new LinkModel({ url, label, level, children });
+		return this._linkModel;
+	}
+
+	getParentLinkModel(){
+		let parent = this.getParent();
+		if(!parent || !parent.getLinkModel) return;
+		let model = parent.getLinkModel();
+		return model;
+	}
+
+	getNeighbourLinks(){
+		let link = this.getLinkModel();
+		if(link.collection) return link.collection;
+	}
+	_getSublinks(level){
+		let children = this.getChildren();
+		if(!children || !children.length) return;
+		let sublinks = _(children).map((child) => child.getLinkModel(level + 1));
+		if(!sublinks.length) return;
+		let col = new Collection(sublinks);
+		return col;
+	}
 
 	_initializeModels(opts = {}){
 		this.addModel(opts.model, opts);
@@ -99,7 +130,10 @@ export default class extends mixin(App).with(GetNameLabel) {
 		if(!relative || !parent || !parent.getRoute) return route;
 		let parentRoute = parent.getRoute();
 		if(parentRoute == null) return route;
-		return parentRoute + '/' + route;
+		let result = parentRoute + '/' + route;
+		if(result.startsWith('/'))
+			result = result.substring(1);
+		return result;
 	}
 
 	_tryCreateRouter(){

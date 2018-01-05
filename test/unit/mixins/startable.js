@@ -42,9 +42,9 @@ describe('Startable mixin', function(){
 			});
 		});
 		
-		it('should successfully call `_getStartPromises` on `start`', () => {
+		it('should successfully call `_getStartPromise` on `start`', () => {
 			testObject.start();
-			expect(testObject._getStartPromises).to.have.been.calledOnce;
+			expect(testObject._getStartPromise).to.have.been.calledOnce;
 		});
 		it('should successfully call `triggerStart` on `start`', () => {
 			return testObject.start().then(() => {
