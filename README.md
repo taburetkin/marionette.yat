@@ -1,6 +1,13 @@
 # marionette.yat
 
 Marionette Yet Another Toolkit
+the goal is
+* allow to make things via mixins.
+* extend default functionality with some useful things
+
+Simple App with pages, modals*, popovers*, and common ui*.
+* - not yet implemented.
+
 
 ## Examples
 * [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ) - simple application with pages.
