@@ -2,7 +2,7 @@
 `Marionette.Application` mixed with [GetOptionProperty](mixins/get-option-property.md), [Radioable](mixins/radioable.md), [Childrenable](mixins/childrenable.md), [Startable](mixins/startable.md)
 
 also has 
-* `PageManger` support
+* [`PageManger`](YatPageManager.md) support
 * more smart region, it will not initialize with instance and support definition as function.
 
 ## Smart region
