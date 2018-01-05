@@ -1,14 +1,21 @@
 # marionette.yat
 
-Marionette Yet Another Toolkit
+The goal of Marionette Yet Another Toolkit is
+* allow to make things via mixins.
+* extend default functionality with some useful things
+
+Simple App with pages, modals*, popovers*, and common ui*.
+
+marked with asterisk is not yet implemented.
+
 
 ## Examples
-* [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ)
+* [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ) - simple application with pages.
 
 ## Table of content
 * [Helpers](./docs/helpers/readme.md)
 	* [mixin](./docs/helpers/mixin.md)
-	* [isKnowCtor](./docs/helpers/mixin.md)	
+	* [isKnowCtor](./docs/helpers/isKnowCtor.md)	
 * [Mixins](./docs/mixins/readme.md)	
 	* [GetNameLabel](./docs/mixins/get-name-label.md)
 	* [GetOptionProperty](./docs/mixins/get-option-property.md)
