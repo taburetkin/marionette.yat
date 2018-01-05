@@ -1,5 +1,5 @@
 # YatApp
-`Mn.Application` mixed with [GetOptionProperty](mixins/get-option-property.md), [Radioable](mixins/radioable.md), [Childrenable](mixins/childrenable.md), [Startable](mixins/startable.md)
+`Marionette.Application` mixed with [GetOptionProperty](mixins/get-option-property.md), [Radioable](mixins/radioable.md), [Childrenable](mixins/childrenable.md), [Startable](mixins/startable.md)
 
 also has 
 * `PageManger` support
