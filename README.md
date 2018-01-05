@@ -2,6 +2,9 @@
 
 Marionette Yet Another Toolkit
 
+## Examples
+* [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ)
+
 ## Table of content
 * [Helpers](./docs/helpers/readme.md)
 	* [mixin](./docs/helpers/mixin.md)
@@ -20,9 +23,6 @@ Marionette Yet Another Toolkit
 * [YatPageManager](./docs/YatPageManager.md)
 * [YatRouter](./docs/YatRouter.md)
 
-
-<p data-height="265" data-theme-id="0" data-slug-hash="opGPoQ" data-default-tab="result" data-user="dimatabu" data-embed-version="2" data-pen-title="marionette.yat: Page and PageManager" class="codepen">See the Pen <a href="https://codepen.io/dimatabu/pen/opGPoQ/">marionette.yat: Page and PageManager</a> by dimatabu (<a href="https://codepen.io/dimatabu">@dimatabu</a>) on <a href="https://codepen.io">CodePen</a>.</p>
-<script async src="https://production-assets.codepen.io/assets/embed/ei.js"></script>
 
 [![Travis build status](http://img.shields.io/travis/taburetkin/marionette.yat.svg?style=flat)](https://travis-ci.org/taburetkin/marionette.yat)
 [![Code Climate](https://codeclimate.com/github/taburetkin/marionette.yat/badges/gpa.svg)](https://codeclimate.com/github/taburetkin/marionette.yat)
