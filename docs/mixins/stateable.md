@@ -38,4 +38,5 @@ instance.setState({
 instance.getState('pulled'); //returns false
 instance.getState('state2'); //returns 'value of state2'
 instance.getState(); //returns { pulled: false, state2: 'value of state2', state3: 'value of state3' }
+
 ```
