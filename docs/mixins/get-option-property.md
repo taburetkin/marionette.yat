@@ -8,7 +8,7 @@ exposed methods
 ## getOption(key, options[optional])
 returns value from options hash and if its undefined then return value of instance property. (by default, see options)
 
-## getProperty(key, options)
+## getProperty(key, options[optional])
 returns value from instance property and if its undefined then return value from options hash. (by default, see options)
 
 ## options
