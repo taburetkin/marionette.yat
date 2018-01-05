@@ -21,7 +21,7 @@ Marionette Yet Another Toolkit
 * [YatRouter](./docs/YatRouter.md)
 
 
-codepen[opGPoQ][350]
+[codepen_embed height="349" theme_id="0" slug_hash="opGPoQ" default_tab="result" user="dimatabu"]See the Pen <a href='https://codepen.io/dimatabu/pen/opGPoQ/'>marionette.yat: Page and PageManager</a> by dimatabu (<a href='https://codepen.io/dimatabu'>@dimatabu</a>) on <a href='https://codepen.io'>CodePen</a>.[/codepen_embed]
 
 [![Travis build status](http://img.shields.io/travis/taburetkin/marionette.yat.svg?style=flat)](https://travis-ci.org/taburetkin/marionette.yat)
 [![Code Climate](https://codeclimate.com/github/taburetkin/marionette.yat/badges/gpa.svg)](https://codeclimate.com/github/taburetkin/marionette.yat)
