@@ -1,3 +1,4 @@
+import {version} from '../package.json';
 import Mn from 'backbone.marionette';
 import YatPage from './YatPage';
 import YatApp from './YatApp';
@@ -9,6 +10,7 @@ import Mixins from './mixins/Mixins';
 import Helpers from './helpers/Helpers';
 
 const marionetteYat = {
+	VERSION: version,
 	Helpers: Helpers,
 	Mixins: Mixins,
 	Error: YatError,
