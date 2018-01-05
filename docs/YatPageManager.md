@@ -5,4 +5,4 @@
 * Builds links tree
 
 ## functional
-[YatApp](YatApp.md) mixed with [GetNameLabel](mixins/GetNameLabel)
+[YatApp](YatApp.md) mixed with [GetNameLabel](mixins/get-name-label.md)
