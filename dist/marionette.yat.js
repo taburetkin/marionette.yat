@@ -44,52 +44,69 @@ function isKnownCtor(arg) {
 	return isFn && result;
 }
 
-function normalizeOptions(options) {
-	return _$1.extend({}, { deep: true, force: true, args: [] }, options);
-}
+// function normalizeOptions(options){
+// 	return _.extend({}, {deep: true, force: true, args: []}, options);
+// }
 
-function getDeepOptions(options) {
-	return _$1.extend({}, options, { deep: false, force: false });
-}
+// function getDeepOptions(options){
+// 	return _.extend({}, options, {deep:false, force: false});
+// }
 
-function getValue(deepMethodName, key) {
-	var context = deepMethodName === 'getOption' ? this : deepMethodName === 'getProperty' && _$1.isObject(this.options) ? this.getProperty('options', { deep: false }) : null;
-	if (context == null) return;
+// function getValue(deepMethodName, key)
+// {
+// 	const context = deepMethodName === 'getOption' ? this
+// 					: deepMethodName === 'getProperty' &&  _.isObject(this.options) ? this.getProperty('options',{deep:false})
+// 					: null;
+// 	if(context == null) return;
 
-	return context[key];
-}
+// 	return context[key];
 
-function getOptionPropertyValue(key, options, deepMethodName) {
+// }
 
-	if (key == null) return;
+var OptionPropertyHelpers = {
+	normalizeOptions: function normalizeOptions(options) {
+		return _$1.extend({}, { deep: true, force: true, args: [] }, options);
+	},
+	getDeepOptions: function getDeepOptions(options) {
+		return _$1.extend({}, options, { deep: false, force: false });
+	},
+	getValue: function getValue(deepMethodName, key) {
+		var context = deepMethodName === 'getOption' ? this : deepMethodName === 'getProperty' && _$1.isObject(this.options) ? this.getProperty('options', { deep: false }) : null;
+		if (context == null) return;
 
-	var opts = normalizeOptions(options);
-	var deepOpts = getDeepOptions(options);
+		return context[key];
+	},
+	getOptionPropertyValue: function getOptionPropertyValue(key, options, deepMethodName) {
 
-	var value = getValue.call(this, deepMethodName, key);
+		if (key == null) return;
 
-	if (value === undefined && opts.deep) value = this[deepMethodName](key, deepOpts);
+		var opts = OptionPropertyHelpers.normalizeOptions(options);
+		var deepOpts = OptionPropertyHelpers.getDeepOptions(options);
 
-	if (typeof value !== 'function' || isKnownCtor(value) || !opts.force) return value;
+		var value = OptionPropertyHelpers.getValue.call(this, deepMethodName, key);
 
-	return value.apply(this, opts.args);
-}
+		if (value === undefined && opts.deep) value = this[deepMethodName](key, deepOpts);
+
+		if (typeof value !== 'function' || isKnownCtor(value) || !opts.force) return value;
+
+		return value.apply(this, opts.args);
+	}
+};
 
 var GetOptionProperty = (function (Base) {
-	return Base.extend({
+	var Mixin = Base.extend({
 		getProperty: function getProperty(key) {
 			var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { deep: true, force: true, args: [] };
 
-
-			return getOptionPropertyValue.call(this, key, options, 'getOption');
+			return OptionPropertyHelpers.getOptionPropertyValue.call(this, key, options, 'getOption');
 		},
 		getOption: function getOption(key) {
 			var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { deep: true, force: true, args: [] };
 
-
-			return getOptionPropertyValue.call(this, key, options, 'getProperty');
+			return OptionPropertyHelpers.getOptionPropertyValue.call(this, key, options, 'getProperty');
 		}
 	});
+	return Mixin;
 });
 
 var Radioable = (function (Base) {
@@ -188,37 +205,20 @@ var State = (function (BaseClass) {
 	return Mixin;
 });
 
-// function staticWith(...args)
-// {
-// 	let Base = this;
-// 	//delete Base.with;
-
-// 	_(args).each((arg) => {
-// 		if(_.isObject(arg))
-// 			Base = Base.extend(arg);
-// 		else if(_.isFunction(arg))
-// 			Base = arg(Base);
-// 	});
-
-// 	return Base;
-// }
-
 function smartExtend(Src, Dst) {
 	if (_$1.isFunction(Dst)) {
 		return Dst(Src);
 	} else if (_$1.isObject(Dst)) {
 		return Src.extend(Dst);
-	}
+	} else throw new YatError('Mixin fail, argument should be an object hash or mixin function');
 }
 
 function mix(BaseClass) {
-
 	var Mixed = BaseClass;
 	if (!Mixed.extend) {
 		Mixed = Mn.extend.call(BaseClass, {});
 		Mixed.extend = Mn.extend;
 	}
-
 	var fake = {
 		with: function _with() {
 			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -229,18 +229,11 @@ function mix(BaseClass) {
 				return smartExtend(memo, arg);
 			}, Mixed);
 		}
-		// {
-		// 	let src = Mixed;
-		// 	_(args).each(function(dst, i){
-		// 		src = smartExtend(src, dst);
-		// 	});
-		// 	return src;
-		// },
 	};
 	return fake;
 }
 
-var YatError = Mn.Error.extend({}, {
+var YatError$1 = Mn.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -458,7 +451,7 @@ var Startable = (function (Base) {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
 
 			var message = 'Startable has already been destroyed and cannot be used.';
-			var error = new YatError({
+			var error = new YatError$1({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -473,7 +466,7 @@ var Startable = (function (Base) {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
 
 			var message = 'Startable is not idle. current state: ' + this._getLifeState();
-			var error = new YatError({
+			var error = new YatError$1({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -492,7 +485,7 @@ var Startable = (function (Base) {
 
 
 			var message = 'Startable has already been started.';
-			var error = new YatError({
+			var error = new YatError$1({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -515,7 +508,7 @@ var Startable = (function (Base) {
 
 
 			var message = 'Startable should be in `running` state.';
-			var error = new YatError({
+			var error = new YatError$1({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -664,11 +657,9 @@ var Mixins = {
 	Childrenable: Childrenable
 };
 
-//import mixin from './mixin';
 var Helpers = {
 	isKnownCtor: isKnownCtor,
 	mix: mix
-	//mixin,
 };
 
 var Base$1 = mix(Mn__default.Application).with(GetOptionProperty, Radioable, Childrenable, Startable);
@@ -1092,7 +1083,7 @@ var marionetteYat = {
 	VERSION: version,
 	Helpers: Helpers,
 	Mixins: Mixins,
-	Error: YatError,
+	Error: YatError$1,
 	Object: YatObject,
 	App: App,
 	Page: YatPage,
