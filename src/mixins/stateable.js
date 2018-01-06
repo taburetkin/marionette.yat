@@ -1,27 +1,25 @@
 import _ from 'underscore';
 
 export default (BaseClass) => {
-	class Mixin extends BaseClass {
+	let Mixin = BaseClass.extend({
 		constructor(...args){
-			super(...args);
+			BaseClass.apply(this, args);
 			this.initializeStateable();
-		}
-		
-		//static get Stateable() { return true; }
-
+		},
 		initializeStateable(){
 			this._state = {};
-		}
+		},
+
 		getState(key){
 			const state = this._state;
 			if(!key) return state
 			else return state[key];
-		}
+		},
 		setState(key, value, options){
 			
 			if(key == null) return;
 
-			if(typeof key === 'object'){
+			if(_.isObject(key)){
 				const _this = this;
 				options = value;
 				value = key;
@@ -32,12 +30,12 @@ export default (BaseClass) => {
 				state[key] = value;
 				this._triggerStateChange(key, value, options);
 			}
-		}
+		},
 		_triggerStateChange(key, value, options){
 
 			if(!_.isFunction(this.triggerMethod)) return;
 
-			if(typeof key !== 'object'){
+			if(!_.isObject(key)){
 				this.triggerMethod('state:' + key, value, options);
 				if(value === true || value === false)
 					this.triggerMethod('state:' + key + ':' + value.toString(), options);
@@ -48,10 +46,10 @@ export default (BaseClass) => {
 				value = key;
 				this.triggerMethod('state', value, options);
 			}
-		}
-	}
-
+		},		
+	});
 	Mixin.Stateable = true;
 
 	return Mixin;
+
 }

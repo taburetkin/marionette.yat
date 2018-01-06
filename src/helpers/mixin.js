@@ -1,9 +1,5 @@
 import _ from 'underscore';
 
-function mixWithMixinFunc(ClassDefinition, mixin){
-	return mixin(ClassDefinition);
-}
-
 function mixWithObject(ClassDefinition, mixin){
 	let MixedClass = class extends ClassDefinition{
 		constructor(...args){
@@ -17,7 +13,7 @@ function mixWithObject(ClassDefinition, mixin){
 function mixWithOne(ClassDefinition, mixin)
 {
 	if(typeof mixin === 'function')
-		return mixWithMixinFunc(ClassDefinition, mixin);
+		return mixin(ClassDefinition);
 	else if(typeof mixin === 'object')
 		return mixWithObject(ClassDefinition, mixin);
 	else

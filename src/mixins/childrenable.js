@@ -1,32 +1,37 @@
 import _ from 'underscore';
 
-const CHILDREN_FIELD = '_children';
-
 export default (Base) => {
-	class Mixin extends Base {
+	
+	const CHILDREN_FIELD = '_children';
+
+	let Mixin = Base.extend({
 		constructor(...args) {
-			super(...args);
+			Base.apply(this, args);
 			this.initializeChildrenable(...args);
-		}
+		},
+
 		initializeChildrenable(options = {}){
 			this._initializeParrent(options);
 			this._initializeChildren(options);
-		}
+		},
 
 		hasChildren(){
 			let children = this.getChildren();
 			return this[CHILDREN_FIELD].length > 0;
-		}
+		},
+
 		getChildren(){
 			return this[CHILDREN_FIELD] || [];
-		}
+		},
+
 		hasParent(){
 			let parent = this.getParent();
 			return _.isObject(parent);
-		}
+		},
+
 		getParent(){
 			return this.getProperty('parent', {deep:false});
-		}
+		},
 
 		_initializeChildren(){
 			let _children = this.getProperty('children');
@@ -40,13 +45,14 @@ export default (Base) => {
 					_.extend(opts, this.options);
 				}
 				opts.parent = this;
-					
+
 				delete opts.Child;
 
 				return new childContext.Child(opts);
 
 			}).filter((f) => f != null);
-		}
+		},
+
 		_normalizeChildContext(child){
 			let childOptions = this.getChildOptions();
 			let childContext = {};
@@ -61,16 +67,19 @@ export default (Base) => {
 			}
 
 			return childContext;
-		}
+		},
+
 		getChildOptions(){
 			let opts = this.getProperty('childOptions');
 			return opts;
-		}
+		},
+
 		_initializeParrent(opts){
 			if(this.parent == null && opts.parent != null)
 				this.parent = opts.parent;
-		}
-	}
+		},
+
+	});
 
 	Mixin.Childrenable = true;
 

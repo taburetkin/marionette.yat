@@ -13,7 +13,7 @@ function getDeepOptions(options){
 function getValue(deepMethodName, key)
 {
 	const context = deepMethodName === 'getOption' ? this
-					: deepMethodName === 'getProperty' &&  _.isObject(this.options) ? this.options
+					: deepMethodName === 'getProperty' &&  _.isObject(this.options) ? this.getProperty('options',{deep:false})
 					: null;
 	if(context == null) return;
 
@@ -21,7 +21,8 @@ function getValue(deepMethodName, key)
 
 }
 
-function get(key, options, deepMethodName)
+
+function getOptionPropertyValue(key, options, deepMethodName)
 {
 	
 	if(key == null) return;
@@ -40,19 +41,15 @@ function get(key, options, deepMethodName)
 }
 
 
-export default (Base) => class extends Base {
-	constructor(...args){
-		super(...args);
-	}
+export default (Base) => Base.extend({
 	getProperty(key, options = {deep:true, force:true, args:[]}){
 
-		return get.call(this, key, options, 'getOption');
+		return getOptionPropertyValue.call(this, key, options, 'getOption');
 
-	}
+	},
 	getOption(key, options = {deep:true, force:true, args:[]}){
 
-		return get.call(this, key, options, 'getProperty');
+		return getOptionPropertyValue.call(this, key, options, 'getProperty');
 
-	}
-	
-}
+	},
+});

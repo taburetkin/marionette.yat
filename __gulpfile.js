@@ -1,3 +1,18 @@
+/*
+
+package.json scripts section
+
+    "test": "gulp",
+    "lint": "gulp lint",
+    "test-browser": "gulp test-browser",
+    "watch": "gulp watch",
+    "build": "gulp build",
+	"coverage": "gulp coverage"
+
+
+
+*/
+
 const gulp = require('gulp');
 const loadPlugins = require('gulp-load-plugins');
 const del = require('del');
@@ -53,7 +68,7 @@ function build() {
     .pipe(webpackStream({
       output: {
         filename: `${exportFileName}.js`,
-        libraryTarget: 'umd',
+        libraryTarget: 'var',
         library: config.mainVarName
       },
       // Add your own externals here. For instance,

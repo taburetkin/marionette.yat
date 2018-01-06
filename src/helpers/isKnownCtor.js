@@ -2,9 +2,7 @@ import _ from 'underscore';
 import Bb from 'backbone';
 import Mn from 'backbone.marionette';
 
-//console.log('backbone', Bb != null);
-
-const ctors = [
+const knownCtors = [
 	Bb.Model,
 	Bb.Collection,
 	Bb.View,
@@ -12,7 +10,10 @@ const ctors = [
 	Mn.Object
 ];
 
-export default (arg) => {
-	return _.isFunction(arg)
-	&& _(ctors).some((ctor) => arg === ctor || arg.prototype instanceof ctor);
+function isKnownCtor(arg) {
+	let isFn = _.isFunction(arg);
+	let result = _(knownCtors).some((ctor) => arg === ctor || arg.prototype instanceof ctor);
+	return isFn && result;
 }
+
+export default isKnownCtor;

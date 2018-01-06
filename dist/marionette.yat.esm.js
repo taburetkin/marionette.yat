@@ -10,16 +10,10 @@
 */
 
 
-(function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('underscore'), require('backbone'), require('backbone.marionette'), require('backbone.radio')) :
-	typeof define === 'function' && define.amd ? define(['underscore', 'backbone', 'backbone.marionette', 'backbone.radio'], factory) :
-	(global.MarionetteYat = factory(global._,global.Backbone,global.Marionette,global.Backbone.Radio));
-}(this, (function (_$1,Bb,Mn,backbone_radio) { 'use strict';
-
-_$1 = _$1 && _$1.hasOwnProperty('default') ? _$1['default'] : _$1;
-var Bb__default = 'default' in Bb ? Bb['default'] : Bb;
-var Mn__default = 'default' in Mn ? Mn['default'] : Mn;
-backbone_radio = backbone_radio && backbone_radio.hasOwnProperty('default') ? backbone_radio['default'] : backbone_radio;
+import _$1 from 'underscore';
+import Bb, { Collection, Model } from 'backbone';
+import Mn, { AppRouter, Error, Object as Object$1, extend } from 'backbone.marionette';
+import backbone_radio from 'backbone.radio';
 
 var version = "0.0.4";
 
@@ -34,7 +28,7 @@ function GetNameLabel (Base) {
 	});
 }
 
-var knownCtors = [Bb__default.Model, Bb__default.Collection, Bb__default.View, Bb__default.Router, Mn__default.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _$1.isFunction(arg);
@@ -117,7 +111,7 @@ var Radioable = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn.Object.prototype._initRadio.call(this);
+			Object$1.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -215,8 +209,8 @@ function mix(BaseClass) {
 
 	var Mixed = BaseClass;
 	if (!Mixed.extend) {
-		Mixed = Mn.extend.call(BaseClass, {});
-		Mixed.extend = Mn.extend;
+		Mixed = extend.call(BaseClass, {});
+		Mixed.extend = extend;
 	}
 
 	var fake = {
@@ -240,7 +234,7 @@ function mix(BaseClass) {
 	return fake;
 }
 
-var YatError = Mn.Error.extend({}, {
+var YatError = Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -671,7 +665,7 @@ var Helpers = {
 	//mixin,
 };
 
-var Base$1 = mix(Mn__default.Application).with(GetOptionProperty, Radioable, Childrenable, Startable);
+var Base$1 = mix(Mn.Application).with(GetOptionProperty, Radioable, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -720,7 +714,7 @@ var App = Base$1.extend({
 		var links = _(managers).chain().map(function (manager) {
 			return manager.getLinks();
 		}).flatten().value();
-		this._menuTree = new Bb.Collection(links);
+		this._menuTree = new Collection(links);
 		return this._menuTree;
 	},
 	getPage: function getPage(key) {
@@ -731,7 +725,7 @@ var App = Base$1.extend({
 	}
 });
 
-var Router = Mn.AppRouter.extend({}, {
+var Router = AppRouter.extend({}, {
 	create: function create(hash, context) {
 		var _this = this;
 
@@ -775,7 +769,7 @@ var _class = function (_Model) {
 	}
 
 	return _class;
-}(Bb.Model);
+}(Model);
 
 var LinkModel = _class.extend({
 	defaults: {
@@ -904,7 +898,7 @@ var YatPage = Base.extend({
 			return child.getLinkModel(level + 1);
 		}).value();
 		if (!sublinks.length) return;
-		var col = new Bb.Collection(sublinks);
+		var col = new Collection(sublinks);
 		return col;
 	},
 	_initializeModels: function _initializeModels() {
@@ -963,7 +957,7 @@ var YatPage = Base.extend({
 	}
 });
 
-var YatObject = mix(Mn__default.Object).with(GetOptionProperty, Radioable);
+var YatObject = mix(Mn.Object).with(GetOptionProperty, Radioable);
 
 var Base$2 = mix(App).with(GetNameLabel);
 
@@ -1100,8 +1094,5 @@ var marionetteYat = {
 	PageManager: YatPageManager
 };
 
-return marionetteYat;
-
-})));
-this && this.Marionette && (this.Marionette.Yat = this.MarionetteYat);
-//# sourceMappingURL=marionette.yat.js.map
+export default marionetteYat;
+//# sourceMappingURL=marionette.yat.esm.js.map
