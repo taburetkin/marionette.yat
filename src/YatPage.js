@@ -107,7 +107,7 @@ export default Base.extend({
 
 	getNeighbourLinks(){
 		let link = this.getLinkModel();
-		if(link.collection) return link.collection;
+		if(link && link.collection) return link.collection;
 	},
 
 	_getSublinks(level){
@@ -176,5 +176,5 @@ export default Base.extend({
 		if(!allowed || !allowed.length || allowed.indexOf(eventName))
 			this.radioTrigger(`page:${eventName}`, ...[this].concat(args));		
 	},
-	
+
 });
