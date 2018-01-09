@@ -19,10 +19,11 @@ export default Base.extend({
 	allowStartWithoutStop: true,
 
 	initializeYatPage(opts){
+		this.mergeOptions(opts, ["manager"]);
 		this._initializeModels(opts);
 		this._initializeRoute(opts);
+		this._proxyEvents();
 		this._tryCreateRouter();
-		this._tryProxyToRadio();
 	},
 
 	getLayout(opts = {rebuild: false}){
@@ -130,8 +131,9 @@ export default Base.extend({
 	_initializeRoute(){
 		let route = this.getRoute();
 		if(route == null) return;
+		let page = this;
 		this._routeHandler = {
-			[route]:{context:this, action: (...args) => this.start(...args) }
+			[route]:{context: page, action: (...args) => page.start(...args) }
 		};
 	},
 
@@ -162,19 +164,53 @@ export default Base.extend({
 		return new Router(hash);
 	},
 
-	_tryProxyToRadio(){
-		
-		let channel = this.getChannel();
-		if(!channel) return;
+	_proxyEvents(){
+		let proxyContexts = this._getProxyContexts();
+		this._proxyEventsTo(proxyContexts);
+	},
+	_getProxyContexts(){
+		let rdy = [];
+		let manager = this.getProperty('manager');
+		if(manager){
+			rdy.push({context:manager})
+		}
+		let radio = this.getChannel();
+		if(radio){
+			let allowed = this.getProperty('proxyEventsToRadio');
+			rdy.push({context:radio, allowed });
+		}
+		return rdy;
+	},
+	_proxyEventsTo(contexts){
+		let all = [];
+		let eventsHash = {};
 
-		this.on('all', this._proxyEventToRadio)
+		_(contexts).each((context) => {
+			let events = [];
+			if(!context.allowed)
+				all.push(context.context);
+			else {
+				_(context.allowed).each(function(allowed){
+					eventsHash[allowed] || (eventsHash[allowed] = []);
+					eventsHash[allowed].push(context.context)
+				});
+			}
+		});
+		let page = this;
+		page.on('all', (eventName, ...args) => {
+			let contexts = (eventName in eventsHash) ? eventsHash[eventName] : all;
+			let triggerArguments = [page].concat(args);
+			_(contexts).each((context) => context.triggerMethod(`page:${eventName}`, ...triggerArguments))
+		});
 
 	},
 
-	_proxyEventToRadio(eventName, ...args){
-		let allowed = this.getProperty('proxyEventsToRadio');
-		if(!allowed || !allowed.length || allowed.indexOf(eventName))
-			this.radioTrigger(`page:${eventName}`, ...[this].concat(args));		
-	},
+	_buildChildOptions: function(def){
+		let add = {};
+		let manager = this.getProperty('manager');
+		if(manager) add.manager = manager;
+		return _.extend(def, this.getProperty('childOptions'), add);
+	},	
+
 
 });

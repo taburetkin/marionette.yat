@@ -305,9 +305,14 @@ var Startable = (function (Base) {
 			this._registerStartableLifecycleListeners();
 			this._setLifeState(STATES.INITIALIZED);
 		},
-		start: function start(options) {
+		start: function start() {
 			var _this2 = this;
 
+			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+				args[_key2] = arguments[_key2];
+			}
+
+			var options = args[0];
 			var canNotBeStarted = this._ensureStartableCanBeStarted();
 			var resultPromise = null;
 			var catchMethod = null;
@@ -333,7 +338,7 @@ var Startable = (function (Base) {
 			if (resultPromise == null) {
 				var currentState = this._getLifeState();
 				this._tryMergeStartOptions(options);
-				this.triggerMethod('before:start', this, options);
+				this.triggerMethod.apply(this, ['before:start'].concat(args));
 				resultPromise = this._getStartPromise();
 			}
 
@@ -401,8 +406,8 @@ var Startable = (function (Base) {
 		_isLifeStateIn: function _isLifeStateIn() {
 			var _this4 = this;
 
-			for (var _len2 = arguments.length, states = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				states[_key2] = arguments[_key2];
+			for (var _len3 = arguments.length, states = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+				states[_key3] = arguments[_key3];
 			}
 
 			return _$1(states).some(function (state) {
@@ -596,41 +601,51 @@ var Childrenable = (function (Base) {
 			var _this = this;
 
 			var _children = this.getProperty('children');
-			this[CHILDREN_FIELD] = _$1(_children).map(function (child) {
+			var children = [];
+			_$1(_children).each(function (child) {
 
 				var childContext = _this._normalizeChildContext(child);
-				if (childContext == null || !_$1.isFunction(childContext.Child)) return;
-
-				var opts = _$1.extend({}, childContext);
-				if (_this.getOption('passToChildren') === true) {
-					_$1.extend(opts, _this.options);
-				}
-				opts.parent = _this;
-
-				delete opts.Child;
-
-				return new childContext.Child(opts);
-			}).filter(function (f) {
-				return f != null;
+				var initialized = _this._initializeChild(childContext);
+				if (initialized) children.push(initialized);
 			});
+			this[CHILDREN_FIELD] = children;
+		},
+		_initializeChild: function _initializeChild(childContext) {
+			if (childContext == null || !_$1.isFunction(childContext.Child)) return;
+
+			var Child = childContext.Child;
+			var opts = this._normalizeChildOptions(childContext);
+			return this.buildChild(Child, opts);
 		},
 		_normalizeChildContext: function _normalizeChildContext(child) {
-			var childOptions = this.getChildOptions();
 			var childContext = {};
 
 			if (_$1.isFunction(child) && child.Childrenable) {
-				_$1.extend(childContext, { Child: child }, childOptions);
+				_$1.extend(childContext, { Child: child });
 			} else if (_$1.isFunction(child)) {
 				childContext = this._normalizeChildContext(child.call(this));
 			} else if (_$1.isObject(child)) {
 				childContext = child;
 			}
-
 			return childContext;
 		},
-		getChildOptions: function getChildOptions() {
-			var opts = this.getProperty('childOptions');
-			return opts;
+		_normalizeChildOptions: function _normalizeChildOptions(options) {
+			var opts = _$1.extend({}, options);
+			if (this.getOption('passToChildren') === true) {
+				_$1.extend(opts, this.options);
+			}
+			opts.parent = this;
+			delete opts.Child;
+			return this._buildChildOptions(opts);
+		},
+
+
+		_buildChildOptions: function _buildChildOptions(def) {
+			return _$1.extend(def, this.getProperty('childOptions'));
+		},
+
+		buildChild: function buildChild(ChildClass, options) {
+			return new ChildClass(options);
 		},
 		_initializeParrent: function _initializeParrent(opts) {
 			if (this.parent == null && opts.parent != null) this.parent = opts.parent;
@@ -792,10 +807,11 @@ var YatPage = Base.extend({
 	allowStartWithoutStop: true,
 
 	initializeYatPage: function initializeYatPage(opts) {
+		this.mergeOptions(opts, ["manager"]);
 		this._initializeModels(opts);
 		this._initializeRoute(opts);
+		this._proxyEvents();
 		this._tryCreateRouter();
-		this._tryProxyToRadio();
 	},
 	getLayout: function getLayout() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { rebuild: false };
@@ -899,12 +915,11 @@ var YatPage = Base.extend({
 		this.addCollection(opts.collection, opts);
 	},
 	_initializeRoute: function _initializeRoute() {
-		var _this = this;
-
 		var route = this.getRoute();
 		if (route == null) return;
-		this._routeHandler = _defineProperty({}, route, { context: this, action: function action() {
-				return _this.start.apply(_this, arguments);
+		var page = this;
+		this._routeHandler = _defineProperty({}, route, { context: page, action: function action() {
+				return page.start.apply(page, arguments);
 			} });
 	},
 	getRoute: function getRoute() {
@@ -930,22 +945,57 @@ var YatPage = Base.extend({
 		if (!_.size(hash)) return;
 		return new Router(hash);
 	},
-	_tryProxyToRadio: function _tryProxyToRadio() {
-
-		var channel = this.getChannel();
-		if (!channel) return;
-
-		this.on('all', this._proxyEventToRadio);
+	_proxyEvents: function _proxyEvents() {
+		var proxyContexts = this._getProxyContexts();
+		this._proxyEventsTo(proxyContexts);
 	},
-	_proxyEventToRadio: function _proxyEventToRadio(eventName) {
-		var allowed = this.getProperty('proxyEventsToRadio');
-
-		for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-			args[_key2 - 1] = arguments[_key2];
+	_getProxyContexts: function _getProxyContexts() {
+		var rdy = [];
+		var manager = this.getProperty('manager');
+		if (manager) {
+			rdy.push({ context: manager });
 		}
+		var radio = this.getChannel();
+		if (radio) {
+			var allowed = this.getProperty('proxyEventsToRadio');
+			rdy.push({ context: radio, allowed: allowed });
+		}
+		return rdy;
+	},
+	_proxyEventsTo: function _proxyEventsTo(contexts) {
+		var all = [];
+		var eventsHash = {};
 
-		if (!allowed || !allowed.length || allowed.indexOf(eventName)) this.radioTrigger.apply(this, ['page:' + eventName].concat(_toConsumableArray([this].concat(args))));
+		_(contexts).each(function (context) {
+			if (!context.allowed) all.push(context.context);else {
+				_(context.allowed).each(function (allowed) {
+					eventsHash[allowed] || (eventsHash[allowed] = []);
+					eventsHash[allowed].push(context.context);
+				});
+			}
+		});
+		var page = this;
+		page.on('all', function (eventName) {
+			for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+				args[_key2 - 1] = arguments[_key2];
+			}
+
+			var contexts = eventName in eventsHash ? eventsHash[eventName] : all;
+			var triggerArguments = [page].concat(args);
+			_(contexts).each(function (context) {
+				return context.triggerMethod.apply(context, ['page:' + eventName].concat(_toConsumableArray(triggerArguments)));
+			});
+		});
+	},
+
+
+	_buildChildOptions: function _buildChildOptions(def) {
+		var add = {};
+		var manager = this.getProperty('manager');
+		if (manager) add.manager = manager;
+		return _.extend(def, this.getProperty('childOptions'), add);
 	}
+
 });
 
 var YatObject = mix(Mn.Object).with(GetOptionProperty, Radioable);
@@ -962,13 +1012,13 @@ var YatPageManager = Base$2.extend({
 		this._initializeYatPageManager.apply(this, args);
 	},
 
-	initRadioOnInitialize: false,
-	getChildOptions: function getChildOptions() {
-		var opts = Base$2.prototype.getChildOptions() || {};
-		opts.channel = this.getChannel();
-		opts.passToChildren = true;
-		return opts;
-	},
+	// initRadioOnInitialize: false,
+	// getChildOptions(){
+	// 	let opts = Base.prototype.getChildOptions() || {};
+	// 	opts.channel = this.getChannel();
+	// 	opts.passToChildren = true;
+	// 	return opts;
+	// },
 	createRouter: function createRouter() {
 		var children = this.getChildren();
 		var hash = {};
@@ -1007,59 +1057,21 @@ var YatPageManager = Base$2.extend({
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 		this.mergeOptions(opts, ['id', 'name', 'label']);
-		this._initPageManagerRadio(opts);
+		this._registerPageHandlers(opts);
 		this.createRouter();
 	},
-	getChannel: function getChannel() {
-		if (!this._channel) this._initPageManagerRadio(this.options);
-		return this._channel;
-	},
-	_initPageManagerRadio: function _initPageManagerRadio() {
-		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-		this.mergeOptions(opts, ['channel', 'channelName']);
 
-		if (this._radioInitialized) return;
-
-		var name = this.getName();
-		if (!this._channel && name) {
-			this.channelName = 'pagemanager:' + name;
-			this._initRadio({ skip: false });
-		}
-
-		this._registerRadioHandlers();
-		this._proxyRadioEvents();
-
-		this._radioInitialized = true;
-	},
-	_registerRadioHandlers: function _registerRadioHandlers() {
-		var channel = this.getChannel();
-		if (this._radioHandlersRegistered || !channel) return;
-
-		this.listenTo(channel, 'page:before:start', this._pageBeforeStart);
-		this.listenTo(channel, 'page:start', this._pageStart);
-		this.listenTo(channel, 'page:decline', this._pageDecline);
-
-		this._radioHandlersRegistered = true;
-	},
-	_proxyRadioEvents: function _proxyRadioEvents() {
-		var _this = this;
-
-		var channel = this.getChannel();
-		if (this._radioEventsProxied || !channel) return;
-
-		var proxyRadioEvents = this.getProperty('proxyRadioEvents') || [];
-		_$1(['page:before:start', 'page:start'].concat(proxyRadioEvents)).each(function (event) {
-			_this.listenTo(channel, event, function () {
-				for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-					args[_key2] = arguments[_key2];
-				}
-
-				return _this.triggerMethod.apply(_this, [event].concat(args));
-			});
+	_buildChildOptions: function _buildChildOptions(def) {
+		return _$1.extend(def, this.getProperty('childOptions'), {
+			manager: this
 		});
+	},
 
-		this._radioEventsProxied = true;
+	_registerPageHandlers: function _registerPageHandlers() {
+		this.on('page:before:start', this._pageBeforeStart);
+		this.on('page:start', this._pageStart);
+		this.on('page:decline', this._pageDecline);
 	},
 	_pageBeforeStart: function _pageBeforeStart(page) {
 		var current = this.getState('currentPage');
@@ -1070,7 +1082,13 @@ var YatPageManager = Base$2.extend({
 	_pageStart: function _pageStart(page) {
 		this.setState('currentPage', page);
 	},
-	_pageDecline: function _pageDecline() {}
+	_pageDecline: function _pageDecline() {
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
+		}
+
+		console.log("decline", args);
+	}
 });
 
 var marionetteYat = {

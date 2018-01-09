@@ -35,43 +35,55 @@ export default (Base) => {
 
 		_initializeChildren(){
 			let _children = this.getProperty('children');
-			this[CHILDREN_FIELD] = _(_children).map((child) => {
+			let children = [];
+			_(_children).each((child) => {
 
 				let childContext = this._normalizeChildContext(child);
-				if(childContext == null || !_.isFunction(childContext.Child)) return;
-				
-				let opts = _.extend({}, childContext);
-				if(this.getOption('passToChildren') === true){
-					_.extend(opts, this.options);
-				}
-				opts.parent = this;
+				let initialized = this._initializeChild(childContext);
+				if(initialized) children.push(initialized);
 
-				delete opts.Child;
+			});
+			this[CHILDREN_FIELD] = children;
+		},
+		_initializeChild(childContext)
+		{
+			if(childContext == null || !_.isFunction(childContext.Child)) return;
 
-				return new childContext.Child(opts);
-
-			}).filter((f) => f != null);
+			let Child = childContext.Child;
+			let opts = this._normalizeChildOptions(childContext);
+			return this.buildChild(Child, opts);
 		},
 
 		_normalizeChildContext(child){
-			let childOptions = this.getChildOptions();
 			let childContext = {};
 
 			if(_.isFunction(child) && child.Childrenable){
-				_.extend(childContext, { Child: child }, childOptions);
+				_.extend(childContext, { Child: child });
 			}else if(_.isFunction(child)){
 				childContext = this._normalizeChildContext(child.call(this));
 			}
 			else if(_.isObject(child)){
 				childContext = child;
 			}
-
 			return childContext;
 		},
+		
+		_normalizeChildOptions(options){
+			let opts = _.extend({}, options);
+			if(this.getOption('passToChildren') === true){
+				_.extend(opts, this.options);
+			}
+			opts.parent = this;
+			delete opts.Child;
+			return this._buildChildOptions(opts);
+		},
 
-		getChildOptions(){
-			let opts = this.getProperty('childOptions');
-			return opts;
+		_buildChildOptions: function(def){
+			return _.extend(def, this.getProperty('childOptions'));
+		},
+
+		buildChild(ChildClass, options){
+			return new ChildClass(options);
 		},
 
 		_initializeParrent(opts){

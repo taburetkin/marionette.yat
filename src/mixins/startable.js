@@ -51,7 +51,8 @@ export default (Base) => {
 			this._setLifeState(STATES.INITIALIZED);
 		},	
 
-		start(options){
+		start(...args){
+			let options = args[0];
 			let canNotBeStarted = this._ensureStartableCanBeStarted();
 			let resultPromise = null;
 			let catchMethod = null;
@@ -73,7 +74,7 @@ export default (Base) => {
 			if(resultPromise == null){
 				var currentState = this._getLifeState();
 				this._tryMergeStartOptions(options);		
-				this.triggerMethod('before:start', this, options);
+				this.triggerMethod('before:start', ...args);
 				resultPromise = this._getStartPromise();
 			}
 				

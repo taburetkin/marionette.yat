@@ -11,13 +11,13 @@ let YatPageManager = Base.extend({
 		Base.apply(this, args);
 		this._initializeYatPageManager(...args);
 	},
-	initRadioOnInitialize: false,
-	getChildOptions(){
-		let opts = Base.prototype.getChildOptions() || {};
-		opts.channel = this.getChannel();
-		opts.passToChildren = true;
-		return opts;
-	},
+	// initRadioOnInitialize: false,
+	// getChildOptions(){
+	// 	let opts = Base.prototype.getChildOptions() || {};
+	// 	opts.channel = this.getChannel();
+	// 	opts.passToChildren = true;
+	// 	return opts;
+	// },
 	createRouter(){
 		let children = this.getChildren();
 		let hash = {};
@@ -57,58 +57,21 @@ let YatPageManager = Base.extend({
 
 	_initializeYatPageManager(opts = {}){
 		this.mergeOptions(opts, ['id','name','label']);
-		this._initPageManagerRadio(opts);
+		this._registerPageHandlers(opts);
 		this.createRouter();
 
 	},
 
-	getChannel () {
-		if(!this._channel) this._initPageManagerRadio(this.options);
-		return this._channel;
-	},
-
-	_initPageManagerRadio(opts = {})
-	{
-		this.mergeOptions(opts, ['channel','channelName']);
-
-		if(this._radioInitialized) return;
-
-
-		let name = this.getName();
-		if(!this._channel && name){
-			this.channelName = `pagemanager:${name}`;
-			this._initRadio({skip:false});
-		}
-
-		this._registerRadioHandlers();
-		this._proxyRadioEvents();
-
-		this._radioInitialized = true;
-	},
-
-	_registerRadioHandlers(){
-		let channel = this.getChannel();
-		if(this._radioHandlersRegistered || !channel) return;
-
-		this.listenTo(channel,'page:before:start', this._pageBeforeStart);
-		this.listenTo(channel,'page:start', this._pageStart);
-		this.listenTo(channel,'page:decline', this._pageDecline);
-
-		this._radioHandlersRegistered = true;
-	},
-
-	_proxyRadioEvents(){
-		let channel = this.getChannel();
-		if(this._radioEventsProxied || !channel) return;
-
-
-		let proxyRadioEvents = this.getProperty('proxyRadioEvents') || [];
-		_(['page:before:start', 'page:start'].concat(proxyRadioEvents)).each((event) => {
-			this.listenTo(channel, event, (...args) => this.triggerMethod(event, ...args));
+	_buildChildOptions: function(def){
+		return _.extend(def, this.getProperty('childOptions'), {
+			manager: this
 		});
+	},	
 
-		this._radioEventsProxied = true;
-
+	_registerPageHandlers(){
+		this.on('page:before:start', this._pageBeforeStart);
+		this.on('page:start', this._pageStart);
+		this.on('page:decline', this._pageDecline);
 	},
 
 	_pageBeforeStart(page){
@@ -123,7 +86,7 @@ let YatPageManager = Base.extend({
 	},
 
 	_pageDecline(...args){
-
+		console.log("decline", args)
 	},
 });
 
