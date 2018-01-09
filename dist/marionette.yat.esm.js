@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.4
+* v0.0.5
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -15,7 +15,7 @@ import Bb, { Collection, Model } from 'backbone';
 import Mn, { AppRouter, Error, Object as Object$1, extend } from 'backbone.marionette';
 import backbone_radio from 'backbone.radio';
 
-var version = "0.0.4";
+var version = "0.0.5";
 
 function GetNameLabel (Base) {
 	return Base.extend({

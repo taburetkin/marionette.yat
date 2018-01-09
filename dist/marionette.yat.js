@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.4
+* v0.0.5
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -21,7 +21,7 @@ var Bb__default = 'default' in Bb ? Bb['default'] : Bb;
 var Mn__default = 'default' in Mn ? Mn['default'] : Mn;
 backbone_radio = backbone_radio && backbone_radio.hasOwnProperty('default') ? backbone_radio['default'] : backbone_radio;
 
-var version = "0.0.4";
+var version = "0.0.5";
 
 function GetNameLabel (Base) {
 	return Base.extend({
