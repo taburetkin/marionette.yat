@@ -884,7 +884,7 @@ var YatPage = Base.extend({
 	},
 	getNeighbourLinks: function getNeighbourLinks() {
 		var link = this.getLinkModel();
-		if (link.collection) return link.collection;
+		if (link && link.collection) return link.collection;
 	},
 	_getSublinks: function _getSublinks(level) {
 		var children = this.getChildren();
