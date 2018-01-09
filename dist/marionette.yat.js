@@ -594,7 +594,16 @@ var Childrenable = (function (Base) {
 			return this[CHILDREN_FIELD].length > 0;
 		},
 		getChildren: function getChildren() {
-			return this[CHILDREN_FIELD] || [];
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { startable: true };
+
+			var all = this[CHILDREN_FIELD] || [];
+			if (!opts.startable) {
+				return all;
+			} else {
+				return all.filter(function (c) {
+					return !c.getProperty('isStartNotAllowed');
+				});
+			}
 		},
 		hasParent: function hasParent() {
 			var parent = this.getParent();
@@ -886,6 +895,7 @@ var YatPage = Base.extend({
 
 		if (this._linkModel) return this._linkModel;
 		if (this.getProperty('skipMenu') === true) return;
+		if (!!this.getProperty('isStartNotAllowed')) return;
 		var url = this.getRoute();
 		var label = this.getLabel();
 		var children = this._getSublinks(level);

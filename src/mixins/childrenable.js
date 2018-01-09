@@ -20,8 +20,13 @@ export default (Base) => {
 			return this[CHILDREN_FIELD].length > 0;
 		},
 
-		getChildren(){
-			return this[CHILDREN_FIELD] || [];
+		getChildren(opts = {startable:true}){
+			let all = this[CHILDREN_FIELD] || [];
+			if(!opts.startable){
+				return all;
+			}else{
+				return all.filter((c) => !c.getProperty('isStartNotAllowed'));
+			}
 		},
 
 		hasParent(){
@@ -67,7 +72,7 @@ export default (Base) => {
 			}
 			return childContext;
 		},
-		
+
 		_normalizeChildOptions(options){
 			let opts = _.extend({}, options);
 			if(this.getOption('passToChildren') === true){

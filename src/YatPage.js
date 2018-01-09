@@ -92,6 +92,7 @@ export default Base.extend({
 	getLinkModel(level = 0){
 		if(this._linkModel) return this._linkModel;
 		if(this.getProperty('skipMenu') === true) return;
+		if(!!this.getProperty('isStartNotAllowed')) return;
 		let url = this.getRoute();
 		let label = this.getLabel();
 		let children = this._getSublinks(level);
