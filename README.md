@@ -14,7 +14,7 @@ marked with asterisk is not yet implemented.
 
 ## Table of content
 * [Helpers](./docs/helpers/readme.md)
-	* [mixin](./docs/helpers/mixin.md)
+	* [mix](./docs/helpers/mix.md)
 	* [isKnowCtor](./docs/helpers/isKnowCtor.md)	
 * [Mixins](./docs/mixins/readme.md)	
 	* [GetNameLabel](./docs/mixins/get-name-label.md)
