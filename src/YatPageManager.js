@@ -40,8 +40,11 @@ let YatPageManager = Base.extend({
 
 	navigate(url, opts = {trigger:true}){
 		let router = this.getRouter();
-		if(router)
+		if(router){
 			router.navigate(url, opts);
+			console.log('navigated to ', url);
+			console.log(document.location.hash);
+		}
 		else
 			console.warn('router not found');
 	},

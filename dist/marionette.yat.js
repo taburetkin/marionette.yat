@@ -1095,7 +1095,11 @@ var YatPageManager = Base$3.extend({
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
 
 		var router = this.getRouter();
-		if (router) router.navigate(url, opts);else console.warn('router not found');
+		if (router) {
+			router.navigate(url, opts);
+			console.log('navigated to ', url);
+			console.log(document.location.hash);
+		} else console.warn('router not found');
 	},
 	getPage: function getPage(key) {
 
