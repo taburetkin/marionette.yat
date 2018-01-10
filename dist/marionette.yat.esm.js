@@ -180,7 +180,7 @@ var Stateable = (function (BaseClass) {
 		},
 		clearState: function clearState() {
 			var state = this.getState();
-			var broadcast = _$1({}, state);
+			var broadcast = _$1.extend({}, state);
 			_$1(state).each(function (s, key) {
 				broadcast[key] = undefined;
 				delete state[key];

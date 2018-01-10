@@ -33,7 +33,7 @@ export default (BaseClass) => {
 		},
 		clearState(opts = {}){
 			let state = this.getState();
-			let broadcast = _({}, state);
+			let broadcast = _.extend({}, state);
 			_(state).each((s,key) => {
 				broadcast[key] = undefined;
 				delete state[key];
