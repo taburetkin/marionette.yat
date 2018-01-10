@@ -1,21 +1,30 @@
 # GetOptionProperty mixin
-see [mixin](../helpers/mixin.md)
+see [mixin](../helpers/mix.md)
 
 exposed methods
-* `getOption(key, options)`
-* `getProperty(key, options)`
+* `getOption(key, options[optional])`
+* `getProperty(key, options[optional])`
 
 ## getOption(key, options[optional])
-returns value from options hash and if its undefined then return value of instance property. (by default, see options)
+returns value from options if options is present on instance.
+
+if returned value is undefined then it returns value from instance property.
 
 ## getProperty(key, options[optional])
-returns value from instance property and if its undefined then return value from options hash. (by default, see options)
+returns value from instance property. 
+
+if returned value is undefined then it returns value from options of the instance.
 
 ## options
 * `deep` - default value `true`.
-  if true, checks also options or property value.
+	forces to check falback value if primary value is undefined.
 * `force` - default value `true`.
-  if true, then returns result of value function if its not known constructor (see [isKnowCtor](../helpers/isKnownCtor.md))
+	forces to return function value if primary value is a function.
+
+	do not executes known constructors (see [isKnowCtor](../helpers/isKnowCtor.md))
+* `args` - default value is [].
+	if returned value is function and `force` == true then this property will be passed as arguments
+* `default`	- returns as value if resulting value is undefined.
 
 ## examples
 
@@ -25,6 +34,7 @@ let App = Mn.Yat.App.extend({
   propertyValue: 'instance',
   propertyFunction: () => 'from function',
   propertyClass: Mn.Object
+  propertyFunction2: (a,b) => 'from function' + a + '-' + b,
 });
 
 let app = new Mn.Yat.App({
@@ -46,5 +56,8 @@ app.getProperty('propertyFunction',{force:false}); // returns () => 'from functi
 
 app.getProperty('additional',{deep:false}); //returns undefined
 
+app.getProperty('propertyFunction2',{args:['a','b']}); //returns 'from function a-b'
+
+app.getProperty('not-exists-property',{default:'ooops'}); //returns 'ooops'
 
 ```

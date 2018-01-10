@@ -70,47 +70,40 @@ function GetNameLabel (Base) {
 	});
 }
 
-var OptionPropertyHelpers = {
-	normalizeOptions: function normalizeOptions(options) {
-		return _.extend({}, { deep: true, force: true, args: [] }, options);
-	},
-	getDeepOptions: function getDeepOptions(options) {
-		return _.extend({}, options, { deep: false, force: false });
-	},
-	getValue: function getValue(deepMethodName, key) {
-		var context = deepMethodName === 'getOption' ? this : deepMethodName === 'getProperty' && _.isObject(this.options) ? this.getProperty('options', { deep: false }) : null;
-		if (context == null) return;
-
-		return context[key];
-	},
-	getOptionPropertyValue: function getOptionPropertyValue(key, options, deepMethodName) {
-
-		if (key == null) return;
-
-		var opts = OptionPropertyHelpers.normalizeOptions(options);
-		var deepOpts = OptionPropertyHelpers.getDeepOptions(options);
-
-		var value = OptionPropertyHelpers.getValue.call(this, deepMethodName, key);
-
-		if (value === undefined && opts.deep) value = this[deepMethodName](key, deepOpts);
-
-		if (typeof value !== 'function' || isKnownCtor(value) || !opts.force) return value;
-
-		return value.apply(this, opts.args);
-	}
-};
-
 var GetOptionProperty = (function (Base) {
 	var Mixin = Base.extend({
-		getProperty: function getProperty(key) {
-			var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { deep: true, force: true, args: [] };
-
-			return OptionPropertyHelpers.getOptionPropertyValue.call(this, key, options, 'getOption');
+		//property first approach
+		getProperty: function getProperty(key, options) {
+			return this._getOptionOrProperty(this, key, options, this.getOption);
 		},
-		getOption: function getOption(key) {
-			var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { deep: true, force: true, args: [] };
 
-			return OptionPropertyHelpers.getOptionPropertyValue.call(this, key, options, 'getProperty');
+		//options first approach
+		getOption: function getOption(key, options) {
+			return this._getOptionOrProperty(this.getProperty('options', { deep: false }), key, options, this.getProperty);
+		},
+		_getOptionOrProperty: function _getOptionOrProperty(valueContext, key) {
+			var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : { deep: true, force: true, args: [] };
+			var fallback = arguments[3];
+
+			//key and valueContext should be passed
+			if (key == null || valueContext == null) return;
+
+			//getting raw value
+			var value = valueContext[key];
+
+			//if there is no raw value and deep option is true then getting value from fallback
+			if (value === undefined && options.deep && _.isFunction(fallback)) {
+				var fallbackOptions = _.extend({}, options, { deep: false, force: false });
+				value = fallback.call(this, key, fallbackOptions);
+			}
+
+			//if returned value is function and is not any of known constructors and options property force set to true 
+			//we should return value of that function
+			//options.args will be passed as arguments
+			if (_.isFunction(value) && options.force && !isKnownCtor(value)) value = value.apply(this, options.args);
+
+			//if value is still undefined we will return default option value
+			return value === undefined ? options.default : value;
 		}
 	});
 	return Mixin;

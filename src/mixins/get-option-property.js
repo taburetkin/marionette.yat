@@ -1,53 +1,40 @@
 import _ from 'underscore';
 import isKnownCtor from '../helpers/isKnownCtor.js';
 
-let OptionPropertyHelpers = {
-	
-	normalizeOptions(options){
-		return _.extend({}, {deep: true, force: true, args: []}, options);
-	},
-
-	getDeepOptions(options){
-		return _.extend({}, options, {deep:false, force: false});
-	},
-
-	getValue(deepMethodName, key){
-		const context = deepMethodName === 'getOption' ? this
-					: deepMethodName === 'getProperty' &&  _.isObject(this.options) ? this.getProperty('options',{deep:false})
-					: null;
-		if(context == null) return;
-
-		return context[key];
-	},
-	getOptionPropertyValue(key, options, deepMethodName)
-	{
-		
-		if(key == null) return;
-	
-		let opts = OptionPropertyHelpers.normalizeOptions(options);
-		let deepOpts = OptionPropertyHelpers.getDeepOptions(options);
-		
-		let value = OptionPropertyHelpers.getValue.call(this, deepMethodName, key);
-	
-		if(value === undefined && opts.deep)
-			value = this[deepMethodName](key, deepOpts);
-	
-		if(typeof value !== 'function' || isKnownCtor(value) || !opts.force) return value;
-	
-		return value.apply(this, opts.args);
-	},	
-};
-
 
 export default (Base) => {
 	let Mixin = Base.extend({
-		getProperty(key, options = {deep:true, force:true, args:[]}){
-			return OptionPropertyHelpers.getOptionPropertyValue.call(this, key, options, 'getOption');
+		//property first approach
+		getProperty(key, options){
+			return this._getOptionOrProperty(this, key, options, this.getOption);
 		},
-		getOption(key, options = {deep:true, force:true, args:[]}){
-			return OptionPropertyHelpers.getOptionPropertyValue.call(this, key, options, 'getProperty');
+		//options first approach
+		getOption(key, options){
+			return this._getOptionOrProperty(this.getProperty('options',{deep:false}), key, options, this.getProperty);
 		},
+		_getOptionOrProperty(valueContext, key, options = {deep:true, force:true, args:[]}, fallback)
+		{
+			//key and valueContext should be passed
+			if(key == null || valueContext == null) return;
+			
+			//getting raw value
+			let value = valueContext[key];
 
+			//if there is no raw value and deep option is true then getting value from fallback
+			if(value === undefined && options.deep && _.isFunction(fallback)){
+				let fallbackOptions = _.extend({}, options, {deep:false, force: false});
+				value = fallback.call(this, key, fallbackOptions); 
+			}
+
+			//if returned value is function and is not any of known constructors and options property force set to true 
+			//we should return value of that function
+			//options.args will be passed as arguments
+			if(_.isFunction(value) && options.force && !isKnownCtor(value))
+				value = value.apply(this, options.args); 
+
+			//if value is still undefined we will return default option value
+			return value === undefined ? options.default : value;
+		}
 	});
 	return Mixin;
 }
