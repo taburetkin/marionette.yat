@@ -1095,8 +1095,7 @@ var YatPageManager = Base$3.extend({
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
 
 		var router = this.getRouter();
-		if (!router) return;
-		router.navigate(url, opts);
+		if (router) router.navigate(url, opts);else console.warn('router not found');
 	},
 	getPage: function getPage(key) {
 
@@ -1111,13 +1110,14 @@ var YatPageManager = Base$3.extend({
 		var rootUrl = this.getProperty('rootUrl');
 		if (!rootUrl) {
 			var children = this.getChildren();
-			if (!children || !children.length) return;
-			var root = children.find(function (child) {
-				return child != current;
-			});
-			rootUrl = root && root.getRoute();
+			if (children && children.length) {
+				var root = children.find(function (child) {
+					return child != current;
+				});
+				rootUrl = root && root.getRoute();
+			}
 		}
-		if (rootUrl) this.navigate(rootUrl);
+		if (rootUrl) this.navigate(rootUrl);else console.warn('root page not found');
 	},
 	_initializeYatPageManager: function _initializeYatPageManager() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};

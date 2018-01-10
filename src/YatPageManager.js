@@ -40,8 +40,10 @@ let YatPageManager = Base.extend({
 
 	navigate(url, opts = {trigger:true}){
 		let router = this.getRouter();
-		if(!router) return;
-		router.navigate(url, opts);
+		if(router)
+			router.navigate(url, opts);
+		else
+			console.warn('router not found');
 	},
 
 	getPage(key){
@@ -61,12 +63,15 @@ let YatPageManager = Base.extend({
 		let rootUrl = this.getProperty('rootUrl');
 		if(!rootUrl){
 			let children = this.getChildren();
-			if(!children || !children.length) return;
-			let root = children.find((child) => child != current);
-			rootUrl = root && root.getRoute()
+			if(children && children.length) {
+				let root = children.find((child) => child != current);
+				rootUrl = root && root.getRoute()
+			}
 		}
 		if(rootUrl)
 			this.navigate(rootUrl);
+		else
+			console.warn('root page not found');
 	},
 
 	_initializeYatPageManager(opts = {}){
