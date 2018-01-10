@@ -88,7 +88,7 @@ export default Base.extend({
 
 	getRouteHash(){
 
-		let hashes = [{},this._routeHandler].concat(this.getChildren().map((children) => children.getRouteHash()))
+		let hashes = [{},this._routeHandler].concat(this.getChildren({startable:false}).map((children) => children.getRouteHash()))
 		return _.extend(...hashes);
 
 	},

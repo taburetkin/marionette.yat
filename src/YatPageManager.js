@@ -3,6 +3,7 @@ import App from './YatApp';
 import GetNameLabel from './mixins/get-name-label';
 import Router from './YatRouter';
 import mixin from './helpers/mix';
+import identity from './YatIdentity';
 
 let Base = mixin(App).with(GetNameLabel);
 
@@ -12,7 +13,7 @@ let YatPageManager = Base.extend({
 		this._initializeYatPageManager(...args);
 	},
 	createRouter(){
-		let children = this.getChildren();
+		let children = this.getChildren({startable:false});
 		let hash = {};
 		_(children).each(function(page){
 			if(_.isFunction(page.getRouteHash)){
@@ -37,6 +38,12 @@ let YatPageManager = Base.extend({
 			.value();
 	},
 
+	navigate(url, opts = {trigger:true}){
+		let router = this.getRouter();
+		if(!router) return;
+		router.navigate(url, opts);
+	},
+
 	getPage(key){
 
 		let found = _(this._routesHash)
@@ -46,6 +53,20 @@ let YatPageManager = Base.extend({
 			});
 		return found && found.context;
 
+	},
+
+
+	navigateToRoot(){
+		let current = this.getState('currentPage');
+		let rootUrl = this.getProperty('rootUrl');
+		if(!rootUrl){
+			let children = this.getChildren();
+			if(!children || !children.length) return;
+			let root = children.find((child) => child != current);
+			rootUrl = root && root.getRoute()
+		}
+		if(rootUrl)
+			this.navigate(rootUrl);
 	},
 
 	_initializeYatPageManager(opts = {}){
@@ -85,9 +106,16 @@ let YatPageManager = Base.extend({
 	_registerIdentityHandlers(){
 		this.listenTo(identity, 'change', (...args) => {
 			this.triggerMethod('identity:change', ...args);
+			this._moveToRootIfCurrentPageNotAllowed();
 		});
+	},
+	
+	_moveToRootIfCurrentPageNotAllowed(){
+		let current = this.getState('currentPage');
+		if(!current) return;
+		if(!current.isStartNotAllowed()) return;
+		this.navigateToRoot();
 	}
-
 
 });
 

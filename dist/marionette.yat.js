@@ -901,7 +901,7 @@ var YatPage = Base$2.extend({
 	},
 	getRouteHash: function getRouteHash() {
 
-		var hashes = [{}, this._routeHandler].concat(this.getChildren().map(function (children) {
+		var hashes = [{}, this._routeHandler].concat(this.getChildren({ startable: false }).map(function (children) {
 			return children.getRouteHash();
 		}));
 		return _.extend.apply(_, _toConsumableArray(hashes));
@@ -1066,7 +1066,7 @@ var YatPageManager = Base$3.extend({
 		this._initializeYatPageManager.apply(this, args);
 	},
 	createRouter: function createRouter() {
-		var children = this.getChildren();
+		var children = this.getChildren({ startable: false });
 		var hash = {};
 		_(children).each(function (page) {
 			if (_.isFunction(page.getRouteHash)) {
@@ -1091,6 +1091,13 @@ var YatPageManager = Base$3.extend({
 			return !!child;
 		}).value();
 	},
+	navigate: function navigate(url) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
+
+		var router = this.getRouter();
+		if (!router) return;
+		router.navigate(url, opts);
+	},
 	getPage: function getPage(key) {
 
 		var found = _(this._routesHash).find(function (pageContext, route) {
@@ -1098,6 +1105,19 @@ var YatPageManager = Base$3.extend({
 			if (pageContext.context.getName() === key) return true;
 		});
 		return found && found.context;
+	},
+	navigateToRoot: function navigateToRoot() {
+		var current = this.getState('currentPage');
+		var rootUrl = this.getProperty('rootUrl');
+		if (!rootUrl) {
+			var children = this.getChildren();
+			if (!children || !children.length) return;
+			var root = children.find(function (child) {
+				return child != current;
+			});
+			rootUrl = root && root.getRoute();
+		}
+		if (rootUrl) this.navigate(rootUrl);
 	},
 	_initializeYatPageManager: function _initializeYatPageManager() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -1139,13 +1159,20 @@ var YatPageManager = Base$3.extend({
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
 		var _this = this;
 
-		this.listenTo(identity, 'change', function () {
+		this.listenTo(user, 'change', function () {
 			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
 				args[_key3] = arguments[_key3];
 			}
 
 			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
+			_this._moveToRootIfCurrentPageNotAllowed();
 		});
+	},
+	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
+		var current = this.getState('currentPage');
+		if (!current) return;
+		if (!current.isStartNotAllowed()) return;
+		this.navigateToRoot();
 	}
 });
 
