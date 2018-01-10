@@ -19,9 +19,7 @@ if returned value is undefined then it returns value from options of the instanc
 * `deep` - default value `true`.
 	forces to check falback value if primary value is undefined.
 * `force` - default value `true`.
-	forces to return function value if primary value is a function.
-
-	do not executes known constructors (see [isKnowCtor](../helpers/isKnowCtor.md))
+	forces to return function value if primary value is a function. Do not executes known constructors (see [isKnowCtor](../helpers/isKnownCtor.md))
 * `args` - default value is [].
 	if returned value is function and `force` == true then this property will be passed as arguments
 * `default`	- returns as value if resulting value is undefined.
