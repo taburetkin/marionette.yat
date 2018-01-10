@@ -58,8 +58,8 @@ let YatPageManager = Base.extend({
 	_initializeYatPageManager(opts = {}){
 		this.mergeOptions(opts, ['id','name','label']);
 		this._registerPageHandlers(opts);
+		this._registerIdentityHandlers();
 		this.createRouter();
-
 	},
 
 	_buildChildOptions: function(def){
@@ -88,6 +88,14 @@ let YatPageManager = Base.extend({
 	_pageDecline(...args){
 		console.log("decline", args)
 	},
+
+	_registerIdentityHandlers(){
+		this.listenTo(identity, 'change', (...args) => {
+			this.triggerMethod('identity:change', ...args);
+		});
+	}
+
+
 });
 
 export default YatPageManager;

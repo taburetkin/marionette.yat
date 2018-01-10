@@ -8,7 +8,7 @@ import YatObject from './YatObject';
 import YatError from './YatError';
 import YatRouter from './YatRouter';
 import YatPageManager from './YatPageManager';
-import user from './YatUser';
+import identity from './YatIdentity';
 
 const marionetteYat = {
 	VERSION: version,
@@ -20,7 +20,7 @@ const marionetteYat = {
 	Page : YatPage,
 	Router: YatRouter,
 	PageManager: YatPageManager,
-	user: user,
+	identity: identity,
 };
 
 // 2050 lines (1550 sloc)  70.9 KB

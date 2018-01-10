@@ -6,10 +6,12 @@ import Router from './YatRouter.js';
 import Radio from 'backbone.radio';
 import LinkModel from './models/link';
 import {Collection} from 'backbone';
+import identity from './YatIdentity';
 
 let Base = mixin(App).with(GetNameLabel);
 
 export default Base.extend({
+
 	constructor(...args){
 		Base.apply(this,args);
 		this.initializeYatPage();
@@ -24,6 +26,7 @@ export default Base.extend({
 		this._initializeRoute(opts);
 		this._proxyEvents();
 		this._tryCreateRouter();
+		this._registerIdentityHandlers();		
 	},
 
 	getLayout(opts = {rebuild: false}){
@@ -90,16 +93,23 @@ export default Base.extend({
 	},
 
 	getLinkModel(level = 0){
+		if(!this._canHaveLinkModel()) return;
+
 		if(this._linkModel) return this._linkModel;
-		if(this.getProperty('skipMenu') === true) return;
-		if(!!this.getProperty('isStartNotAllowed')) return;
+
 		let url = this.getRoute();
 		let label = this.getLabel();
 		let children = this._getSublinks(level);
 		this._linkModel = new LinkModel({ url, label, level, children });
+
 		return this._linkModel;
 	},
+	_canHaveLinkModel(){
+		return !((this.getProperty('skipMenu') === true) || (!!this.getProperty('isStartNotAllowed')));
+	},
+	_destroyLinkModel(){
 
+	},
 	getParentLinkModel(){
 		let parent = this.getParent();
 		if(!parent || !parent.getLinkModel) return;
@@ -213,5 +223,10 @@ export default Base.extend({
 		return _.extend(def, this.getProperty('childOptions'), add);
 	},	
 
+	_registerIdentityHandlers(){
+		this.listenTo(identity, 'change', (...args) => {
+			this.triggerMethod('identity:change', ...args);
+		});
+	}
 
 });

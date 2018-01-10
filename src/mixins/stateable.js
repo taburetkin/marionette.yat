@@ -31,6 +31,15 @@ export default (BaseClass) => {
 				this._triggerStateChange(key, value, options);
 			}
 		},
+		clearState(opts = {}){
+			let state = this.getState();
+			let broadcast = _({}, state);
+			_(state).each((s,key) => {
+				broadcast[key] = undefined;
+				delete state[key];
+			});
+			this._triggerStateChange(broadcast);
+		},
 		_triggerStateChange(key, value, options){
 
 			if(!_.isFunction(this.triggerMethod)) return;

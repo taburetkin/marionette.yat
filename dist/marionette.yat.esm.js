@@ -178,6 +178,15 @@ var Stateable = (function (BaseClass) {
 				this._triggerStateChange(key, value, options);
 			}
 		},
+		clearState: function clearState() {
+			var state = this.getState();
+			var broadcast = _$1({}, state);
+			_$1(state).each(function (s, key) {
+				broadcast[key] = undefined;
+				delete state[key];
+			});
+			this._triggerStateChange(broadcast);
+		},
 		_triggerStateChange: function _triggerStateChange(key, value, options) {
 
 			if (!_$1.isFunction(this.triggerMethod)) return;
@@ -795,6 +804,49 @@ var LinkModel = _class.extend({
 	}
 });
 
+var YatObject = mix(Mn.Object).with(GetOptionProperty, Radioable);
+
+var IDENTITY_CHANNEL = 'identity';
+
+var Base$2 = mix(YatObject).with(Stateable);
+var YatUser = Base$2.extend({
+	constructor: function constructor() {
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
+
+		Base$2.apply(this, args);
+		this._initializeYatUser();
+	},
+	_initializeYatUser: function _initializeYatUser() {},
+
+	channelName: IDENTITY_CHANNEL,
+	isAnonym: function isAnonym() {
+		return !this.getState('id');
+	},
+	isUser: function isUser() {
+		return !this.isAnonym();
+	},
+	isMe: function isMe(id) {
+		return id && this.getState('id') === id;
+	},
+	update: function update(hash) {
+		this.setState(hash);
+		this.trigger('change');
+	},
+	logIn: function logIn(hash) {
+		if (!hash.id) return;
+		this.update(hash);
+		this.trigger('log:in');
+	},
+	logOut: function logOut() {
+		this.clearState();
+		this.trigger('change');
+		this.trigger('log:out');
+	}
+});
+var user = new YatUser();
+
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -821,6 +873,7 @@ var YatPage = Base.extend({
 		this._initializeRoute(opts);
 		this._proxyEvents();
 		this._tryCreateRouter();
+		this._registerIdentityHandlers();
 	},
 	getLayout: function getLayout() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { rebuild: false };
@@ -887,15 +940,21 @@ var YatPage = Base.extend({
 	getLinkModel: function getLinkModel() {
 		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
 
+		if (!this._canHaveLinkModel()) return;
+
 		if (this._linkModel) return this._linkModel;
-		if (this.getProperty('skipMenu') === true) return;
-		if (!!this.getProperty('isStartNotAllowed')) return;
+
 		var url = this.getRoute();
 		var label = this.getLabel();
 		var children = this._getSublinks(level);
 		this._linkModel = new LinkModel({ url: url, label: label, level: level, children: children });
+
 		return this._linkModel;
 	},
+	_canHaveLinkModel: function _canHaveLinkModel() {
+		return !(this.getProperty('skipMenu') === true || !!this.getProperty('isStartNotAllowed'));
+	},
+	_destroyLinkModel: function _destroyLinkModel() {},
 	getParentLinkModel: function getParentLinkModel() {
 		var parent = this.getParent();
 		if (!parent || !parent.getLinkModel) return;
@@ -1004,21 +1063,30 @@ var YatPage = Base.extend({
 		var manager = this.getProperty('manager');
 		if (manager) add.manager = manager;
 		return _.extend(def, this.getProperty('childOptions'), add);
-	}
+	},
 
+	_registerIdentityHandlers: function _registerIdentityHandlers() {
+		var _this = this;
+
+		this.listenTo(user, 'change', function () {
+			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+				args[_key3] = arguments[_key3];
+			}
+
+			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
+		});
+	}
 });
 
-var YatObject = mix(Mn.Object).with(GetOptionProperty, Radioable);
+var Base$3 = mix(App).with(GetNameLabel);
 
-var Base$2 = mix(App).with(GetNameLabel);
-
-var YatPageManager = Base$2.extend({
+var YatPageManager = Base$3.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
 		}
 
-		Base$2.apply(this, args);
+		Base$3.apply(this, args);
 		this._initializeYatPageManager.apply(this, args);
 	},
 
@@ -1068,6 +1136,7 @@ var YatPageManager = Base$2.extend({
 
 		this.mergeOptions(opts, ['id', 'name', 'label']);
 		this._registerPageHandlers(opts);
+		this._registerIdentityHandlers();
 		this.createRouter();
 	},
 
@@ -1098,36 +1167,19 @@ var YatPageManager = Base$2.extend({
 		}
 
 		console.log("decline", args);
+	},
+	_registerIdentityHandlers: function _registerIdentityHandlers() {
+		var _this = this;
+
+		this.listenTo(identity, 'change', function () {
+			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+				args[_key3] = arguments[_key3];
+			}
+
+			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
+		});
 	}
 });
-
-var Base$3 = mix(YatObject).with(Stateable);
-var YatUser = Base$3.extend({
-	constructor: function constructor() {
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
-		}
-
-		Base$3.apply(this, args);
-		this._initializeYatUser();
-	},
-	_initializeYatUser: function _initializeYatUser() {},
-
-	channelName: 'identity',
-	isAnonym: function isAnonym() {
-		return !this.getState('id');
-	},
-	isUser: function isUser() {
-		return !this.isAnonym();
-	},
-	isMe: function isMe(id) {
-		return id && this.getState('id') === id;
-	},
-	update: function update(hash) {
-		this.setState(hash);
-	}
-});
-var user = new YatUser();
 
 var marionetteYat = {
 	VERSION: version,
@@ -1139,7 +1191,7 @@ var marionetteYat = {
 	Page: YatPage,
 	Router: Router,
 	PageManager: YatPageManager,
-	user: user
+	identity: user
 };
 
 export default marionetteYat;

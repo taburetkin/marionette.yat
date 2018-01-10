@@ -2,7 +2,7 @@ import mix from './helpers/mix';
 import Stateable from './mixins/stateable';
 import YatObject from './YatObject';
 
-const USERSTATE_FIELD = 'user';
+const IDENTITY_CHANNEL = 'identity';
 
 let Base = mix(YatObject).with(Stateable);
 let YatUser = Base.extend({	
@@ -11,7 +11,7 @@ let YatUser = Base.extend({
 		this._initializeYatUser();
 	},
 	_initializeYatUser(){},	
-	channelName: 'identity',
+	channelName: IDENTITY_CHANNEL,
 	isAnonym(){
 		return !this.getState('id');
 	},
@@ -23,6 +23,17 @@ let YatUser = Base.extend({
 	},
 	update(hash){
 		this.setState(hash);
+		this.trigger('change');
+	},
+	logIn(hash){
+		if(!hash.id) return;
+		this.update(hash);
+		this.trigger('log:in');
+	},
+	logOut(){
+		this.clearState();
+		this.trigger('change');
+		this.trigger('log:out');
 	}
 });
 let user = new YatUser();
