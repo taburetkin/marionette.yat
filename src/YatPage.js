@@ -93,8 +93,7 @@ export default Base.extend({
 	},
 
 	getLinkModel(level = 0){
-		if(!this._canHaveLinkModel()) return;
-
+		if(!this._canHaveLinkModel()) return;		
 		if(this._linkModel) return this._linkModel;
 
 		let url = this.getRoute();
@@ -108,7 +107,9 @@ export default Base.extend({
 		return !((this.getProperty('skipMenu') === true) || (!!this.getProperty('isStartNotAllowed')));
 	},
 	_destroyLinkModel(){
-
+		if(!this._linkModel) return;
+		this._linkModel.destroy();
+		delete this._linkModel;
 	},
 	getParentLinkModel(){
 		let parent = this.getParent();
@@ -225,6 +226,7 @@ export default Base.extend({
 
 	_registerIdentityHandlers(){
 		this.listenTo(identity, 'change', (...args) => {
+			this._destroyLinkModel();
 			this.triggerMethod('identity:change', ...args);
 		});
 	}

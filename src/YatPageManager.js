@@ -11,13 +11,6 @@ let YatPageManager = Base.extend({
 		Base.apply(this, args);
 		this._initializeYatPageManager(...args);
 	},
-	// initRadioOnInitialize: false,
-	// getChildOptions(){
-	// 	let opts = Base.prototype.getChildOptions() || {};
-	// 	opts.channel = this.getChannel();
-	// 	opts.passToChildren = true;
-	// 	return opts;
-	// },
 	createRouter(){
 		let children = this.getChildren();
 		let hash = {};

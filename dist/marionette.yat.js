@@ -807,6 +807,10 @@ var LinkModel = _class.extend({
 		label: undefined,
 		target: '_self',
 		level: 0
+	},
+	destroy: function destroy() {
+		this.id = null;
+		_class.prototype.destroy.apply(this, arguments);
 	}
 });
 
@@ -947,7 +951,6 @@ var YatPage = Base.extend({
 		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
 
 		if (!this._canHaveLinkModel()) return;
-
 		if (this._linkModel) return this._linkModel;
 
 		var url = this.getRoute();
@@ -960,7 +963,11 @@ var YatPage = Base.extend({
 	_canHaveLinkModel: function _canHaveLinkModel() {
 		return !(this.getProperty('skipMenu') === true || !!this.getProperty('isStartNotAllowed'));
 	},
-	_destroyLinkModel: function _destroyLinkModel() {},
+	_destroyLinkModel: function _destroyLinkModel() {
+		if (!this._linkModel) return;
+		this._linkModel.destroy();
+		delete this._linkModel;
+	},
 	getParentLinkModel: function getParentLinkModel() {
 		var parent = this.getParent();
 		if (!parent || !parent.getLinkModel) return;
@@ -1079,6 +1086,7 @@ var YatPage = Base.extend({
 				args[_key3] = arguments[_key3];
 			}
 
+			_this._destroyLinkModel();
 			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
 		});
 	}
@@ -1095,14 +1103,6 @@ var YatPageManager = Base$3.extend({
 		Base$3.apply(this, args);
 		this._initializeYatPageManager.apply(this, args);
 	},
-
-	// initRadioOnInitialize: false,
-	// getChildOptions(){
-	// 	let opts = Base.prototype.getChildOptions() || {};
-	// 	opts.channel = this.getChannel();
-	// 	opts.passToChildren = true;
-	// 	return opts;
-	// },
 	createRouter: function createRouter() {
 		var children = this.getChildren();
 		var hash = {};
