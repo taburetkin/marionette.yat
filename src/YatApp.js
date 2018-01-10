@@ -1,11 +1,12 @@
+import _ from 'underscore';
 import Mn from 'backbone.marionette';
+import Bb from 'backbone';
 import mixin from './helpers/mix.js';
 
 import GetOptionProperty from './mixins/get-option-property.js';
 import RadioMixin from './mixins/radioable.js';
 import Startable from './mixins/startable.js';
 import Childrenable from './mixins/childrenable.js';
-import {Collection} from 'backbone';
 
 let Base = mixin(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
@@ -49,7 +50,7 @@ export default Base.extend({
 		if(this._menuTree && !opts.rebuild) return this._menuTree;
 		let managers = this._pageManagers || [];
 		let links = _(managers).chain().map((manager) => manager.getLinks()).flatten().value();
-		this._menuTree = new Collection(links);
+		this._menuTree = new Bb.Collection(links);
 		return this._menuTree;
 	},
 

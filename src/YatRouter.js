@@ -1,6 +1,6 @@
 import _ from 'underscore';
-import {AppRouter} from 'backbone.marionette';
-export default AppRouter.extend({},{
+import Mn from 'backbone.marionette';
+export default Mn.AppRouter.extend({},{
 	create(hash, context){
 		let appRoutes = {};
 		let controller = {};

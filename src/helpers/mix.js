@@ -1,5 +1,5 @@
 import _ from 'underscore'
-import {extend} from 'backbone.marionette';
+import Mn from 'backbone.marionette';
 
 function smartExtend(Src, Dst){
 	if(_.isFunction(Dst)){
@@ -15,7 +15,7 @@ function mix(BaseClass){
 	let Mixed = BaseClass;
 	if(!Mixed.extend) {
 		Mixed = extend.call(BaseClass, {});
-		Mixed.extend = extend;
+		Mixed.extend = Mn.extend;
 	}
 	let fake = {
 		with: (...args) => _.reduce(args, (memo, arg) => smartExtend(memo, arg), Mixed)

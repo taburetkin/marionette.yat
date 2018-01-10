@@ -17,11 +17,11 @@ const srcPath = 'src/';
 const distPath = './dist/**/*';
 
 const rollupGlobals = {
-  'backbone': 'Backbone',
-  'underscore': '_',
-  'backbone.radio': 'Backbone.Radio',
-  'jquery':'$',
-  'backbone.marionette': 'Marionette'
+	'jquery':'$',
+	'underscore': '_',
+	'backbone': 'Backbone',
+	'backbone.radio': 'Backbone.Radio',
+	'backbone.marionette': 'Marionette'
 };
 
 function makeESModule(bundle) {
@@ -53,15 +53,15 @@ function makeBundle(buildPath) {
 
   return rollup({
     input: srcPath + pkg.name + '.js',
-    external: ['underscore', 'backbone', 'backbone.radio','backbone.marionette', 'jquery'],
+    external: ['jquery', 'underscore', 'backbone', 'backbone.radio','backbone.marionette'],
     plugins: [
 		rollupClean(),
-      json(),
-      babel({
-        sourceMaps: true,
-        presets: [['es2015', {modules: false}]],
-        babelrc: false
-      })
+		json(),
+		babel({
+			sourceMaps: true,
+			presets: [['es2015', {modules: false}]],
+			babelrc: false
+		})
     ]
   }).then(bundle => {
     // Only build the ES6 module if this is the main build

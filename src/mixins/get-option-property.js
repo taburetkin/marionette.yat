@@ -1,25 +1,6 @@
 import _ from 'underscore';
 import isKnownCtor from '../helpers/isKnownCtor.js';
 
-// function normalizeOptions(options){
-// 	return _.extend({}, {deep: true, force: true, args: []}, options);
-// }
-
-// function getDeepOptions(options){
-// 	return _.extend({}, options, {deep:false, force: false});
-// }
-
-// function getValue(deepMethodName, key)
-// {
-// 	const context = deepMethodName === 'getOption' ? this
-// 					: deepMethodName === 'getProperty' &&  _.isObject(this.options) ? this.getProperty('options',{deep:false})
-// 					: null;
-// 	if(context == null) return;
-
-// 	return context[key];
-
-// }
-
 let OptionPropertyHelpers = {
 	
 	normalizeOptions(options){

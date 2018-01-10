@@ -3,9 +3,14 @@
     "ecmaVersion": 6,
     "sourceType": "module"
   },
-  "rules": {},
+  "rules": {
+	"camelcase": [ 2, { "properties": "always" } ]
+  },
   "env": {
     "browser": true,
     "node": true
-  }
+  },
+  "globals": {
+	  "define":true
+  }  
 }

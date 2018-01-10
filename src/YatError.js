@@ -1,8 +1,8 @@
-import {Error} from 'backbone.marionette';
+import Mn from 'backbone.marionette';
 import mix from './helpers/mix';
 
 
-let YatError = Error.extend({},{
+let YatError = Mn.Error.extend({},{
 	Http400(message){
 		return this.Http(400,message);
 	},

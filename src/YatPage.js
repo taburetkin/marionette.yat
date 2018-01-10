@@ -1,12 +1,17 @@
+import _ from 'underscore';
 import App from './YatApp.js';
 import mixin from './helpers/mix';
 import Startable from './mixins/startable';
 import GetNameLabel from './mixins/get-name-label';
 import Router from './YatRouter.js';
-import Radio from 'backbone.radio';
+//import Radio from 'backbone.radio';
 import LinkModel from './models/link';
-import {Collection} from 'backbone';
+import Bb from 'backbone';
 import identity from './YatIdentity';
+
+/* 
+	YatPage
+*/
 
 let Base = mixin(App).with(GetNameLabel);
 
@@ -131,7 +136,7 @@ export default Base.extend({
 			.map((child) => child.getLinkModel(level + 1))
 			.value();
 		if(!sublinks.length) return;
-		let col = new Collection(sublinks);
+		let col = new Bb.Collection(sublinks);
 		return col;
 	},
 

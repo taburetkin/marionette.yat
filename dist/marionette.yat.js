@@ -11,17 +11,59 @@
 
 
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('underscore'), require('backbone'), require('backbone.marionette'), require('backbone.radio')) :
-	typeof define === 'function' && define.amd ? define(['underscore', 'backbone', 'backbone.marionette', 'backbone.radio'], factory) :
-	(global.MarionetteYat = factory(global._,global.Backbone,global.Marionette,global.Backbone.Radio));
-}(this, (function (_$1,Bb,Mn,backbone_radio) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('underscore'), require('backbone'), require('backbone.marionette')) :
+	typeof define === 'function' && define.amd ? define(['underscore', 'backbone', 'backbone.marionette'], factory) :
+	(global.MarionetteYat = factory(global._,global.Backbone,global.Marionette));
+}(this, (function (_,Bb,Mn) { 'use strict';
 
-_$1 = _$1 && _$1.hasOwnProperty('default') ? _$1['default'] : _$1;
-var Bb__default = 'default' in Bb ? Bb['default'] : Bb;
-var Mn__default = 'default' in Mn ? Mn['default'] : Mn;
-backbone_radio = backbone_radio && backbone_radio.hasOwnProperty('default') ? backbone_radio['default'] : backbone_radio;
+_ = _ && _.hasOwnProperty('default') ? _['default'] : _;
+Bb = Bb && Bb.hasOwnProperty('default') ? Bb['default'] : Bb;
+Mn = Mn && Mn.hasOwnProperty('default') ? Mn['default'] : Mn;
 
 var version = "0.0.5";
+
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
+
+function isKnownCtor(arg) {
+	var isFn = _.isFunction(arg);
+	var result = _(knownCtors).some(function (ctor) {
+		return arg === ctor || arg.prototype instanceof ctor;
+	});
+	return isFn && result;
+}
+
+function smartExtend(Src, Dst) {
+	if (_.isFunction(Dst)) {
+		return Dst(Src);
+	} else if (_.isObject(Dst)) {
+		return Src.extend(Dst);
+	} else throw new YatError('Mixin fail, argument should be an object hash or mixin function');
+}
+
+function mix(BaseClass) {
+	var Mixed = BaseClass;
+	if (!Mixed.extend) {
+		Mixed = extend.call(BaseClass, {});
+		Mixed.extend = Mn.extend;
+	}
+	var fake = {
+		with: function _with() {
+			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+				args[_key] = arguments[_key];
+			}
+
+			return _.reduce(args, function (memo, arg) {
+				return smartExtend(memo, arg);
+			}, Mixed);
+		}
+	};
+	return fake;
+}
+
+var Helpers = {
+	isKnownCtor: isKnownCtor,
+	mix: mix
+};
 
 function GetNameLabel (Base) {
 	return Base.extend({
@@ -34,44 +76,15 @@ function GetNameLabel (Base) {
 	});
 }
 
-var knownCtors = [Bb__default.Model, Bb__default.Collection, Bb__default.View, Bb__default.Router, Mn__default.Object];
-
-function isKnownCtor(arg) {
-	var isFn = _$1.isFunction(arg);
-	var result = _$1(knownCtors).some(function (ctor) {
-		return arg === ctor || arg.prototype instanceof ctor;
-	});
-	return isFn && result;
-}
-
-// function normalizeOptions(options){
-// 	return _.extend({}, {deep: true, force: true, args: []}, options);
-// }
-
-// function getDeepOptions(options){
-// 	return _.extend({}, options, {deep:false, force: false});
-// }
-
-// function getValue(deepMethodName, key)
-// {
-// 	const context = deepMethodName === 'getOption' ? this
-// 					: deepMethodName === 'getProperty' &&  _.isObject(this.options) ? this.getProperty('options',{deep:false})
-// 					: null;
-// 	if(context == null) return;
-
-// 	return context[key];
-
-// }
-
 var OptionPropertyHelpers = {
 	normalizeOptions: function normalizeOptions(options) {
-		return _$1.extend({}, { deep: true, force: true, args: [] }, options);
+		return _.extend({}, { deep: true, force: true, args: [] }, options);
 	},
 	getDeepOptions: function getDeepOptions(options) {
-		return _$1.extend({}, options, { deep: false, force: false });
+		return _.extend({}, options, { deep: false, force: false });
 	},
 	getValue: function getValue(deepMethodName, key) {
-		var context = deepMethodName === 'getOption' ? this : deepMethodName === 'getProperty' && _$1.isObject(this.options) ? this.getProperty('options', { deep: false }) : null;
+		var context = deepMethodName === 'getOption' ? this : deepMethodName === 'getProperty' && _.isObject(this.options) ? this.getProperty('options', { deep: false }) : null;
 		if (context == null) return;
 
 		return context[key];
@@ -109,7 +122,7 @@ var GetOptionProperty = (function (Base) {
 	return Mixin;
 });
 
-var Radioable = (function (Base) {
+var RadioMixin = (function (Base) {
 	var Mixin = Base.extend({
 		constructor: function constructor() {
 			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -170,11 +183,11 @@ var Stateable = (function (BaseClass) {
 
 			if (key == null) return;
 
-			if (_$1.isObject(key)) {
+			if (_.isObject(key)) {
 				var _this = this;
 				options = value;
 				value = key;
-				_$1(value).each(function (propertyValue, propertyName) {
+				_(value).each(function (propertyValue, propertyName) {
 					return _this.setState(propertyName, propertyValue, options);
 				});
 				this._triggerStateChange(value, options);
@@ -186,8 +199,8 @@ var Stateable = (function (BaseClass) {
 		},
 		clearState: function clearState() {
 			var state = this.getState();
-			var broadcast = _$1.extend({}, state);
-			_$1(state).each(function (s, key) {
+			var broadcast = _.extend({}, state);
+			_(state).each(function (s, key) {
 				broadcast[key] = undefined;
 				delete state[key];
 			});
@@ -195,9 +208,9 @@ var Stateable = (function (BaseClass) {
 		},
 		_triggerStateChange: function _triggerStateChange(key, value, options) {
 
-			if (!_$1.isFunction(this.triggerMethod)) return;
+			if (!_.isFunction(this.triggerMethod)) return;
 
-			if (!_$1.isObject(key)) {
+			if (!_.isObject(key)) {
 				this.triggerMethod('state:' + key, value, options);
 				if (value === true || value === false) this.triggerMethod('state:' + key + ':' + value.toString(), options);
 			} else {
@@ -213,34 +226,6 @@ var Stateable = (function (BaseClass) {
 
 	return Mixin;
 });
-
-function smartExtend(Src, Dst) {
-	if (_$1.isFunction(Dst)) {
-		return Dst(Src);
-	} else if (_$1.isObject(Dst)) {
-		return Src.extend(Dst);
-	} else throw new YatError('Mixin fail, argument should be an object hash or mixin function');
-}
-
-function mix(BaseClass) {
-	var Mixed = BaseClass;
-	if (!Mixed.extend) {
-		Mixed = Mn.extend.call(BaseClass, {});
-		Mixed.extend = Mn.extend;
-	}
-	var fake = {
-		with: function _with() {
-			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-				args[_key] = arguments[_key];
-			}
-
-			return _$1.reduce(args, function (memo, arg) {
-				return smartExtend(memo, arg);
-			}, Mixed);
-		}
-	};
-	return fake;
-}
 
 var YatError$1 = Mn.Error.extend({}, {
 	Http400: function Http400(message) {
@@ -290,8 +275,8 @@ function getPropertyPromise(context, propertyName) {
 
 	var rawPromises = context[propertyName] || [];
 	var promises = [];
-	_$1(rawPromises).each(function (promiseArg) {
-		if (_$1.isFunction(promiseArg)) promises.push(promiseArg.call(_this));else promises.push(promiseArg);
+	_(rawPromises).each(function (promiseArg) {
+		if (_.isFunction(promiseArg)) promises.push(promiseArg.call(_this));else promises.push(promiseArg);
 	});
 	return Promise.all(promises);
 }
@@ -425,7 +410,7 @@ var Startable = (function (Base) {
 				states[_key3] = arguments[_key3];
 			}
 
-			return _$1(states).some(function (state) {
+			return _(states).some(function (state) {
 				return _this4._isLifeState(state);
 			});
 		},
@@ -554,8 +539,8 @@ var Startable = (function (Base) {
 			return getPropertyPromise(this, 'startPromises');
 		},
 		_getStartParentPromise: function _getStartParentPromise() {
-			var parent = _$1.result(this, 'getParent');
-			if (_$1.isObject(parent) && _$1.isFunction(parent._getStartPromise)) return parent._getStartPromise();
+			var parent = _.result(this, 'getParent');
+			if (_.isObject(parent) && _.isFunction(parent._getStartPromise)) return parent._getStartPromise();
 		},
 		_getStopPromise: function _getStopPromise() {
 			return Promise.all(this._getStopPromises());
@@ -569,8 +554,8 @@ var Startable = (function (Base) {
 			return getPropertyPromise(this, 'stopPromises');
 		},
 		_getStopParentPromise: function _getStopParentPromise() {
-			var parent = _$1.result(this, 'getParent');
-			if (_$1.isObject(parent) && _$1.isFunction(parent._getStopPromise)) return parent._getStartPromise();
+			var parent = _.result(this, 'getParent');
+			if (_.isObject(parent) && _.isFunction(parent._getStopPromise)) return parent._getStartPromise();
 		}
 	});
 
@@ -616,7 +601,7 @@ var Childrenable = (function (Base) {
 		},
 		hasParent: function hasParent() {
 			var parent = this.getParent();
-			return _$1.isObject(parent);
+			return _.isObject(parent);
 		},
 		getParent: function getParent() {
 			return this.getProperty('parent', { deep: false });
@@ -626,7 +611,7 @@ var Childrenable = (function (Base) {
 
 			var _children = this.getProperty('children');
 			var children = [];
-			_$1(_children).each(function (child) {
+			_(_children).each(function (child) {
 
 				var childContext = _this._normalizeChildContext(child);
 				var initialized = _this._initializeChild(childContext);
@@ -635,7 +620,7 @@ var Childrenable = (function (Base) {
 			this[CHILDREN_FIELD] = children;
 		},
 		_initializeChild: function _initializeChild(childContext) {
-			if (childContext == null || !_$1.isFunction(childContext.Child)) return;
+			if (childContext == null || !_.isFunction(childContext.Child)) return;
 
 			var Child = childContext.Child;
 			var opts = this._normalizeChildOptions(childContext);
@@ -644,19 +629,19 @@ var Childrenable = (function (Base) {
 		_normalizeChildContext: function _normalizeChildContext(child) {
 			var childContext = {};
 
-			if (_$1.isFunction(child) && child.Childrenable) {
-				_$1.extend(childContext, { Child: child });
-			} else if (_$1.isFunction(child)) {
+			if (_.isFunction(child) && child.Childrenable) {
+				_.extend(childContext, { Child: child });
+			} else if (_.isFunction(child)) {
 				childContext = this._normalizeChildContext(child.call(this));
-			} else if (_$1.isObject(child)) {
+			} else if (_.isObject(child)) {
 				childContext = child;
 			}
 			return childContext;
 		},
 		_normalizeChildOptions: function _normalizeChildOptions(options) {
-			var opts = _$1.extend({}, options);
+			var opts = _.extend({}, options);
 			if (this.getOption('passToChildren') === true) {
-				_$1.extend(opts, this.options);
+				_.extend(opts, this.options);
 			}
 			opts.parent = this;
 			delete opts.Child;
@@ -665,7 +650,7 @@ var Childrenable = (function (Base) {
 
 
 		_buildChildOptions: function _buildChildOptions(def) {
-			return _$1.extend(def, this.getProperty('childOptions'));
+			return _.extend(def, this.getProperty('childOptions'));
 		},
 
 		buildChild: function buildChild(ChildClass, options) {
@@ -684,18 +669,56 @@ var Childrenable = (function (Base) {
 var Mixins = {
 	GetNameLabel: GetNameLabel,
 	GetOptionProperty: GetOptionProperty,
-	Radioable: Radioable,
+	Radioable: RadioMixin,
 	Stateable: Stateable,
 	Startable: Startable,
 	Childrenable: Childrenable
 };
 
-var Helpers = {
-	isKnownCtor: isKnownCtor,
-	mix: mix
-};
+var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
 
-var Base$1 = mix(Mn__default.Application).with(GetOptionProperty, Radioable, Childrenable, Startable);
+var IDENTITY_CHANNEL = 'identity';
+
+var Base = mix(YatObject).with(Stateable);
+var YatUser = Base.extend({
+	constructor: function constructor() {
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
+
+		Base.apply(this, args);
+		this._initializeYatUser();
+	},
+	_initializeYatUser: function _initializeYatUser() {},
+
+	channelName: IDENTITY_CHANNEL,
+	isAnonym: function isAnonym() {
+		return !this.getState('id');
+	},
+	isUser: function isUser() {
+		return !this.isAnonym();
+	},
+	isMe: function isMe(id) {
+		return id && this.getState('id') === id;
+	},
+	update: function update(hash) {
+		this.setState(hash);
+		this.trigger('change');
+	},
+	logIn: function logIn(hash) {
+		if (!hash.id) return;
+		this.update(hash);
+		this.trigger('log:in');
+	},
+	logOut: function logOut() {
+		this.clearState();
+		this.trigger('change');
+		this.trigger('log:out');
+	}
+});
+var user = new YatUser();
+
+var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -761,7 +784,7 @@ var Router = Mn.AppRouter.extend({}, {
 
 		var appRoutes = {};
 		var controller = {};
-		_$1(hash).each(function (handlerContext, key) {
+		_(hash).each(function (handlerContext, key) {
 			appRoutes[key] = key;
 			controller[key] = function () {
 				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
@@ -777,31 +800,9 @@ var Router = Mn.AppRouter.extend({}, {
 	}
 });
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var Model = Bb.Model.extend({});
 
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var _class = function (_Model) {
-	_inherits(_class, _Model);
-
-	function _class() {
-		var _ref;
-
-		_classCallCheck(this, _class);
-
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
-		}
-
-		return _possibleConstructorReturn(this, (_ref = _class.__proto__ || Object.getPrototypeOf(_class)).call.apply(_ref, [this].concat(args)));
-	}
-
-	return _class;
-}(Bb.Model);
-
-var LinkModel = _class.extend({
+var LinkModel = Model.extend({
 	defaults: {
 		url: undefined,
 		label: undefined,
@@ -810,66 +811,28 @@ var LinkModel = _class.extend({
 	},
 	destroy: function destroy() {
 		this.id = null;
-		_class.prototype.destroy.apply(this, arguments);
+		Model.prototype.destroy.apply(this, arguments);
 	}
 });
 
-var YatObject = mix(Mn__default.Object).with(GetOptionProperty, Radioable);
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-var IDENTITY_CHANNEL = 'identity';
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-var Base$2 = mix(YatObject).with(Stateable);
-var YatUser = Base$2.extend({
+//import Radio from 'backbone.radio';
+/* 
+	YatPage
+*/
+
+var Base$2 = mix(App).with(GetNameLabel);
+
+var YatPage = Base$2.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
 		}
 
 		Base$2.apply(this, args);
-		this._initializeYatUser();
-	},
-	_initializeYatUser: function _initializeYatUser() {},
-
-	channelName: IDENTITY_CHANNEL,
-	isAnonym: function isAnonym() {
-		return !this.getState('id');
-	},
-	isUser: function isUser() {
-		return !this.isAnonym();
-	},
-	isMe: function isMe(id) {
-		return id && this.getState('id') === id;
-	},
-	update: function update(hash) {
-		this.setState(hash);
-		this.trigger('change');
-	},
-	logIn: function logIn(hash) {
-		if (!hash.id) return;
-		this.update(hash);
-		this.trigger('log:in');
-	},
-	logOut: function logOut() {
-		this.clearState();
-		this.trigger('change');
-		this.trigger('log:out');
-	}
-});
-var user = new YatUser();
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
-var Base = mix(App).with(GetNameLabel);
-
-var YatPage = Base.extend({
-	constructor: function constructor() {
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
-		}
-
-		Base.apply(this, args);
 		this.initializeYatPage();
 	},
 
@@ -937,12 +900,11 @@ var YatPage = Base.extend({
 		}
 	},
 	getRouteHash: function getRouteHash() {
-		var _ref;
 
 		var hashes = [{}, this._routeHandler].concat(this.getChildren().map(function (children) {
 			return children.getRouteHash();
 		}));
-		return (_ref = _).extend.apply(_ref, _toConsumableArray(hashes));
+		return _.extend.apply(_, _toConsumableArray(hashes));
 	},
 	hasRouteHash: function hasRouteHash() {
 		return _.isObject(this.getRouteHash());
@@ -1106,9 +1068,9 @@ var YatPageManager = Base$3.extend({
 	createRouter: function createRouter() {
 		var children = this.getChildren();
 		var hash = {};
-		_$1(children).each(function (page) {
-			if (_$1.isFunction(page.getRouteHash)) {
-				_$1.extend(hash, page.getRouteHash());
+		_(children).each(function (page) {
+			if (_.isFunction(page.getRouteHash)) {
+				_.extend(hash, page.getRouteHash());
 			}
 		});
 		this._routesHash = hash;
@@ -1123,7 +1085,7 @@ var YatPageManager = Base$3.extend({
 	getLinks: function getLinks() {
 		var children = this.getChildren();
 		if (!children) return;
-		return _$1(children).chain().map(function (child) {
+		return _(children).chain().map(function (child) {
 			return child.getLinkModel();
 		}).filter(function (child) {
 			return !!child;
@@ -1131,7 +1093,7 @@ var YatPageManager = Base$3.extend({
 	},
 	getPage: function getPage(key) {
 
-		var found = _$1(this._routesHash).find(function (pageContext, route) {
+		var found = _(this._routesHash).find(function (pageContext, route) {
 			if (route === key) return true;
 			if (pageContext.context.getName() === key) return true;
 		});
@@ -1148,7 +1110,7 @@ var YatPageManager = Base$3.extend({
 
 
 	_buildChildOptions: function _buildChildOptions(def) {
-		return _$1.extend(def, this.getProperty('childOptions'), {
+		return _.extend(def, this.getProperty('childOptions'), {
 			manager: this
 		});
 	},
@@ -1191,8 +1153,8 @@ var marionetteYat = {
 	VERSION: version,
 	Helpers: Helpers,
 	Mixins: Mixins,
-	Error: YatError$1,
 	Object: YatObject,
+	Error: YatError$1,
 	App: App,
 	Page: YatPage,
 	Router: Router,

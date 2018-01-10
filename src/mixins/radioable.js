@@ -1,4 +1,5 @@
-import {Object} from 'backbone.marionette';
+import Mn from 'backbone.marionette';
+
 export default (Base) => {
 	let Mixin = Base.extend({
 		constructor(...args){
@@ -19,7 +20,7 @@ export default (Base) => {
 				if(channel)
 					this.channelName = channel.channelName;
 			}
-			Object.prototype._initRadio.call(this);
+			Mn.Object.prototype._initRadio.call(this);
 		},
 		radioRequest(...args){
 			let channel = this.getChannel();
