@@ -12,7 +12,14 @@ function smartExtend(Src, Dst){
 }
 
 function mix(BaseClass){
-	let Mixed = BaseClass;
+	let Mixed = null;
+	if(_.isFunction(BaseClass) && _.isFunction(BaseClass.constructor))
+		Mixed = BaseClass;
+	else if(_.isObject(BaseClass) && BaseClass !== null){
+		let tmp = function(){};
+		tmp.extend = Mn.extend;
+		Mixed = tmp.extend(BaseClass);
+	}
 	if(!Mixed.extend) {
 		Mixed = extend.call(BaseClass, {});
 		Mixed.extend = Mn.extend;
