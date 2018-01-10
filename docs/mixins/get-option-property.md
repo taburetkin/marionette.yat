@@ -1,7 +1,7 @@
 # GetOptionProperty mixin
 see [mixin](../helpers/mix.md)
 
-exposed methods
+public methods
 * `getOption(key, options[optional])`
 * `getProperty(key, options[optional])`
 
