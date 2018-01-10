@@ -64,7 +64,7 @@ app.getProperty('propertyFunction',{force:false}); // returns () => 'from functi
 
 app.getProperty('additional',{deep:false}); //returns undefined
 
-app.getProperty('propertyFunction2',{args:['a','b']}); //returns 'from function a-b'
+app.getProperty('propertyFunction2',{args:['a','b']}); //returns 'from functiona-b'
 
 app.getProperty('not-exists-property',{default:'ooops'}); //returns 'ooops'
 
