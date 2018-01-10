@@ -28,6 +28,16 @@ if returned value is undefined then it returns value from options of the instanc
 
 ```js
 
+import {GetOptionProperty} from 'marionette.yat';
+import {Application} from 'backbone.marionette';
+
+// direct use
+// let App = GetOptionProperty(Application);
+
+// also you can use it through mix
+// let App = mix(Application).with(GetOptionProperty, anotherMixin, yetanothermixin, ...)
+
+//YatApp has mixed it by default
 let App = Mn.Yat.App.extend({
   propertyValue: 'instance',
   propertyFunction: () => 'from function',
