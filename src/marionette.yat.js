@@ -1,3 +1,4 @@
+
 import {version} from '../package.json';
 import Mixins from './mixins/Mixins';
 import Helpers from './helpers/Helpers';
@@ -7,6 +8,7 @@ import YatObject from './YatObject';
 import YatError from './YatError';
 import YatRouter from './YatRouter';
 import YatPageManager from './YatPageManager';
+import user from './YatUser';
 
 const marionetteYat = {
 	VERSION: version,
@@ -18,6 +20,7 @@ const marionetteYat = {
 	Page : YatPage,
 	Router: YatRouter,
 	PageManager: YatPageManager,
+	user: user,
 };
 
 // 2050 lines (1550 sloc)  70.9 KB

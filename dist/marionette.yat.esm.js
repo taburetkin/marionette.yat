@@ -143,7 +143,7 @@ var Radioable = (function (Base) {
 	return Mixin;
 });
 
-var State = (function (BaseClass) {
+var Stateable = (function (BaseClass) {
 	var Mixin = BaseClass.extend({
 		constructor: function constructor() {
 			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -288,7 +288,7 @@ function addPropertyPromise(context, propertyName, promise) {
 }
 
 var Startable = (function (Base) {
-	var Middle = mix(Base).with(State);
+	var Middle = mix(Base).with(Stateable);
 	var Mixin = Middle.extend({
 		constructor: function constructor() {
 			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -670,7 +670,7 @@ var Mixins = {
 	GetNameLabel: GetNameLabel,
 	GetOptionProperty: GetOptionProperty,
 	Radioable: Radioable,
-	Stateable: State,
+	Stateable: Stateable,
 	Startable: Startable,
 	Childrenable: Childrenable
 };
@@ -1101,6 +1101,34 @@ var YatPageManager = Base$2.extend({
 	}
 });
 
+var Base$3 = mix(YatObject).with(Stateable);
+var YatUser = Base$3.extend({
+	constructor: function constructor() {
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
+
+		Base$3.apply(this, args);
+		this._initializeYatUser();
+	},
+	_initializeYatUser: function _initializeYatUser() {},
+
+	channelName: 'identity',
+	isAnonym: function isAnonym() {
+		return !this.getState('id');
+	},
+	isUser: function isUser() {
+		return !this.isAnonym();
+	},
+	isMe: function isMe(id) {
+		return id && this.getState('id') === id;
+	},
+	update: function update(hash) {
+		this.setState(hash);
+	}
+});
+var user = new YatUser();
+
 var marionetteYat = {
 	VERSION: version,
 	Helpers: Helpers,
@@ -1110,7 +1138,8 @@ var marionetteYat = {
 	App: App,
 	Page: YatPage,
 	Router: Router,
-	PageManager: YatPageManager
+	PageManager: YatPageManager,
+	user: user
 };
 
 export default marionetteYat;
