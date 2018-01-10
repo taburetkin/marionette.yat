@@ -953,7 +953,7 @@ var YatPage = Base$2.extend({
 		this.addCollection(opts.collection, opts);
 	},
 	_initializeRoute: function _initializeRoute() {
-		var route = this.getRoute();
+		var route = this.getRoute({ asPattern: true });
 		if (route == null) return;
 		var page = this;
 		this._routeHandler = _defineProperty({}, route, { context: page, action: function action() {
@@ -961,16 +961,30 @@ var YatPage = Base$2.extend({
 			} });
 	},
 	getRoute: function getRoute() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { asPattern: false };
+
 		var relative = this.getProperty('relativeRoute');
 		var route = this.getProperty('route');
 		var parent = this.getParent();
 		if (route == null) return;
-		if (!relative || !parent || !parent.getRoute) return route;
-		var parentRoute = parent.getRoute();
-		if (parentRoute == null) return route;
-		var result = parentRoute + '/' + route;
-		if (result.startsWith('/')) result = result.substring(1);
-		return result;
+
+		var result = route;
+
+		if (relative && parent && parent.getRoute) {
+			var parentRoute = parent.getRoute();
+			result = parentRoute + '/' + route;
+		}
+
+		return this._normalizeRoute(result, opts);
+	},
+	_normalizeRoute: function _normalizeRoute(route, opts) {
+		route = route.replace(/\/+/gmi, '/').replace(/^\//, '');
+		if (opts.asPattern) {
+			return route;
+		} else {
+			var res = route.replace(/\(\/\)/gmi, '/').replace(/\/+/gmi, '/');
+			return res;
+		}
 	},
 	_tryCreateRouter: function _tryCreateRouter() {
 		var create = this.getProperty('createRouter') === true;
@@ -1088,11 +1102,12 @@ var YatPageManager = Base$3.extend({
 	navigate: function navigate(url) {
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
 
+
 		var router = this.getRouter();
 		if (router) {
 			router.navigate(url, opts);
-			console.log('navigated to ', url);
-			console.log(document.location.hash);
+			// console.log('navigated to ', url);
+			// console.log(document.location.hash);
 		} else console.warn('router not found');
 	},
 	getPage: function getPage(key) {
@@ -1115,7 +1130,7 @@ var YatPageManager = Base$3.extend({
 				rootUrl = root && root.getRoute();
 			}
 		}
-		if (rootUrl) this.navigate(rootUrl);else console.warn('root page not found');
+		if (rootUrl != null) this.navigate(rootUrl);else console.warn('root page not found');
 	},
 	_initializeYatPageManager: function _initializeYatPageManager() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};

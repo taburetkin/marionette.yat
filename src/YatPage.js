@@ -146,7 +146,7 @@ export default Base.extend({
 	},
 
 	_initializeRoute(){
-		let route = this.getRoute();
+		let route = this.getRoute({asPattern:true});
 		if(route == null) return;
 		let page = this;
 		this._routeHandler = {
@@ -154,20 +154,31 @@ export default Base.extend({
 		};
 	},
 
-	getRoute(){
+	getRoute(opts = {asPattern:false}){
 		let relative = this.getProperty('relativeRoute');
 		let route = this.getProperty('route');
 		let parent = this.getParent();
 		if(route == null) return;
-		if(!relative || !parent || !parent.getRoute) return route;
-		let parentRoute = parent.getRoute();
-		if(parentRoute == null) return route;
-		let result = parentRoute + '/' + route;
-		if(result.startsWith('/'))
-			result = result.substring(1);
-		return result;
-	},
+		
+		let result = route;
 
+		if(relative && parent && parent.getRoute){
+			let parentRoute = parent.getRoute();
+			result = parentRoute + '/' + route;			
+		}
+
+		return this._normalizeRoute(result, opts);
+	},
+	_normalizeRoute(route, opts){		
+		route = route.replace(/\/+/gmi,'/').replace(/^\//,'');
+		if(opts.asPattern){
+			return route;
+		}
+		else{
+			let res = route.replace(/\(\/\)/gmi,'/').replace(/\/+/gmi,'/');
+			return res;
+		}
+	},
 	_tryCreateRouter(){
 		let create = this.getProperty('createRouter') === true;
 		if(create){

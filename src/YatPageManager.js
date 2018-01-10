@@ -39,11 +39,12 @@ let YatPageManager = Base.extend({
 	},
 
 	navigate(url, opts = {trigger:true}){
+
 		let router = this.getRouter();
 		if(router){
 			router.navigate(url, opts);
-			console.log('navigated to ', url);
-			console.log(document.location.hash);
+			// console.log('navigated to ', url);
+			// console.log(document.location.hash);
 		}
 		else
 			console.warn('router not found');
@@ -71,7 +72,7 @@ let YatPageManager = Base.extend({
 				rootUrl = root && root.getRoute()
 			}
 		}
-		if(rootUrl)
+		if(rootUrl != null)
 			this.navigate(rootUrl);
 		else
 			console.warn('root page not found');
