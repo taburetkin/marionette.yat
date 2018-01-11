@@ -1,5 +1,8 @@
 # Startable mixin
-* derived from Stateable
+see [mixin](../helpers/mix.md)
+
+
+* derived from [Stateable](./stateable.md)
 * has special `life` state lifecycle
 * has static field `Startable` equal to true
 

@@ -1,13 +1,17 @@
 # Stateable mixin
-main goal to store and get state of an instance and trigger apropriate events on state change.
+see [mixin](../helpers/mix.md)
 
-has two methods: `getState(key[optional])` and `setState(key,value[optional])`
+Main goal to store and get state of an instance and trigger apropriate events on state change.
+
+## methods
+* `getState(key[optional])`
+* `setState(key, value[optional])`
+* `clearState()`
 
 has static field `Stateable` equal to `true`
 
 ## getState
 `getState()` will return state object itself
-
 `getState(key)` will return value of stored state
 
 ## setState
@@ -20,6 +24,9 @@ also triggers:
 `state:[keyValue]` with value as argument
 
 `state` with hash of changed state fields
+
+## clearState
+Clears all states fields.
 
 ## example
 

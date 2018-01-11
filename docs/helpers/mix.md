@@ -1,56 +1,44 @@
-# mixin
-Extends a Class with mixins.
+# mix - extended mixin functionality
+Extends a Class or object with mixins and hashes and do not pollute prototypes.
 
-## use
-`let newClass = mix(BaseClass).with(Mixin1, Mixin2)`
+## primary use case
+`let NewClass = mix(BaseClass).with(Mixin1, Mixin2);`
 
-## mix(arg)
-argument can be a class definition or simple object.
-
-
-## with(...args)
-argument can be an object hash or function that returns extended class.
-order of mixins is left to right and class prototype always last.
-
-
-
-## how to define own mixin
-my-mixin.js
+## mix(argument)
+returns a special `wrapper` object with `class` property and `with` method.
+`argument` can be a class definition or simple object.
 ```js
-export default (Base) => Base.extend({
-	/* mixin properties and methods */
-});
+let wrapper = mix({example:true}); //OK
+let wrapper = mix(MyClass); //OK
+let wrapper = mix([1,2,3]); //ERROR
+
+let NewClass = mix({prop1:1, prop2:2}).class;
+let instance = new NewClass();
 ```
 
-## example
+## mix(BaseClass).with(mixin1, mixin2, mixin3)
+`mixin` argument could be an `object` or a `mixin function`. The apply order is left to right, so properties of mixin3 will be the last
+
+## mixin function
+Its a function that takes as argument Base class and returns extended Base class
 ```js
 
-import Mixins from 'marionette.yat';
-let mix = Mixins.mix;
+let myMixin = (BaseClass) => BaseClass.extends({prop:'abc'},{staticProp:'zxc'});
 
-let JustHash = {
-	hashProperty:1
-}
+let MyClass = mix({somedata:123}).with(myMixin);
 
-let mymixin = (BaseClass) => BaseClass.extend({
-	myMixinMethod(){ }
+```
+
+## resulted class
+`mix` helper will settle to resulting class static `extend` method, so you can do like that
+```js
+
+let MyClass = mix(BaseClass).with(mixin1, mixin2, {abc:123, zxc:321}).extend({
+	abc:'my abc is better',
+	greet(){
+		console.log('abc', this.abc); // logs "my abc is better"
+		console.log('zxc', this.zxc); // logs "321"
+	}
 });
-
-
-let MyMixedClass = mix(BaseClass).with(JustHash, mymixin).extend({
-	methodB(){}
-});
-
-/*
-
-this will result in mixed class
-{
-	...BaseClass methods and properties
-	hashProperty,
-	myMixinMethod(),
-	methodB()
-}
-
-*/
 
 ```

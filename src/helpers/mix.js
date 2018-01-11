@@ -13,19 +13,24 @@ function smartExtend(Src, Dst){
 
 function mix(BaseClass){
 	let Mixed = null;
-	if(_.isFunction(BaseClass) && _.isFunction(BaseClass.constructor))
+	if(_.isFunction(BaseClass)){
 		Mixed = BaseClass;
+	}
 	else if(_.isObject(BaseClass) && BaseClass !== null){
 		let tmp = function(){};
 		tmp.extend = Mn.extend;
 		Mixed = tmp.extend(BaseClass);
 	}
+	else {
+		throw new Error('argument should be an object or class definition')
+	}
 	if(!Mixed.extend) {
-		Mixed = extend.call(BaseClass, {});
+		Mixed = Mn.extend.call(BaseClass, {});
 		Mixed.extend = Mn.extend;
 	}
 	let fake = {
-		with: (...args) => _.reduce(args, (memo, arg) => smartExtend(memo, arg), Mixed)
+		with: (...args) => _.reduce(args, (memo, arg) => smartExtend(memo, arg), Mixed),
+		class: Mixed,	
 	}
 	return fake;
 }

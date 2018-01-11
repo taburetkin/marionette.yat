@@ -1,5 +1,5 @@
 # Childrenable mixin
-see [mixin](../helpers/mixin.md)
+see [mixin](../helpers/mix.md)
 
 On initialize instantiate all children.
 

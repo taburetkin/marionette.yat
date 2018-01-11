@@ -1,4 +1,6 @@
 # Radioable mixin
+see [mixin](../helpers/mix.md).
+
 extends marionette radio functionality.
 
 differences from marionette functionality

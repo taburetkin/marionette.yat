@@ -33,8 +33,6 @@ describe('get-option-property mixin', function(){
 		additional:'additional'
 	});
 
-	console.log('!!', test.getProperty('propertyFunction2') )
-
 	describe('getProperty', () => {
 		it('should return instance property if its exists', () => {
 			expect(test.getProperty('propertyValue')).to.be.equal('instance');
@@ -107,11 +105,5 @@ describe('get-option-property mixin', function(){
 
 	
 	});
-
-	// describe('getOption', () => {
-	// 	it('should return instance property if undefined', () => {
-	// 		expect(this.testObject.getOption('prop3')).to.be.equal('instance');
-	// 	});
-	// });
 
 });
