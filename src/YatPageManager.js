@@ -41,11 +41,8 @@ let YatPageManager = Base.extend({
 	navigate(url, opts = {trigger:true}){
 
 		let router = this.getRouter();
-		if(router){
+		if(router)
 			router.navigate(url, opts);
-			// console.log('navigated to ', url);
-			// console.log(document.location.hash);
-		}
 		else
 			console.warn('router not found');
 	},
@@ -121,8 +118,8 @@ let YatPageManager = Base.extend({
 	
 	_moveToRootIfCurrentPageNotAllowed(){
 		let current = this.getState('currentPage');
-		if(!current) return;
-		if(!current.isStartNotAllowed()) return;
+		if(!current || !current.isStartNotAllowed()) return;
+		
 		this.navigateToRoot();
 	}
 

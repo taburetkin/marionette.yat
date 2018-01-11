@@ -13,10 +13,10 @@ marked with asterisk is not yet implemented.
 * [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ) - simple application with pages.
 
 ## Table of content
-* [Helpers](./docs/helpers/readme.md)
+* [Helpers](./docs/helpers/)
 	* [mix](./docs/helpers/mix.md)
 	* [isKnowCtor](./docs/helpers/isKnowCtor.md)	
-* [Mixins](./docs/mixins/readme.md)	
+* [Mixins](./docs/mixins/)	
 	* [GetNameLabel](./docs/mixins/get-name-label.md)
 	* [GetOptionProperty](./docs/mixins/get-option-property.md)
 	* [Radioable](./docs/mixins/radioable.md)
