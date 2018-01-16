@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.5
+* v0.0.7
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -14,7 +14,7 @@ import _ from 'underscore';
 import Bb from 'backbone';
 import Mn$1 from 'backbone.marionette';
 
-var version = "0.0.5";
+var version = "0.0.7";
 
 var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
 

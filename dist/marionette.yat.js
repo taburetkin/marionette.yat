@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.5
+* v0.0.7
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -20,7 +20,7 @@ _ = _ && _.hasOwnProperty('default') ? _['default'] : _;
 Bb = Bb && Bb.hasOwnProperty('default') ? Bb['default'] : Bb;
 Mn$1 = Mn$1 && Mn$1.hasOwnProperty('default') ? Mn$1['default'] : Mn$1;
 
-var version = "0.0.5";
+var version = "0.0.7";
 
 var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
 
