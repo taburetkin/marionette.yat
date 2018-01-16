@@ -10,17 +10,17 @@
 */
 
 
-import _ from 'underscore';
 import Bb from 'backbone';
-import Mn$1 from 'backbone.marionette';
+import Mn from 'backbone.marionette';
+import _ from 'underscore';
 
 var version = "0.0.8";
 
 var getCompareABModel = function getCompareABModel(arg) {
-	if (arg instanceof Bbe.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
+	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
 };
 var getCompareABView = function getCompareABView(arg) {
-	if (arg instanceof Backbone.View) return arg;else return;
+	if (arg instanceof Bb.View) return arg;else return;
 };
 
 var compareAB = function compareAB(a, b, func) {
@@ -66,7 +66,7 @@ var view = { compareAB: compareAB, viewComparator: viewComparator };
 
 var Functions = { view: view };
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _.isFunction(arg);
@@ -76,7 +76,7 @@ function isKnownCtor(arg) {
 	return isFn && result;
 }
 
-var YatError = Mn$1.Error.extend({}, {
+var YatError = Mn.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -122,14 +122,14 @@ function mix(BaseClass) {
 		Mixed = BaseClass;
 	} else if (_.isObject(BaseClass) && BaseClass !== null) {
 		var tmp = function tmp() {};
-		tmp.extend = Mn$1.extend;
+		tmp.extend = Mn.extend;
 		Mixed = tmp.extend(BaseClass);
 	} else {
 		throw new Error('argument should be an object or class definition');
 	}
 	if (!Mixed.extend) {
-		Mixed = Mn$1.extend.call(BaseClass, {});
-		Mixed.extend = Mn$1.extend;
+		Mixed = Mn.extend.call(BaseClass, {});
+		Mixed.extend = Mn.extend;
 	}
 	var fake = {
 		with: function _with() {
@@ -232,7 +232,7 @@ var RadioMixin = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn$1.Object.prototype._initRadio.call(this);
+			Mn.Object.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -728,7 +728,7 @@ var Mixins = {
 	Childrenable: Childrenable
 };
 
-var DragAndDropSingleton = Mn$1.Object.extend({
+var DragAndDropSingleton = Mn.Object.extend({
 	name: 'draggable manager',
 	buildDraggableContext: function buildDraggableContext($el, beh, event) {
 		var context = {
@@ -769,7 +769,7 @@ var DragAndDropSingleton = Mn$1.Object.extend({
 	},
 	setupDraggable: function setupDraggable($el, behavior) {
 		if (!$el.jquery && !(typeof $el === 'string')) throw new Error('first argument should be jquery element or string selector');
-		if (!(behavior instanceof Mn$1.Behavior)) throw new Error('second argument should be marionette behavior instance');
+		if (!(behavior instanceof Mn.Behavior)) throw new Error('second argument should be marionette behavior instance');
 
 		var $handler = $el.jquery ? $el : behavior.$el;
 		var selector = typeof $el === 'string' ? $el : null;
@@ -874,7 +874,7 @@ var DragAndDropSingleton = Mn$1.Object.extend({
 
 var dragAndDrop = new DragAndDropSingleton();
 
-var DraggableBehavior = Mn$1.Behavior.extend({
+var DraggableBehavior = Mn.Behavior.extend({
 
 	startDragOnDistance: 50,
 
@@ -942,7 +942,7 @@ var DraggableBehavior = Mn$1.Behavior.extend({
 	}
 });
 
-var SortByDrag = Mn$1.Behavior.extend({
+var SortByDrag = Mn.Behavior.extend({
 	events: {
 		'drag:drop': '_dragDrop',
 		'drag:over': '_dragOver'
@@ -1092,7 +1092,7 @@ var Behaviors = { Draggable: DraggableBehavior, SortByDrag: SortByDrag };
 
 var Singletons = { dragAndDrop: dragAndDrop };
 
-var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
+var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
 
 var IDENTITY_CHANNEL = 'identity';
 
@@ -1135,7 +1135,7 @@ var YatUser = Base.extend({
 });
 var user = new YatUser();
 
-var Base$1 = mix(Mn$1.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
+var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -1195,7 +1195,7 @@ var App = Base$1.extend({
 	}
 });
 
-var Router = Mn$1.AppRouter.extend({}, {
+var Router = Mn.AppRouter.extend({}, {
 	create: function create(hash, context) {
 		var _this = this;
 
