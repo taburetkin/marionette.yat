@@ -1,6 +1,8 @@
+import Bb from 'backbone';
+import Mn from 'backbone.marionette';
 
 let getCompareABModel = (arg) => {
-	if (arg instanceof Bbe.Model)
+	if (arg instanceof Bb.Model)
 		return arg;
 	else if (arg instanceof Mn.View)
 		return arg.model;
@@ -8,7 +10,7 @@ let getCompareABModel = (arg) => {
 		return;
 }
 let getCompareABView = (arg) => {
-	if (arg instanceof Backbone.View)
+	if (arg instanceof Bb.View)
 		return arg;
 	else
 		return;
