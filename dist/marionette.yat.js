@@ -22,6 +22,56 @@ Mn$1 = Mn$1 && Mn$1.hasOwnProperty('default') ? Mn$1['default'] : Mn$1;
 
 var version = "0.0.7";
 
+var getCompareABModel = function getCompareABModel(arg) {
+	if (arg instanceof Bbe.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
+};
+var getCompareABView = function getCompareABView(arg) {
+	if (arg instanceof Backbone.View) return arg;else return;
+};
+
+var compareAB = function compareAB(a, b, func) {
+	if (typeof func === 'function') {
+		a = func.call(a, getCompareABModel(a), getCompareABView(a));
+		b = func.call(b, getCompareABModel(b), getCompareABView(b));
+	}
+	return a < b ? -1 : a > b ? 1 : 0;
+};
+
+var _arguments = arguments;
+/*
+*	accepts:
+*		variant #1: a, b, function
+*		variant #2: [[a,b,function], [a,b,function]]
+*		function can be undefined
+*		example:
+*			ascending	:		return viewComparator(viewA, viewB, function(model, view){ return model && model.get('someTextField') });
+*			descending	:		return viewComparator(viewB, viewA, function(model, view){ return model && model.get('someTextField') });
+			multiple compares: 	return viewComparator([[viewB, viewA, func], [viewB, viewA, func]])
+*/
+var viewComparator = function viewComparator() {
+	for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+		args[_key] = arguments[_key];
+	}
+
+	var compareArray = [];
+	var result = 0;
+
+	if (_arguments.length >= 2) // single compare
+		return compareAB.apply(null, args);else if (args.length === 1 && args[0] instanceof Array) // array of compare
+		compareArray = _arguments[0];
+
+	_(compareArray).every(function (singleCompare) {
+		result = compareAB.apply(null, singleCompare);
+		return result === 0;
+	});
+
+	return result;
+};
+
+var view = { compareAB: compareAB, viewComparator: viewComparator };
+
+var Functions = { view: view };
+
 var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
 
 function isKnownCtor(arg) {
@@ -31,6 +81,38 @@ function isKnownCtor(arg) {
 	});
 	return isFn && result;
 }
+
+var YatError = Mn$1.Error.extend({}, {
+	Http400: function Http400(message) {
+		return this.Http(400, message);
+	},
+	Http401: function Http401(message) {
+		return this.Http(401, message);
+	},
+	Http403: function Http403(message) {
+		return this.Http(403, message);
+	},
+	Http404: function Http404(message) {
+		return this.Http(404, message);
+	},
+	Http500: function Http500(message) {
+		return this.Http(500, message);
+	},
+	Http: function Http(status, message) {
+		var error = new this({ message: message, name: "HttpError" });
+		error.status = status;
+		return error;
+	},
+	NotFound: function NotFound(message) {
+		return this.Http404(message);
+	},
+	NotAuthorized: function NotAuthorized(message) {
+		return this.Http401(message);
+	},
+	Forbidden: function Forbidden(message) {
+		return this.Http403(message);
+	}
+});
 
 function smartExtend(Src, Dst) {
 	if (_.isFunction(Dst)) {
@@ -236,38 +318,6 @@ var Stateable = (function (BaseClass) {
 	return Mixin;
 });
 
-var YatError$1 = Mn$1.Error.extend({}, {
-	Http400: function Http400(message) {
-		return this.Http(400, message);
-	},
-	Http401: function Http401(message) {
-		return this.Http(401, message);
-	},
-	Http403: function Http403(message) {
-		return this.Http(403, message);
-	},
-	Http404: function Http404(message) {
-		return this.Http(404, message);
-	},
-	Http500: function Http500(message) {
-		return this.Http(500, message);
-	},
-	Http: function Http(status, message) {
-		var error = new this({ message: message, name: "HttpError" });
-		error.status = status;
-		return error;
-	},
-	NotFound: function NotFound(message) {
-		return this.Http404(message);
-	},
-	NotAuthorized: function NotAuthorized(message) {
-		return this.Http401(message);
-	},
-	Forbidden: function Forbidden(message) {
-		return this.Http403(message);
-	}
-});
-
 var STATES = {
 	INITIALIZED: 'initialized',
 	STARTING: 'starting',
@@ -459,7 +509,7 @@ var Startable = (function (Base) {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
 
 			var message = 'Startable has already been destroyed and cannot be used.';
-			var error = new YatError$1({
+			var error = new YatError({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -474,7 +524,7 @@ var Startable = (function (Base) {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
 
 			var message = 'Startable is not idle. current state: ' + this._getLifeState();
-			var error = new YatError$1({
+			var error = new YatError({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -493,7 +543,7 @@ var Startable = (function (Base) {
 
 
 			var message = 'Startable has already been started.';
-			var error = new YatError$1({
+			var error = new YatError({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -516,7 +566,7 @@ var Startable = (function (Base) {
 
 
 			var message = 'Startable should be in `running` state.';
-			var error = new YatError$1({
+			var error = new YatError({
 				name: 'StartableLifecycleError',
 				message: message
 			});
@@ -831,15 +881,19 @@ var DragAndDropSingleton = Mn$1.Object.extend({
 var dragAndDrop = new DragAndDropSingleton();
 
 var DraggableBehavior = Mn$1.Behavior.extend({
-	events: {
-		'dragged:over': function draggedOver(event, part, context) {
-			event.stopPropagation();
-			event.preventDefault();
 
-			if (this.wrongScope(context)) return;
-			this.view.triggerMethod('dragged:over', part, context, this);
-			this.view.triggerMethod('dragged:over:' + part, context, this);
-		}
+	startDragOnDistance: 50,
+
+	events: {
+		'dragged:over': '_dragOver'
+	},
+	_dragOver: function _dragOver(event, part, context) {
+		event.stopPropagation();
+		event.preventDefault();
+
+		if (this.wrongScope(context)) return;
+		this.view.triggerMethod('dragged:over', part, context, this);
+		this.view.triggerMethod('dragged:over:' + part, context, this);
 	},
 	onInitialize: function onInitialize() {
 		this._setup();
@@ -884,7 +938,6 @@ var DraggableBehavior = Mn$1.Behavior.extend({
 
 		if (this.getOption('elementClass')) this.$el.removeClass(this.getOption('elementClass'));
 	},
-	startDragOnDistance: 50,
 	getDragTrigger: function getDragTrigger() {
 		if (this.getOption('dragTrigger')) return this.getOption('dragTrigger');
 
@@ -895,29 +948,27 @@ var DraggableBehavior = Mn$1.Behavior.extend({
 	}
 });
 
-var _this2 = undefined;
-
 var SortByDrag = Mn$1.Behavior.extend({
 	events: {
 		'drag:drop': '_dragDrop',
 		'drag:over': '_dragOver'
 	},
 	_dragOver: function _dragOver(ev, context) {
-		if (_this2.wrongScope(context)) return;
+		if (this.wrongScope(context)) return;
 		ev.stopPropagation();
 		ev.preventDefault();
 
-		if (ev.target === _this2.$el.get(0)) {
-			_this2._insert(context);
+		if (ev.target === this.$el.get(0)) {
+			this._insert(context);
 			return;
 		}
 
-		var oldpos = _this2.dragOverPosition || '';
+		var oldpos = this.dragOverPosition || '';
 		var m = { y: ev.pageY, x: ev.pageX };
-		var $el = _this2.getChildEl(ev.target);
+		var $el = this.getChildEl(ev.target);
 		var position = "top:left";
 		if ($el.length) {
-			var i = _this2._get$elInfo($el);
+			var i = this._get$elInfo($el);
 			var hor = m.x < i.center.x ? 'left' : 'right';
 			var ver = m.y < i.center.y ? 'top' : 'bottom';
 			position = ver + ":" + hor;
@@ -925,7 +976,7 @@ var SortByDrag = Mn$1.Behavior.extend({
 			console.warn(ev.target);
 		}
 
-		var dragBy = _this2.getOption("dragBy") || "both";
+		var dragBy = this.getOption("dragBy") || "both";
 		if (oldpos != position) {
 			var apos = oldpos.split(':');
 
@@ -939,7 +990,7 @@ var SortByDrag = Mn$1.Behavior.extend({
 			if (apos.indexOf(ver) == -1 && (dragBy === "vertical" || dragBy === "both")) {
 				eventContext.trigger('dragged:over', [ver, context]);
 			}
-			_this2.dragOverPosition = position;
+			this.dragOverPosition = position;
 		}
 	},
 	_dragDrop: function _dragDrop(ev, context) {
@@ -998,7 +1049,6 @@ var SortByDrag = Mn$1.Behavior.extend({
 
 		this.view.sort();
 	},
-
 	getScope: function getScope() {
 		return this.getOption("scope") || "default";
 	},
@@ -1023,7 +1073,6 @@ var SortByDrag = Mn$1.Behavior.extend({
 	_updateInsert: function _updateInsert(context, order) {
 		context.insertAt = order;
 	},
-
 	onChildviewDraggedOverLeft: function onChildviewDraggedOverLeft(context, childBeh) {
 		this._insert(context, "insertBefore", childBeh);
 	},
@@ -1044,6 +1093,10 @@ var SortByDrag = Mn$1.Behavior.extend({
 		this._updateInsert(context, order);
 	}
 });
+
+var Behaviors = { Draggable: DraggableBehavior, SortByDrag: SortByDrag };
+
+var Singletons = { dragAndDrop: dragAndDrop };
 
 var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
 
@@ -1563,10 +1616,13 @@ var YatPageManager = Base$3.extend({
 
 var marionetteYat = {
 	VERSION: version,
+	Functions: Functions,
 	Helpers: Helpers,
 	Mixins: Mixins,
+	Behaviors: Behaviors,
+	Singletons: Singletons,
 	Object: YatObject,
-	Error: YatError$1,
+	Error: YatError,
 	App: App,
 	Page: YatPage,
 	Router: Router,

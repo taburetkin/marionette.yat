@@ -1,5 +1,6 @@
 import _ from 'underscore'
 import Mn from 'backbone.marionette';
+import YatError from '../YatError';
 
 function smartExtend(Src, Dst){
 	if(_.isFunction(Dst)){

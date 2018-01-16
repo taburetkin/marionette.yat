@@ -3,26 +3,30 @@ import Mn from 'backbone.marionette';
 import dragAndDrop from '../singletons/drag-and-drop';
 
 var DraggableBehavior = Mn.Behavior.extend({
-	events: {
-		'dragged:over': function (event, part, context) {
-			event.stopPropagation();
-			event.preventDefault();
 
-			if (this.wrongScope(context)) return;
-			this.view.triggerMethod('dragged:over', part, context, this);
-			this.view.triggerMethod('dragged:over:' + part, context, this);
-		}
+	startDragOnDistance: 50,
+
+	events: {
+		'dragged:over': '_dragOver'
 	},
-	onInitialize: function () {
+	_dragOver(event, part, context){
+		event.stopPropagation();
+		event.preventDefault();
+
+		if (this.wrongScope(context)) return;
+		this.view.triggerMethod('dragged:over', part, context, this);
+		this.view.triggerMethod('dragged:over:' + part, context, this);
+	},
+	onInitialize() {
 		this._setup();
 	},
-	getScope: function () {
+	getScope () {
 		return this.getOption("scope") || "default";
 	},
-	wrongScope: function (context) {
+	wrongScope (context) {
 		return this.getScope() !== context.scope;
 	},
-	onDragStart: function (ev, context) {
+	onDragStart (ev, context) {
 
 		var ghost = this.getOption('ghost') || "clone";
 
@@ -49,14 +53,14 @@ var DraggableBehavior = Mn.Behavior.extend({
 		}
 
 	},
-	onDrag: function (ev) {
+	onDrag (ev) {
 		if (!this.$ghost) return;
 		this.$ghost.css({
 			top: (ev.pageY) + 'px',
 			left: ev.pageX + 'px',
 		});
 	},
-	onDragEnd: function () {
+	onDragEnd () {
 
 		if (this.$ghost)
 			this.$ghost.remove();
@@ -64,14 +68,14 @@ var DraggableBehavior = Mn.Behavior.extend({
 		if (this.getOption('elementClass'))
 			this.$el.removeClass(this.getOption('elementClass'));
 	},
-	startDragOnDistance: 50,
-	getDragTrigger: function () {
+
+	getDragTrigger() {
 		if (this.getOption('dragTrigger'))
 			return this.getOption('dragTrigger');
 
 		return this.$el;
 	},
-	_setup: function () {
+	_setup() {
 		dragAndDrop.setupDraggable(this.getDragTrigger(), this);
 	},
 });

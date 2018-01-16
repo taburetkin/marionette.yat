@@ -6,7 +6,7 @@ let SortByDrag = Mn.Behavior.extend({
 		'drag:drop': '_dragDrop',
 		'drag:over': '_dragOver',
 	},
-	_dragOver: (ev, context) => {
+	_dragOver(ev, context) {
 		if (this.wrongScope(context)) return;
 		ev.stopPropagation();
 		ev.preventDefault();
@@ -47,7 +47,7 @@ let SortByDrag = Mn.Behavior.extend({
 			this.dragOverPosition = position;
 		}
 	},
-	_dragDrop: function (ev, context) {
+	_dragDrop(ev, context) {
 		if (this.wrongScope(context)) return;
 		ev.stopPropagation();
 		ev.preventDefault();
@@ -55,7 +55,7 @@ let SortByDrag = Mn.Behavior.extend({
 		this._tryInsertBetween(context);
 		return false;
 	},
-	_tryInsertBetween: function (context) {
+	_tryInsertBetween (context) {
 
 		var model = context.model;
 		var view = context.view;
@@ -73,14 +73,14 @@ let SortByDrag = Mn.Behavior.extend({
 		this.insertModelAt(model, context.insertAt);
 
 	},
-	removeModelFromCollection: function (model) {
+	removeModelFromCollection (model) {
 		var col = model.collection;
 		if (!col) return;
 		col.remove(model);
 		delete model.collection;
 		col.each(function (m, i) { m.set("order", i) });
 	},
-	insertModelAt: function (model, at) {
+	insertModelAt (model, at) {
 		var col = this.view.collection;
 		if (!col) return;
 		
@@ -107,17 +107,17 @@ let SortByDrag = Mn.Behavior.extend({
 		this.view.sort();
 	},
 
-	getScope: function () {
+	getScope () {
 		return this.getOption("scope") || "default";
 	},
-	wrongScope: function (context) {
+	wrongScope (context) {
 		return this.getScope() !== context.scope;
 	},
-	getChildEl: function (el) {
+	getChildEl (el) {
 		var selector = this.getOption('childSelector');
 		return $(el).closest(selector);
 	},
-	_get$elInfo: function ($el, force) {
+	_get$elInfo ($el, force) {
 		var i = this._$elInfo = {
 			size: { width: $el.width(), height: $el.height() },				
 			offset: $el.offset()
@@ -125,27 +125,27 @@ let SortByDrag = Mn.Behavior.extend({
 		i.center = { x: i.size.width / 2 + i.offset.left, y: i.size.height / 2 + i.offset.top };
 		return i;
 	},
-	getOrder: function (beh) {
+	getOrder (beh) {
 		return beh.view.model.getOrder() || 0;
 	},
-	_updateInsert: function (context, order) {
+	_updateInsert (context, order) {
 		context.insertAt = order ;
 	},
 
 
-	onChildviewDraggedOverLeft: function (context, childBeh) {
+	onChildviewDraggedOverLeft (context, childBeh) {
 		this._insert(context, "insertBefore", childBeh);
 	},
-	onChildviewDraggedOverTop: function (context, childBeh) {
+	onChildviewDraggedOverTop (context, childBeh) {
 		this._insert(context, "insertBefore", childBeh);
 	},
-	onChildviewDraggedOverRight: function (context, childBeh) {
+	onChildviewDraggedOverRight (context, childBeh) {
 		this._insert(context, "insertAfter", childBeh);
 	},
-	onChildviewDraggedOverBottom: function (context, childBeh) {
+	onChildviewDraggedOverBottom (context, childBeh) {
 		this._insert(context, "insertAfter", childBeh);
 	},
-	_insert: function (context, method, childBeh) {
+	_insert (context, method, childBeh) {
 		var order = childBeh ? this.getOrder(childBeh) : 0;
 
 		if (method)

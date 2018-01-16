@@ -15,8 +15,11 @@ import YatPageManager from './YatPageManager';
 
 const marionetteYat = {
 	VERSION: version,
+	Functions: Functions,
 	Helpers: Helpers,
 	Mixins: Mixins,
+	Behaviors: Behaviors,
+	Singletons: Singletons,
 	Object: YatObject,
 	Error: YatError,
 	App: YatApp,
