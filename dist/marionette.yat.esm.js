@@ -12,11 +12,11 @@
 
 import _ from 'underscore';
 import Bb from 'backbone';
-import Mn from 'backbone.marionette';
+import Mn$1 from 'backbone.marionette';
 
 var version = "0.0.5";
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _.isFunction(arg);
@@ -35,10 +35,19 @@ function smartExtend(Src, Dst) {
 }
 
 function mix(BaseClass) {
-	var Mixed = BaseClass;
+	var Mixed = null;
+	if (_.isFunction(BaseClass)) {
+		Mixed = BaseClass;
+	} else if (_.isObject(BaseClass) && BaseClass !== null) {
+		var tmp = function tmp() {};
+		tmp.extend = Mn$1.extend;
+		Mixed = tmp.extend(BaseClass);
+	} else {
+		throw new Error('argument should be an object or class definition');
+	}
 	if (!Mixed.extend) {
-		Mixed = extend.call(BaseClass, {});
-		Mixed.extend = Mn.extend;
+		Mixed = Mn$1.extend.call(BaseClass, {});
+		Mixed.extend = Mn$1.extend;
 	}
 	var fake = {
 		with: function _with() {
@@ -49,7 +58,8 @@ function mix(BaseClass) {
 			return _.reduce(args, function (memo, arg) {
 				return smartExtend(memo, arg);
 			}, Mixed);
-		}
+		},
+		class: Mixed
 	};
 	return fake;
 }
@@ -82,8 +92,12 @@ var GetOptionProperty = (function (Base) {
 			return this._getOptionOrProperty(this.getProperty('options', { deep: false }), key, options, this.getProperty);
 		},
 		_getOptionOrProperty: function _getOptionOrProperty(valueContext, key) {
-			var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : { deep: true, force: true, args: [] };
+			var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 			var fallback = arguments[3];
+
+			options.deep !== undefined || (options.deep = true);
+			options.force !== undefined || (options.force = true);
+			options.args || (options.args = []);
 
 			//key and valueContext should be passed
 			if (key == null || valueContext == null) return;
@@ -100,7 +114,9 @@ var GetOptionProperty = (function (Base) {
 			//if returned value is function and is not any of known constructors and options property force set to true 
 			//we should return value of that function
 			//options.args will be passed as arguments
-			if (_.isFunction(value) && options.force && !isKnownCtor(value)) value = value.apply(this, options.args);
+			if (_.isFunction(value) && options.force && !isKnownCtor(value)) value = value.apply(this, options.args || []);
+
+			//console.log('key', key, value);
 
 			//if value is still undefined we will return default option value
 			return value === undefined ? options.default : value;
@@ -134,7 +150,7 @@ var RadioMixin = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn.Object.prototype._initRadio.call(this);
+			Mn$1.Object.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -214,7 +230,7 @@ var Stateable = (function (BaseClass) {
 	return Mixin;
 });
 
-var YatError$1 = Mn.Error.extend({}, {
+var YatError$1 = Mn$1.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -662,7 +678,368 @@ var Mixins = {
 	Childrenable: Childrenable
 };
 
-var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
+var DragAndDropSingleton = Mn$1.Object.extend({
+	name: 'draggable manager',
+	buildDraggableContext: function buildDraggableContext($el, beh, event) {
+		var context = {
+			id: _.uniqueId('draggable'),
+			state: 'pending',
+			$trigger: $el,
+			scope: beh.getOption("scope") || "default",
+			behavior: beh,
+			view: beh.view,
+			model: beh.view.model,
+			mouse: {
+				startAt: { x: event.pageX, y: event.pageY }
+			},
+			_documentHandlers: {},
+			_triggerHandlers: {},
+			_elementHandlers: {}
+		};
+
+		context.mouse.getOffset = function (ev) {
+			var res = {
+				x: ev.pageX - this.startAt.x,
+				y: ev.pageY - this.startAt.y
+			};
+			res.absX = Math.abs(res.x);
+			res.absY = Math.abs(res.y);
+			res.distance = Math.round(Math.sqrt(res.absX * res.absX + res.absY * res.absY));
+			return res;
+		};
+
+		context._documentHandlers.mousemove = _.bind(this.__documentMouseMoveHandler, this, $el, context);
+		context._documentHandlers.mouseup = _.bind(this.__documentMouseUpHandler, this, $el, context);
+		context._documentHandlers.mouseleave = _.bind(this.__documentMouseLeaveHandler, this, $el, context);
+		context._documentHandlers.mouseenter = _.bind(this.__documentMouseEnterHandler, this, $el, context);
+
+		context._elementHandlers.dragover = _.bind(this.__dragOverHandler, this, $el, context);
+
+		return context;
+	},
+	setupDraggable: function setupDraggable($el, behavior) {
+		if (!$el.jquery && !(typeof $el === 'string')) throw new Error('first argument should be jquery element or string selector');
+		if (!(behavior instanceof Mn$1.Behavior)) throw new Error('second argument should be marionette behavior instance');
+
+		var $handler = $el.jquery ? $el : behavior.$el;
+		var selector = typeof $el === 'string' ? $el : null;
+
+		$handler.on('mousedown', selector, null, _.bind(this.__triggerMouseDownHandler, this, $handler, behavior));
+	},
+	__triggerMouseDownHandler: function __triggerMouseDownHandler($el, behavior, ev) {
+
+		ev.preventDefault();
+		ev.stopPropagation();
+
+		var context = this.buildDraggableContext($el, behavior, ev);
+
+		$(document).on('mousemove', null, null, context._documentHandlers.mousemove);
+		$(document).one('mouseup', null, null, context._documentHandlers.mouseup);
+
+		return false;
+	},
+	__documentMouseUpHandler: function __documentMouseUpHandler($el, context, ev) {
+		if (context.state === 'pending') {
+			//dragging do not occurs
+		} else if (context.state === "dragging") {
+			context.state = 'dropped';
+			context.view.triggerMethod('drag:end', context);
+			$(ev.target).trigger('drag:drop', context);
+		}
+
+		this._clearAllHandlers($el, context);
+	},
+
+	__documentMouseMoveHandler: function __documentMouseMoveHandler($el, context, ev) {
+		if (context.state === 'pending') {
+			var startDistance = context.behavior.getOption('startDragOnDistance') || 1;
+			var distance = context.mouse.getOffset(ev).distance;
+			if (distance < startDistance) return;
+
+			this._initializeDragging($el, context, ev);
+		}
+
+		if (context.state === 'dragging') context.view.triggerMethod('drag', ev, context);
+	},
+
+	_initializeDragging: function _initializeDragging($el, context, ev) {
+		if (context.state === 'dragging') return;
+
+		context.state = 'dragging';
+		context.view.triggerMethod('drag:start', ev, context);
+
+		$(document).on('mouseleave', '*', null, context._documentHandlers.mouseleave);
+		$(document).on('mouseenter', '*', null, context._documentHandlers.mouseenter);
+	},
+
+	__documentMouseLeaveHandler: function __documentMouseLeaveHandler($el, context, ev) {
+		if ($.contains(context.view.$el.get(0), ev.target)) return;
+
+		$(ev.target).trigger('drag:leave', context);
+	},
+	__documentMouseEnterHandler: function __documentMouseEnterHandler($el, context, ev) {
+		if (context.$entered) {
+			context.$entered.off('mousemove', null, context._elementHandlers.dragover);
+		}
+		var same = $.contains(context.view.$el.get(0), ev.target);
+		if (same) return;
+
+		var event = this._createCustomDomEvent("drag:enter", ev);
+		context.$entered = $(ev.target);
+		context.$entered.trigger(event, context);
+
+		context.$entered.on('mousemove', null, null, context._elementHandlers.dragover);
+	},
+
+	__dragOverHandler: function __dragOverHandler($el, context, ev) {
+		var event = this._createCustomDomEvent("drag:over", ev);
+		$(ev.target).trigger(event, context);
+	},
+
+	_createCustomDomEvent: function _createCustomDomEvent(name, event, merge) {
+		if (!merge) merge = ["pageX", "pageY", "clientX", "clientY", "offsetX", "offsetY"];
+
+		var customEvent = jQuery.Event(name);
+		_(merge).each(function (prop) {
+			customEvent[prop] = event[prop];
+		});
+
+		return customEvent;
+	},
+
+	_clearAllHandlers: function _clearAllHandlers($el, context) {
+		$doc = $(document);
+		_(context._documentHandlers).each(function (handler, name) {
+			$doc.off(name, null, handler);
+		});
+		_(context._triggerHandlers).each(function (handler, name) {
+			$el.off(name, null, handler);
+		});
+
+		if (context.$entered) {
+			context.$entered.off('mousemove', null, context._elementHandlers.dragover);
+		}
+	}
+});
+
+var dragAndDrop = new DragAndDropSingleton();
+
+var DraggableBehavior = Mn$1.Behavior.extend({
+	events: {
+		'dragged:over': function draggedOver(event, part, context) {
+			event.stopPropagation();
+			event.preventDefault();
+
+			if (this.wrongScope(context)) return;
+			this.view.triggerMethod('dragged:over', part, context, this);
+			this.view.triggerMethod('dragged:over:' + part, context, this);
+		}
+	},
+	onInitialize: function onInitialize() {
+		this._setup();
+	},
+	getScope: function getScope() {
+		return this.getOption("scope") || "default";
+	},
+	wrongScope: function wrongScope(context) {
+		return this.getScope() !== context.scope;
+	},
+	onDragStart: function onDragStart(ev, context) {
+
+		var ghost = this.getOption('ghost') || "clone";
+
+		if (ghost == 'clone') {
+			var $g = this.$ghost = this.$el.clone();
+			$g.css({
+				top: ev.pageY + 'px',
+				left: ev.pageX + 'px',
+				width: this.$el.width()
+			});
+
+			if (this.getOption('elementClass')) this.$el.addClass(this.getOption('elementClass'));
+			if (this.getOption('ghostClass')) $g.addClass(this.getOption('ghostClass'));
+
+			var $dragContext = $('body');
+			var ghostContext = this.getOption('ghostContext');
+			var $dragContext = ghostContext == null ? $('body') : ghostContext == "parent" ? this.$el.parent() : $(ghostContext);
+			$g.appendTo($dragContext);
+		}
+	},
+	onDrag: function onDrag(ev) {
+		if (!this.$ghost) return;
+		this.$ghost.css({
+			top: ev.pageY + 'px',
+			left: ev.pageX + 'px'
+		});
+	},
+	onDragEnd: function onDragEnd() {
+
+		if (this.$ghost) this.$ghost.remove();
+
+		if (this.getOption('elementClass')) this.$el.removeClass(this.getOption('elementClass'));
+	},
+	startDragOnDistance: 50,
+	getDragTrigger: function getDragTrigger() {
+		if (this.getOption('dragTrigger')) return this.getOption('dragTrigger');
+
+		return this.$el;
+	},
+	_setup: function _setup() {
+		dragAndDrop.setupDraggable(this.getDragTrigger(), this);
+	}
+});
+
+var _this2 = undefined;
+
+var SortByDrag = Mn$1.Behavior.extend({
+	events: {
+		'drag:drop': '_dragDrop',
+		'drag:over': '_dragOver'
+	},
+	_dragOver: function _dragOver(ev, context) {
+		if (_this2.wrongScope(context)) return;
+		ev.stopPropagation();
+		ev.preventDefault();
+
+		if (ev.target === _this2.$el.get(0)) {
+			_this2._insert(context);
+			return;
+		}
+
+		var oldpos = _this2.dragOverPosition || '';
+		var m = { y: ev.pageY, x: ev.pageX };
+		var $el = _this2.getChildEl(ev.target);
+		var position = "top:left";
+		if ($el.length) {
+			var i = _this2._get$elInfo($el);
+			var hor = m.x < i.center.x ? 'left' : 'right';
+			var ver = m.y < i.center.y ? 'top' : 'bottom';
+			position = ver + ":" + hor;
+		} else {
+			console.warn(ev.target);
+		}
+
+		var dragBy = _this2.getOption("dragBy") || "both";
+		if (oldpos != position) {
+			var apos = oldpos.split(':');
+
+			var eventContext = $el;
+			if (dragBy == "both") {
+				eventContext.trigger('dragged:over', [position, context]);
+			}
+			if (apos.indexOf(hor) === -1 && (dragBy === "horizontal" || dragBy === "both")) {
+				eventContext.trigger('dragged:over', [hor, context]);
+			}
+			if (apos.indexOf(ver) == -1 && (dragBy === "vertical" || dragBy === "both")) {
+				eventContext.trigger('dragged:over', [ver, context]);
+			}
+			_this2.dragOverPosition = position;
+		}
+	},
+	_dragDrop: function _dragDrop(ev, context) {
+		if (this.wrongScope(context)) return;
+		ev.stopPropagation();
+		ev.preventDefault();
+
+		this._tryInsertBetween(context);
+		return false;
+	},
+	_tryInsertBetween: function _tryInsertBetween(context) {
+
+		var model = context.model;
+		var view = context.view;
+
+		if (!this.view.collection) {
+			console.warn('collection not defined');
+			return;
+		}
+
+		view.$el.detach();
+		view.destroy();
+
+		this.removeModelFromCollection(model);
+		this.insertModelAt(model, context.insertAt);
+	},
+	removeModelFromCollection: function removeModelFromCollection(model) {
+		var col = model.collection;
+		if (!col) return;
+		col.remove(model);
+		delete model.collection;
+		col.each(function (m, i) {
+			m.set("order", i);
+		});
+	},
+	insertModelAt: function insertModelAt(model, at) {
+		var col = this.view.collection;
+		if (!col) return;
+
+		if (at <= 0) at = 0;
+
+		if (at >= col.length) {
+			model.set('order', col.length);
+			model.collection = col;
+			col.push(model);
+		} else {
+			model.set('order', at);
+			model.collection = col;
+
+			if (at > 0) col.add(model, { at: at });else col.unshift(model);
+
+			col.each(function (exist, ind) {
+				exist.set('order', ind);
+			});
+		}
+
+		this.view.sort();
+	},
+
+	getScope: function getScope() {
+		return this.getOption("scope") || "default";
+	},
+	wrongScope: function wrongScope(context) {
+		return this.getScope() !== context.scope;
+	},
+	getChildEl: function getChildEl(el) {
+		var selector = this.getOption('childSelector');
+		return $(el).closest(selector);
+	},
+	_get$elInfo: function _get$elInfo($el, force) {
+		var i = this._$elInfo = {
+			size: { width: $el.width(), height: $el.height() },
+			offset: $el.offset()
+		};
+		i.center = { x: i.size.width / 2 + i.offset.left, y: i.size.height / 2 + i.offset.top };
+		return i;
+	},
+	getOrder: function getOrder(beh) {
+		return beh.view.model.getOrder() || 0;
+	},
+	_updateInsert: function _updateInsert(context, order) {
+		context.insertAt = order;
+	},
+
+	onChildviewDraggedOverLeft: function onChildviewDraggedOverLeft(context, childBeh) {
+		this._insert(context, "insertBefore", childBeh);
+	},
+	onChildviewDraggedOverTop: function onChildviewDraggedOverTop(context, childBeh) {
+		this._insert(context, "insertBefore", childBeh);
+	},
+	onChildviewDraggedOverRight: function onChildviewDraggedOverRight(context, childBeh) {
+		this._insert(context, "insertAfter", childBeh);
+	},
+	onChildviewDraggedOverBottom: function onChildviewDraggedOverBottom(context, childBeh) {
+		this._insert(context, "insertAfter", childBeh);
+	},
+	_insert: function _insert(context, method, childBeh) {
+		var order = childBeh ? this.getOrder(childBeh) : 0;
+
+		if (method) context.view.$el[method](childBeh.$el);else context.view.$el.appendTo(this.$el);
+
+		this._updateInsert(context, order);
+	}
+});
+
+var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
 
 var IDENTITY_CHANNEL = 'identity';
 
@@ -705,7 +1082,7 @@ var YatUser = Base.extend({
 });
 var user = new YatUser();
 
-var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
+var Base$1 = mix(Mn$1.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -765,7 +1142,7 @@ var App = Base$1.extend({
 	}
 });
 
-var Router = Mn.AppRouter.extend({}, {
+var Router = Mn$1.AppRouter.extend({}, {
 	create: function create(hash, context) {
 		var _this = this;
 
@@ -1097,11 +1474,7 @@ var YatPageManager = Base$3.extend({
 
 
 		var router = this.getRouter();
-		if (router) {
-			router.navigate(url, opts);
-			// console.log('navigated to ', url);
-			// console.log(document.location.hash);
-		} else console.warn('router not found');
+		if (router) router.navigate(url, opts);else console.warn('router not found');
 	},
 	getPage: function getPage(key) {
 
@@ -1176,8 +1549,8 @@ var YatPageManager = Base$3.extend({
 	},
 	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
 		var current = this.getState('currentPage');
-		if (!current) return;
-		if (!current.isStartNotAllowed()) return;
+		if (!current || !current.isStartNotAllowed()) return;
+
 		this.navigateToRoot();
 	}
 });
