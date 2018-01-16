@@ -11,6 +11,7 @@ marked with asterisk is not yet implemented.
 
 ## Examples
 * [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ) - simple application with pages.
+* [sort CollectionView by drag'n'drop](https://codepen.io/dimatabu/pen/JMaZXP)
 
 ## Table of content
 * [Helpers](./docs/helpers/)
