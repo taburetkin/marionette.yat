@@ -15,10 +15,10 @@ let viewComparator = (...args) => {
 	var compareArray = [];
 	var result = 0;
 
-	if (arguments.length >= 2)	// single compare
+	if (args.length >= 2)	// single compare
 		return compareAB.apply(null, args);
 	else if (args.length === 1 && args[0] instanceof Array)	// array of compare
-		compareArray = arguments[0];
+		compareArray = args[0];
 
 	_(compareArray).every(function (singleCompare) {
 		result = compareAB.apply(null, singleCompare);

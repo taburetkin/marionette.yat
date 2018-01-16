@@ -37,7 +37,6 @@ var compareAB = function compareAB(a, b, func) {
 	return a < b ? -1 : a > b ? 1 : 0;
 };
 
-var _arguments = arguments;
 /*
 *	accepts:
 *		variant #1: a, b, function
@@ -56,9 +55,9 @@ var viewComparator = function viewComparator() {
 	var compareArray = [];
 	var result = 0;
 
-	if (_arguments.length >= 2) // single compare
+	if (args.length >= 2) // single compare
 		return compareAB.apply(null, args);else if (args.length === 1 && args[0] instanceof Array) // array of compare
-		compareArray = _arguments[0];
+		compareArray = args[0];
 
 	_(compareArray).every(function (singleCompare) {
 		result = compareAB.apply(null, singleCompare);
