@@ -733,6 +733,13 @@ var Mixins = {
 	Childrenable: Childrenable
 };
 
+var isEqualOrContains = function isEqualOrContains(node1, node2) {
+	if (node1.jquery) node1 = node1.get(0);
+	if (node2.jquery) node2 = node2.get(0);
+
+	return node1 === node2 || $.contains(node1, node2);
+};
+
 var DragAndDropSingleton = Mn.Object.extend({
 	name: 'draggable manager',
 	buildDraggableContext: function buildDraggableContext($el, beh, event) {
@@ -828,7 +835,7 @@ var DragAndDropSingleton = Mn.Object.extend({
 	},
 
 	__documentMouseLeaveHandler: function __documentMouseLeaveHandler($el, context, ev) {
-		if ($.contains(context.view.$el.get(0), ev.target)) return;
+		if (isEqualOrContains(context.behavior.$el, ev.target)) return;
 
 		$(ev.target).trigger('drag:leave', context);
 	},
@@ -836,8 +843,8 @@ var DragAndDropSingleton = Mn.Object.extend({
 		if (context.$entered) {
 			context.$entered.off('mousemove', null, context._elementHandlers.dragover);
 		}
-		var same = $.contains(context.view.$el.get(0), ev.target);
-		if (same) return;
+
+		if (isEqualOrContains(context.behavior.$el, ev.target)) return;
 
 		var event = this._createCustomDomEvent("drag:enter", ev);
 		context.$entered = $(ev.target);
@@ -919,13 +926,17 @@ var DraggableBehavior = Mn.Behavior.extend({
 			if (this.getOption('ghostClass')) $g.addClass(this.getOption('ghostClass'));
 
 			var $dragContext = $('body');
-			var ghostContext = this.getOption('ghostContext');
-			var $dragContext = ghostContext == null ? $('body') : ghostContext == "parent" ? this.$el.parent() : $(ghostContext);
+			// var ghostContext = this.getOption('ghostContext');
+			// var $dragContext = ghostContext == null ? $('body')
+			// 	: ghostContext == "parent" ? this.$el.parent()
+			// 		: $(ghostContext);
 			$g.appendTo($dragContext);
+			context.draggingContext = $dragContext;
 		}
 	},
 	onDrag: function onDrag(ev) {
 		if (!this.$ghost) return;
+
 		this.$ghost.css({
 			top: ev.pageY + 'px',
 			left: ev.pageX + 'px'
@@ -1037,7 +1048,6 @@ var SortByDrag = Mn.Behavior.extend({
 			col.push(model);
 		} else {
 			model.set('order', at);
-			model.collection = col;
 
 			if (at > 0) col.add(model, { at: at });else col.unshift(model);
 
@@ -1073,21 +1083,21 @@ var SortByDrag = Mn.Behavior.extend({
 		context.insertAt = order;
 	},
 	onChildviewDraggedOverLeft: function onChildviewDraggedOverLeft(context, childBeh) {
-		this._insert(context, "insertBefore", childBeh);
+		this._insert(context, "insertBefore", childBeh.$el, this.getOrder(childBeh));
 	},
 	onChildviewDraggedOverTop: function onChildviewDraggedOverTop(context, childBeh) {
-		this._insert(context, "insertBefore", childBeh);
+		this._insert(context, "insertBefore", childBeh.$el, this.getOrder(childBeh));
 	},
 	onChildviewDraggedOverRight: function onChildviewDraggedOverRight(context, childBeh) {
-		this._insert(context, "insertAfter", childBeh);
+		this._insert(context, "insertAfter", childBeh.$el, this.getOrder(childBeh) + 1);
 	},
 	onChildviewDraggedOverBottom: function onChildviewDraggedOverBottom(context, childBeh) {
-		this._insert(context, "insertAfter", childBeh);
+		this._insert(context, "insertAfter", childBeh.$el, this.getOrder(childBeh) + 1);
 	},
-	_insert: function _insert(context, method, childBeh) {
-		var order = childBeh ? this.getOrder(childBeh) : 0;
+	_insert: function _insert(context, method, $el, order) {
+		order || (order = 0);
 
-		if (method) context.view.$el[method](childBeh.$el);else context.view.$el.appendTo(this.$el);
+		if (method) context.view.$el[method]($el);else context.view.$el.appendTo(this.$el);
 
 		this._updateInsert(context, order);
 	}

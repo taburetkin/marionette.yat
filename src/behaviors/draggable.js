@@ -33,7 +33,7 @@ var DraggableBehavior = Mn.Behavior.extend({
 		if (ghost == 'clone') {
 			var $g = this.$ghost = this.$el.clone();
 			$g.css({
-				top: (ev.pageY) + 'px',
+				top: ev.pageY + 'px',
 				left: ev.pageX + 'px',
 				width: this.$el.width(),
 			});
@@ -44,19 +44,20 @@ var DraggableBehavior = Mn.Behavior.extend({
 				$g.addClass(this.getOption('ghostClass'));
 
 			var $dragContext = $('body');
-			var ghostContext = this.getOption('ghostContext');
-			var $dragContext = ghostContext == null ? $('body')
-				: ghostContext == "parent" ? this.$el.parent()
-					: $(ghostContext);
+			// var ghostContext = this.getOption('ghostContext');
+			// var $dragContext = ghostContext == null ? $('body')
+			// 	: ghostContext == "parent" ? this.$el.parent()
+			// 		: $(ghostContext);
 			$g.appendTo($dragContext);
-
+			context.draggingContext = $dragContext;
 		}
 
 	},
 	onDrag (ev) {
 		if (!this.$ghost) return;
+		
 		this.$ghost.css({
-			top: (ev.pageY) + 'px',
+			top: ev.pageY + 'px',
 			left: ev.pageX + 'px',
 		});
 	},

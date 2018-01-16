@@ -92,8 +92,7 @@ let SortByDrag = Mn.Behavior.extend({
 			col.push(model);
 		} else {
 			model.set('order', at);
-			model.collection = col;
-
+			
 			if(at > 0)
 				col.add(model, { at: at });
 			else
@@ -134,22 +133,22 @@ let SortByDrag = Mn.Behavior.extend({
 
 
 	onChildviewDraggedOverLeft (context, childBeh) {
-		this._insert(context, "insertBefore", childBeh);
+		this._insert(context, "insertBefore", childBeh.$el, this.getOrder(childBeh));
 	},
 	onChildviewDraggedOverTop (context, childBeh) {
-		this._insert(context, "insertBefore", childBeh);
+		this._insert(context, "insertBefore", childBeh.$el, this.getOrder(childBeh));
 	},
 	onChildviewDraggedOverRight (context, childBeh) {
-		this._insert(context, "insertAfter", childBeh);
+		this._insert(context, "insertAfter", childBeh.$el, this.getOrder(childBeh)+1);
 	},
 	onChildviewDraggedOverBottom (context, childBeh) {
-		this._insert(context, "insertAfter", childBeh);
+		this._insert(context, "insertAfter", childBeh.$el, this.getOrder(childBeh)+1);
 	},
-	_insert (context, method, childBeh) {
-		var order = childBeh ? this.getOrder(childBeh) : 0;
+	_insert (context, method, $el, order) {
+		order || (order = 0);
 
 		if (method)
-			context.view.$el[method](childBeh.$el);
+			context.view.$el[method]($el);
 		else
 			context.view.$el.appendTo(this.$el);
 

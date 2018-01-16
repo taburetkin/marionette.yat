@@ -2,6 +2,15 @@ import _ from 'underscore';
 import Mn from 'backbone.marionette';
 
 
+let isEqualOrContains = function(node1, node2){
+	if(node1.jquery)
+		node1 = node1.get(0);
+	if(node2.jquery)
+		node2 = node2.get(0);
+	
+	return node1 === node2 || $.contains(node1, node2);
+}
+
 var DragAndDropSingleton = Mn.Object.extend({
 	name:'draggable manager',
 	buildDraggableContext: function ($el, beh, event) {
@@ -102,16 +111,16 @@ var DragAndDropSingleton = Mn.Object.extend({
 	},
 
 	__documentMouseLeaveHandler: function ($el, context, ev) {
-		if ($.contains(context.view.$el.get(0), ev.target)) return;
-
+		if(isEqualOrContains(context.behavior.$el, ev.target)) return;
+		
 		$(ev.target).trigger('drag:leave', context);
 	},
 	__documentMouseEnterHandler: function ($el, context, ev) {
 		if (context.$entered) {
 			context.$entered.off('mousemove', null, context._elementHandlers.dragover)
 		}
-		var same = $.contains(context.view.$el.get(0), ev.target);
-		if (same) return;
+
+		if(isEqualOrContains(context.behavior.$el, ev.target)) return;
 
 		var event = this._createCustomDomEvent("drag:enter", ev);
 		context.$entered = $(ev.target);
