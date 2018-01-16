@@ -857,7 +857,7 @@ var DragAndDropSingleton = Mn.Object.extend({
 	},
 
 	_clearAllHandlers: function _clearAllHandlers($el, context) {
-		$doc = $(document);
+		var $doc = $(document);
 		_(context._documentHandlers).each(function (handler, name) {
 			$doc.off(name, null, handler);
 		});
