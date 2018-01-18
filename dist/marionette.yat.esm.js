@@ -1225,7 +1225,7 @@ var Router = Mn.AppRouter.extend({}, {
 		if (!context || context.getProperty('throwChildErrors') === true) {
 			throw error;
 		} else {
-			var postfix = error.status ? ":" + error.status.totring() : '';
+			var postfix = error.status ? ":" + error.status.toString() : '';
 			var commonEvent = 'error';
 			var event = commonEvent + postfix;
 

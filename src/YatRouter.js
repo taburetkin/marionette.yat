@@ -21,7 +21,7 @@ export default Mn.AppRouter.extend({},{
 		if(!context || context.getProperty('throwChildErrors') === true){
 			throw error;
 		}else{
-			let postfix = error.status ? ":" + error.status.totring() : '';
+			let postfix = error.status ? ":" + error.status.toString() : '';
 			let commonEvent = 'error';
 			let event = commonEvent + postfix;
 
