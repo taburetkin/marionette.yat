@@ -720,13 +720,109 @@ var Childrenable = (function (Base) {
 	return Mixin;
 });
 
+var templateContextStore = [function (view) {
+	return {
+		_v: view,
+		_m: view.model || {}
+	};
+}];
+var compiledContext = {}; //rethink how it can be used
+var hasChanges = false;
+
+function normalizeValue(value) {
+	for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+		args[_key - 1] = arguments[_key];
+	}
+
+	if (_.isFunction(value)) return value.apply(undefined, args);else if (_.isObject(value)) return value;else return {};
+}
+
+var GlobalTemplateContext$1 = {
+	mix: function mix(viewTemplateContext) {
+		for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+			args[_key2 - 1] = arguments[_key2];
+		}
+
+		var global = this.get.apply(this, args);
+		return _.extend(global, viewTemplateContext);
+	},
+	get: function get() {
+		return this.compile.apply(this, arguments);
+	},
+	add: function add() {
+		var _this = this;
+
+		for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+			args[_key3] = arguments[_key3];
+		}
+
+		_(args).each(function (item) {
+			return _this.push(item);
+		});
+	},
+	compile: function compile() {
+		for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+			args[_key4] = arguments[_key4];
+		}
+
+		if (hasChanges) compiledContext = {};
+
+		var newcontext = {};
+
+		_(templateContextStore).each(function (cntx) {
+			if (_.isFunction(cntx)) _.extend(newcontext, normalizeValue.apply(undefined, [cntx].concat(args)));else if (hasChanges) {
+				_.extend(compiledContext, cntx);
+			}
+		});
+		if (!hasChanges) _.extend(newcontext, compiledContext);
+
+		hasChanges = false;
+		return newcontext;
+	},
+	pop: function pop() {
+		hasChanges = true;
+		return templateContextStore.pop();
+	},
+	shift: function shift() {
+		hasChanges = true;
+		return templateContextStore.shift();
+	},
+	push: function push(item) {
+		hasChanges = true;
+		templateContextStore.push(item);
+	},
+	unshift: function unshift(item) {
+		hasChanges = true;
+		templateContextStore.unshift(item);
+	},
+	clear: function clear() {
+		hasChanges = false;
+		compiledContext = {};
+		templateContextStore = [];
+	}
+};
+
+var GlobalTemplateContext = (function (Base) {
+	return Base.extend({
+		mixinTemplateContext: function mixinTemplateContext() {
+			var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+			var templateContext = GlobalTemplateContext$1.mix(_.result(this, 'templateContext'), this);
+
+			return _.extend(target, templateContext);
+		}
+	});
+});
+
 var Mixins = {
 	GetNameLabel: GetNameLabel,
 	GetOptionProperty: GetOptionProperty,
 	Radioable: RadioMixin,
 	Stateable: Stateable,
 	Startable: Startable,
-	Childrenable: Childrenable
+	Childrenable: Childrenable,
+	GlobalTemplateContext: GlobalTemplateContext
 };
 
 var isEqualOrContains = function isEqualOrContains(node1, node2) {
@@ -1101,14 +1197,12 @@ var SortByDrag = Mn.Behavior.extend({
 
 var Behaviors = { Draggable: DraggableBehavior, SortByDrag: SortByDrag };
 
-var Singletons = { dragAndDrop: dragAndDrop };
-
 var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
 
 var IDENTITY_CHANNEL = 'identity';
 
 var Base = mix(YatObject).with(Stateable);
-var YatUser = Base.extend({
+var Identity = Base.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
@@ -1144,7 +1238,9 @@ var YatUser = Base.extend({
 		this.trigger('log:out');
 	}
 });
-var user = new YatUser();
+var identity = new Identity();
+
+var Singletons = { dragAndDrop: dragAndDrop, TemplateContext: GlobalTemplateContext$1, identity: identity };
 
 var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
@@ -1255,7 +1351,6 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-//import Radio from 'backbone.radio';
 /* 
 	YatPage
 */
@@ -1498,7 +1593,7 @@ var YatPage = Base$2.extend({
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
 		var _this = this;
 
-		this.listenTo(user, 'change', function () {
+		this.listenTo(identity, 'change', function () {
 			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
 				args[_key3] = arguments[_key3];
 			}
@@ -1520,6 +1615,8 @@ var YatPageManager = Base$3.extend({
 		Base$3.apply(this, args);
 		this._initializeYatPageManager.apply(this, args);
 	},
+
+	throwChildErrors: true,
 	createRouter: function createRouter() {
 		var children = this.getChildren({ startable: false });
 		var hash = {};
@@ -1615,7 +1712,7 @@ var YatPageManager = Base$3.extend({
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
 		var _this = this;
 
-		this.listenTo(user, 'change', function () {
+		this.listenTo(identity, 'change', function () {
 			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
 				args[_key2] = arguments[_key2];
 			}
@@ -1632,6 +1729,10 @@ var YatPageManager = Base$3.extend({
 	}
 });
 
+var YatView = mix(Mn.View).with(GlobalTemplateContext);
+
+var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
+
 var marionetteYat = {
 	VERSION: version,
 	Functions: Functions,
@@ -1639,13 +1740,16 @@ var marionetteYat = {
 	Mixins: Mixins,
 	Behaviors: Behaviors,
 	Singletons: Singletons,
+	TemplateContext: GlobalTemplateContext$1,
+	identity: identity,
 	Object: YatObject,
 	Error: YatError,
 	App: App,
 	Page: YatPage,
 	Router: Router,
 	PageManager: YatPageManager,
-	identity: user
+	View: YatView,
+	CollectionView: YatCollectionView
 };
 
 export default marionetteYat;

@@ -1,11 +1,11 @@
-import mix from './helpers/mix';
-import Stateable from './mixins/stateable';
-import YatObject from './YatObject';
+import mix from '../helpers/mix';
+import Stateable from '../mixins/stateable';
+import YatObject from '../YatObject';
 
 const IDENTITY_CHANNEL = 'identity';
 
 let Base = mix(YatObject).with(Stateable);
-let YatUser = Base.extend({	
+let Identity = Base.extend({	
 	constructor(...args){
 		Base.apply(this, args);
 		this._initializeYatUser();
@@ -36,5 +36,5 @@ let YatUser = Base.extend({
 		this.trigger('log:out');
 	}
 });
-let user = new YatUser();
-export default user;
+let identity = new Identity();
+export default identity;

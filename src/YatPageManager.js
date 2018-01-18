@@ -3,7 +3,7 @@ import App from './YatApp';
 import GetNameLabel from './mixins/get-name-label';
 import Router from './YatRouter';
 import mixin from './helpers/mix';
-import identity from './YatIdentity';
+import identity from './singletons/identity';
 import YatError from './YatError';
 
 let Base = mixin(App).with(GetNameLabel);
@@ -13,6 +13,7 @@ let YatPageManager = Base.extend({
 		Base.apply(this, args);
 		this._initializeYatPageManager(...args);
 	},
+	throwChildErrors:true,
 	createRouter(){
 		let children = this.getChildren({startable:false});
 		let hash = {};

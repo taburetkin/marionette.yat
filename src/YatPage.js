@@ -4,10 +4,9 @@ import mixin from './helpers/mix';
 import Startable from './mixins/startable';
 import GetNameLabel from './mixins/get-name-label';
 import Router from './YatRouter.js';
-//import Radio from 'backbone.radio';
 import LinkModel from './models/link';
 import Bb from 'backbone';
-import identity from './YatIdentity';
+import identity from './singletons/identity';
 
 /* 
 	YatPage
@@ -128,7 +127,7 @@ export default Base.extend({
 		let link = this.getLinkModel();
 		if(link && link.collection) return link.collection;
 	},
-	
+
 	getChildrenLinks(){
 		let model = this.getLinkModel();
 		if(!model) return;
