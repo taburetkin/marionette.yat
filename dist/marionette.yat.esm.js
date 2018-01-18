@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.16
+* v0.0.17
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -14,7 +14,7 @@ import Bb from 'backbone';
 import Mn from 'backbone.marionette';
 import _ from 'underscore';
 
-var version = "0.0.16";
+var version = "0.0.17";
 
 var getCompareABModel = function getCompareABModel(arg) {
 	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
