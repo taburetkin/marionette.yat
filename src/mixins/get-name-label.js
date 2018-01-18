@@ -1,10 +1,14 @@
+import common from '../functions/common';
 export default function (Base) {
 	return Base.extend({
-		getName(){
-			return this.getProperty('name') || this.id || this.cid;
+		getName(...args){
+			return common.getName(this, ...args);
 		},
-		getLabel(){
-			return this.getProperty('label') || this.getName();
+		getLabel(...args){
+			return common.getLabel(this, ...args);
+		},
+		getValue(...args){
+			return common.getValue(this, ...args);
 		}
 	});
 }

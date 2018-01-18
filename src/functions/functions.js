@@ -1,2 +1,3 @@
 import view from './view/view';
-export default { view };
+import common from './common/common';
+export default { view, common };
