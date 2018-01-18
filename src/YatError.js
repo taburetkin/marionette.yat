@@ -23,6 +23,9 @@ let YatError = Mn.Error.extend({},{
 		error.status = status;
 		return error;
 	},
+	HttpRedirect(message){
+		return this.Http(301, message);
+	},
 	NotFound(message){
 		return this.Http404(message);
 	},

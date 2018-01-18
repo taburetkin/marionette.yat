@@ -102,6 +102,9 @@ var YatError = Mn.Error.extend({}, {
 		error.status = status;
 		return error;
 	},
+	HttpRedirect: function HttpRedirect(message) {
+		return this.Http(301, message);
+	},
 	NotFound: function NotFound(message) {
 		return this.Http404(message);
 	},
@@ -388,7 +391,6 @@ var Startable = (function (Base) {
 					catchMethod = function catchMethod() {
 						return _this2.triggerMethod('start:decline', declineReason);
 					};
-					//this.triggerMethod('start:decline', declineReason);
 					resultPromise = Promise.reject(declineReason);
 				}
 			}
@@ -1212,23 +1214,31 @@ var App = Base$1.extend({
 
 var Router = Mn.AppRouter.extend({}, {
 	create: function create(hash, context) {
-		var _this = this;
-
 		var appRoutes = {};
 		var controller = {};
+		var _this = this;
 		_(hash).each(function (handlerContext, key) {
 			appRoutes[key] = key;
 			controller[key] = function () {
 				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
-					var commonEvent = 'error';
-					var event = commonEvent + (error.status && ":" + error.status);
-					if (event != commonEvent) context.triggerMethod(event, error, _this);
-
-					context.triggerMethod(commonEvent, error, _this);
+					_this._catchError(error, context);
 				});
 			};
 		});
 		return new this({ controller: controller, appRoutes: appRoutes });
+	},
+	_catchError: function _catchError(error, context) {
+		if (!context || context.getProperty('throwChildErrors') === true) {
+			throw error;
+		} else {
+			var postfix = error.status ? ":" + error.status.totring() : '';
+			var commonEvent = 'error';
+			var event = commonEvent + postfix;
+
+			context.triggerMethod(commonEvent, error, this);
+
+			if (event != commonEvent) context.triggerMethod(event, error, this);
+		}
 	}
 });
 
@@ -1542,6 +1552,10 @@ var YatPageManager = Base$3.extend({
 			return !!child;
 		}).value();
 	},
+	execute: function execute(route) {
+		var page = this.getPage(route);
+		if (!!page) page.start({ text: error.message });else if (route === '*NotFound') throw new YatError.NotFound('*NotFound handler is missing');else this.execute('*NotFound');
+	},
 	navigate: function navigate(url) {
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
 
@@ -1590,7 +1604,7 @@ var YatPageManager = Base$3.extend({
 	_registerPageHandlers: function _registerPageHandlers() {
 		this.on('page:before:start', this._pageBeforeStart);
 		this.on('page:start', this._pageStart);
-		this.on('page:decline', this._pageDecline);
+		this.on('page:start:decline', this._pageDecline);
 	},
 	_pageBeforeStart: function _pageBeforeStart(page) {
 		var current = this.getState('currentPage');
@@ -1602,18 +1616,14 @@ var YatPageManager = Base$3.extend({
 		this.setState('currentPage', page);
 	},
 	_pageDecline: function _pageDecline() {
-		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-			args[_key2] = arguments[_key2];
-		}
-
-		console.log("decline", args);
+		//console.log("decline", args)
 	},
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
 		var _this = this;
 
 		this.listenTo(user, 'change', function () {
-			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-				args[_key3] = arguments[_key3];
+			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+				args[_key2] = arguments[_key2];
 			}
 
 			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));

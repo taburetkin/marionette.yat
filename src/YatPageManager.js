@@ -4,6 +4,7 @@ import GetNameLabel from './mixins/get-name-label';
 import Router from './YatRouter';
 import mixin from './helpers/mix';
 import identity from './YatIdentity';
+import YatError from './YatError';
 
 let Base = mixin(App).with(GetNameLabel);
 
@@ -37,7 +38,15 @@ let YatPageManager = Base.extend({
 			.filter((child) => !!child)
 			.value();
 	},
-
+	execute(route){
+		let page = this.getPage(route);
+		if(!!page) 
+			page.start({text: error.message});
+		else if(route === '*NotFound')
+			throw new YatError.NotFound('*NotFound handler is missing');
+		else
+			this.execute('*NotFound');
+	},
 	navigate(url, opts = {trigger:true}){
 
 		let router = this.getRouter();
@@ -91,7 +100,7 @@ let YatPageManager = Base.extend({
 	_registerPageHandlers(){
 		this.on('page:before:start', this._pageBeforeStart);
 		this.on('page:start', this._pageStart);
-		this.on('page:decline', this._pageDecline);
+		this.on('page:start:decline', this._pageDecline);
 	},
 
 	_pageBeforeStart(page){
@@ -106,7 +115,7 @@ let YatPageManager = Base.extend({
 	},
 
 	_pageDecline(...args){
-		console.log("decline", args)
+		//console.log("decline", args)
 	},
 
 	_registerIdentityHandlers(){

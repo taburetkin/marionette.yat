@@ -66,7 +66,6 @@ export default (Base) => {
 				let declineReason = this.isStartNotAllowed(options);
 				if(declineReason) {
 					catchMethod = () => this.triggerMethod('start:decline',declineReason);
-					//this.triggerMethod('start:decline', declineReason);
 					resultPromise = Promise.reject(declineReason);
 				}
 			}
