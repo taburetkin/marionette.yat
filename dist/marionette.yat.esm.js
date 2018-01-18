@@ -1364,6 +1364,13 @@ var App = Base$1.extend({
 			var prefixedEventName = prefix + ':' + eventName;
 			_this.triggerMethod.apply(_this, [prefixedEventName].concat(args));
 		});
+		this.listenTo(pageManager, 'state:currentPage', function () {
+			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+				args[_key2] = arguments[_key2];
+			}
+
+			return _this.triggerMethod.apply(_this, ['page:swapped'].concat(args));
+		});
 	},
 	hasPageManagers: function hasPageManagers() {
 		return this._pageManagers && this._pageManagers.length > 0;

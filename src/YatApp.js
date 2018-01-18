@@ -39,7 +39,8 @@ export default Base.extend({
 			let prefixedEventName = prefix + ':' + eventName;
 			this.triggerMethod(prefixedEventName, ...args);
 		});
-
+		this.listenTo(pageManager, 'state:currentPage',(...args) => this.triggerMethod('page:swapped',...args));
+		
 	},
 
 	hasPageManagers(){
