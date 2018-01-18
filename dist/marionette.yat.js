@@ -223,14 +223,23 @@ var Helpers = {
 function GetNameLabel (Base) {
 	return Base.extend({
 		getName: function getName() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
 			options.exclude = 'getName';
 			return common.getName(this, options);
 		},
 		getLabel: function getLabel() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
 			options.exclude = 'getLabel';
 			return common.getLabel(this, options);
 		},
 		getValue: function getValue() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
 			options.exclude = 'getValue';
 			return common.getValue(this, options);
 		}
