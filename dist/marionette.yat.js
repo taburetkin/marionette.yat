@@ -1372,6 +1372,11 @@ var YatPage = Base$2.extend({
 		var link = this.getLinkModel();
 		if (link && link.collection) return link.collection;
 	},
+	getChildrenLinks: function getChildrenLinks() {
+		var model = this.getLinkModel();
+		if (!model) return;
+		return model.get('children');
+	},
 	_getSublinks: function _getSublinks(level) {
 		var children = this.getChildren();
 		if (!children || !children.length) return;

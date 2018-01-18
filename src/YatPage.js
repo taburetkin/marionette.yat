@@ -116,6 +116,7 @@ export default Base.extend({
 		this._linkModel.destroy();
 		delete this._linkModel;
 	},
+
 	getParentLinkModel(){
 		let parent = this.getParent();
 		if(!parent || !parent.getLinkModel) return;
@@ -126,6 +127,12 @@ export default Base.extend({
 	getNeighbourLinks(){
 		let link = this.getLinkModel();
 		if(link && link.collection) return link.collection;
+	},
+	
+	getChildrenLinks(){
+		let model = this.getLinkModel();
+		if(!model) return;
+		return model.get('children');
 	},
 
 	_getSublinks(level){
