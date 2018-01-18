@@ -1,4 +1,4 @@
-import common from '../functions/common';
+import common from '../functions/common/common';
 export default function (Base) {
 	return Base.extend({
 		getName(...args){

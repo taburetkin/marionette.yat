@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.12
+* v0.0.13
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -14,7 +14,7 @@ import Bb from 'backbone';
 import Mn from 'backbone.marionette';
 import _ from 'underscore';
 
-var version = "0.0.12";
+var version = "0.0.13";
 
 var getCompareABModel = function getCompareABModel(arg) {
 	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
@@ -63,7 +63,63 @@ var viewComparator = function viewComparator() {
 
 var view = { compareAB: compareAB, viewComparator: viewComparator };
 
-var Functions = { view: view };
+function normalizeValue(context, value, args) {
+	if (_.isFunction(value)) value = value.apply(context, args || []);
+	return value;
+}
+
+function smartGet(context, opts) {
+	if (!opts.fields || !opts.fileds.length) throw new Error('fields option missing');
+
+	if (context == null) return;
+
+	var value = void 0;
+	var isModel = context instanceof Bb.Model;
+	var hasOptions = _.isObject(context.options);
+
+	_(opts.fields).some(function (fieldName) {
+
+		if (isModel && value == null) value = normalizeValue(context, context.get(fieldName), opts.args);
+
+		if (value == null) value = normalizeValue(context, context[fieldName], opts.args);
+
+		if (value == null && hasOptions) value = normalizeValue(context, context.options[fieldName], opts.args);
+
+		return value != null;
+	});
+
+	return value == null ? opts.default : value;
+}
+
+var getLabel = (function (context) {
+	var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+	var fields = ['getLabel', 'label', 'getName', 'name', 'getValue', 'value'];
+	opts.fields = fields.concat(opts.fields || []);
+	return smartGet(context, opts);
+});
+
+var getName = (function (context) {
+	var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+	var fields = ['getName', 'name', 'getLabel', 'label', 'getValue', 'value'];
+	opts.fields = fields.concat(opts.fields || []);
+	return smartGet(context, opts);
+});
+
+var getValue = (function (context) {
+	var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+	var fields = ['getValue', 'value', 'getId', 'id', 'getName', 'name', 'getLabel', 'label', 'cid'];
+	opts.fields = fields.concat(opts.fields || []);
+	return smartGet(context, opts);
+});
+
+var common = {
+	getLabel: getLabel, getName: getName, getValue: getValue
+};
+
+var Functions = { view: view, common: common };
 
 var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
 
@@ -156,10 +212,25 @@ var Helpers = {
 function GetNameLabel (Base) {
 	return Base.extend({
 		getName: function getName() {
-			return this.getProperty('name') || this.id || this.cid;
+			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+				args[_key] = arguments[_key];
+			}
+
+			return common.getName.apply(common, [this].concat(args));
 		},
 		getLabel: function getLabel() {
-			return this.getProperty('label') || this.getName();
+			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+				args[_key2] = arguments[_key2];
+			}
+
+			return common.getLabel.apply(common, [this].concat(args));
+		},
+		getValue: function getValue() {
+			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+				args[_key3] = arguments[_key3];
+			}
+
+			return common.getValue.apply(common, [this].concat(args));
 		}
 	});
 }
@@ -729,7 +800,7 @@ var templateContextStore = [function (view) {
 var compiledContext = {}; //rethink how it can be used
 var hasChanges = false;
 
-function normalizeValue(value) {
+function normalizeValue$1(value) {
 	for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
 		args[_key - 1] = arguments[_key];
 	}
@@ -770,7 +841,7 @@ var GlobalTemplateContext$1 = {
 		var newcontext = {};
 
 		_(templateContextStore).each(function (cntx) {
-			if (_.isFunction(cntx)) _.extend(newcontext, normalizeValue.apply(undefined, [cntx].concat(args)));else if (hasChanges) {
+			if (_.isFunction(cntx)) _.extend(newcontext, normalizeValue$1.apply(undefined, [cntx].concat(args)));else if (hasChanges) {
 				_.extend(compiledContext, cntx);
 			}
 		});
