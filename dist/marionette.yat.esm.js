@@ -68,16 +68,21 @@ function normalizeValue(context, value, args) {
 	return value;
 }
 
-function smartGet(context, opts) {
-	if (!opts.fields || !opts.fileds.length) throw new Error('fields option missing');
+function smartGet(context) {
+	var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+	if (opts.fields == null || opts.fileds && !opts.fileds.length) throw new Error('fields option missing');
 
 	if (context == null) return;
 
 	var value = void 0;
 	var isModel = context instanceof Bb.Model;
 	var hasOptions = _.isObject(context.options);
+	var exclude = opts.exclude instanceof Array ? opts.exclude : [opts.exclude];
 
 	_(opts.fields).some(function (fieldName) {
+
+		if (exclude.indexOf(fieldName) >= 0) return;
 
 		if (isModel && value == null) value = normalizeValue(context, context.get(fieldName), opts.args);
 
@@ -212,25 +217,16 @@ var Helpers = {
 function GetNameLabel (Base) {
 	return Base.extend({
 		getName: function getName() {
-			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-				args[_key] = arguments[_key];
-			}
-
-			return common.getName.apply(common, [this].concat(args));
+			options.exclude = 'getName';
+			return common.getName(this, options);
 		},
 		getLabel: function getLabel() {
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
-			}
-
-			return common.getLabel.apply(common, [this].concat(args));
+			options.exclude = 'getLabel';
+			return common.getLabel(this, options);
 		},
 		getValue: function getValue() {
-			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-				args[_key3] = arguments[_key3];
-			}
-
-			return common.getValue.apply(common, [this].concat(args));
+			options.exclude = 'getValue';
+			return common.getValue(this, options);
 		}
 	});
 }

@@ -1,14 +1,17 @@
 import common from '../functions/common/common';
 export default function (Base) {
 	return Base.extend({
-		getName(...args){
-			return common.getName(this, ...args);
+		getName(opts = {}){
+			options.exclude = 'getName';
+			return common.getName(this, options);
 		},
-		getLabel(...args){
-			return common.getLabel(this, ...args);
+		getLabel(opts = {}){
+			options.exclude = 'getLabel';
+			return common.getLabel(this, options);
 		},
-		getValue(...args){
-			return common.getValue(this, ...args);
+		getValue(opts = {}){
+			options.exclude = 'getValue';
+			return common.getValue(this, options);
 		}
 	});
 }
