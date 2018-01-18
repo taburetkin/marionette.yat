@@ -73,16 +73,22 @@ function smartGet(context) {
 
 	if (opts.fields == null || opts.fileds && !opts.fileds.length) throw new Error('fields option missing');
 
+	opts.checked || (opts.checked = {});
+
 	if (context == null) return;
 
 	var value = void 0;
 	var isModel = context instanceof Bb.Model;
 	var hasOptions = _.isObject(context.options);
-	var exclude = opts.exclude instanceof Array ? opts.exclude : [opts.exclude];
+	var exclude = opts.exclude instanceof Array ? opts.exclude : typeof opts.exclude === 'string' ? [opts.exclude] : [];
 
 	_(opts.fields).some(function (fieldName) {
+		if (fieldName in opts.checked) return;
+		opts.checked[fieldName] = true;
 
-		if (exclude.indexOf(fieldName) >= 0) return;
+		if (exclude.indexOf(fieldName) >= 0) {
+			return;
+		}
 
 		if (isModel && value == null) value = normalizeValue(context, context.get(fieldName), opts.args);
 
@@ -221,6 +227,7 @@ function GetNameLabel (Base) {
 
 			var options = _.extend({}, opts);
 			options.exclude = 'getName';
+			options.args = [options];
 			return common.getName(this, options);
 		},
 		getLabel: function getLabel() {
@@ -228,6 +235,7 @@ function GetNameLabel (Base) {
 
 			var options = _.extend({}, opts);
 			options.exclude = 'getLabel';
+			options.args = [options];
 			return common.getLabel(this, options);
 		},
 		getValue: function getValue() {
@@ -235,6 +243,7 @@ function GetNameLabel (Base) {
 
 			var options = _.extend({}, opts);
 			options.exclude = 'getValue';
+			options.args = [options];
 			return common.getValue(this, options);
 		}
 	});

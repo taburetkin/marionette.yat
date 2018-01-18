@@ -5,16 +5,19 @@ export default function (Base) {
 		getName(opts = {}){
 			let options = _.extend({}, opts);
 			options.exclude = 'getName';
+			options.args = [options];
 			return common.getName(this, options);
 		},
 		getLabel(opts = {}){
 			let options = _.extend({}, opts);
 			options.exclude = 'getLabel';
+			options.args = [options];
 			return common.getLabel(this, options);
 		},
 		getValue(opts = {}){
 			let options = _.extend({}, opts);
 			options.exclude = 'getValue';
+			options.args = [options];
 			return common.getValue(this, options);
 		}
 	});
