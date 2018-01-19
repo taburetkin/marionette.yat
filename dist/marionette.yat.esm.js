@@ -1210,27 +1210,10 @@ var dragAndDrop = new DragAndDropSingleton();
 var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
 var Behavior = BaseBehavior.extend({
 	constructor: function constructor() {
-
-		//this._viewInitialized = false;
-		// this.on('initialize',() => {
-		// 	if(!this._viewInitialized){
-		// 		this._viewInitialized = true;
-		// 		this.triggerMethod('view:initialize');
-		// 	}
-		// });		
 		this.on('before:render initialize', _.once(_.partial(this.triggerMethod, 'view:initialize')));
 		BaseBehavior.apply(this, arguments);
-		// this.listenTo(this.view, 'before:render',() => {
-		// 	if(!this._viewInitialized){
-		// 		this._viewInitialized = true;
-		// 		this.triggerMethod('view:initialize');
-		// 	}
-		// });
 	},
 
-	// getProperty(...args){
-	// 	return this.getOption(...args);
-	// },
 	getModel: function getModel() {
 		return this.view.model;
 	},
@@ -1463,7 +1446,7 @@ var DynamicClass = Behavior.extend({
 	updateElementClass: function updateElementClass(changeSource) {
 		var viewCls = _.result(this.view, 'className') || '';
 		var addCls = _.result(this.view, 'dynamicClassName') || '';
-		this.$el.attrs({
+		this.$el.attr({
 			class: viewCls + ' ' + addCls
 		});
 	},
