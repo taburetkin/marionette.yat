@@ -6,7 +6,7 @@ const DynamicClass = Behavior.extend({
 	updateElementClass(changeSource){
 		let viewCls = _.result(this.view, 'className') || '';
 		let addCls = _.result(this.view, 'dynamicClassName') || '';
-		this.$el.attrs({
+		this.$el.attr({
 			class: viewCls + ' ' + addCls
 		});
 
