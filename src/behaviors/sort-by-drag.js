@@ -1,7 +1,8 @@
 import _ from 'underscore';
 import Mn from 'backbone.marionette';
+import Behavior from './behavior';
 
-let SortByDrag = Mn.Behavior.extend({
+let SortByDrag = Behavior.extend({
 	events: {				
 		'drag:drop': '_dragDrop',
 		'drag:over': '_dragOver',

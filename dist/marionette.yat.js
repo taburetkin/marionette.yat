@@ -132,11 +132,147 @@ var getValue = (function (context) {
 	return smartGet(context, opts);
 });
 
-var common = {
-	getLabel: getLabel, getName: getName, getValue: getValue
+function cid (arg) {
+
+	var cid = (this.cid || '').toString();
+	if (!cid) return arg;
+
+	if (arg == null) return cid;
+
+	return cid + ':' + arg.toString();
+}
+
+function uncid (arg) {
+	var cid = (this.cid || '').toString();
+	if (!cid) return arg;
+	if (arg == null || typeof arg !== 'string') return arg;
+
+	var pattern = new RegExp('^' + cid + ':');
+	return arg.replace(pattern, '');
+}
+
+function getProperty(name) {
+	if (this instanceof Bb.Model) return this.get(name);else return this[name];
+}
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function setProperty(name, value, silent) {
+	if (this instanceof Bb.Model) {
+		var hash = _defineProperty({}, name, value);
+		//sethash[name] = value;
+		var options = { silent: silent };
+		//if (silent) optshash.silent = true;
+		this.set(hash, options);
+	} else this[name] = value;
+
+	return getProperty.call(this, name);
+}
+
+function setByPathArr(propertyName, pathArr, value, force, silent) {
+
+	if (typeof propertyName !== 'string' || propertyName == '') throw new Error('can not set value on object by path. propertyName is empty');
+
+	if (pathArr.length == 0) return setProperty.call(this, propertyName, value);
+
+	var prop = setProperty.call(this, propertyName);
+	if (!_.isObject(prop) && !force) return;else if (!_.isObject(prop) && force) prop = setProperty.call(this, propertyName, {});
+
+	var nextName = pathArr.shift();
+
+	return setByPathArr.call(prop, nextName, pathArr, value, force);
+}
+
+var setByPath = function setByPath(obj, pathStr, value, force, silent) {
+
+	if (obj == null || !_.isObject(obj)) return obj;
+
+	if (_.isObject(pathStr)) {
+		value = pathStr.value;
+		force = pathStr.force;
+		silent = pathStr.silent;
+		pathStr = pathStr.path;
+	}
+	if (pathStr == null || typeof pathStr !== 'string' || pathStr == '') throw new Error('can not set value to object by path. path is empty');
+
+	var pathArray = pathStr.split('.');
+	var arrlen = pathArray.length;
+	var prop = pathArray.shift();
+	force = force != false;
+
+	setByPathArr.call(obj, prop, pathArray, value, force, silent);
+
+	if (obj instanceof Bb.Model && arrlen > 1 && !silent) {
+		obj.trigger('change:' + prop, this);
+		obj.trigger('change', this);
+	}
+
+	return obj;
 };
 
-var Functions = { view: view, common: common };
+function getByPathArray(propertyName, pathArr) {
+	if (!_.isObject(this)) return;
+
+	if (typeof propertyName != 'string' || propertyName == '') throw 'can not get value from object by path. propertyName is empty';
+
+	var prop = getProperty.call(this, propertyName);
+
+	if (pathArr.length == 0) return prop;
+
+	var nextName = pathArr.shift();
+
+	return getByPathArray.call(prop, nextName, pathArr);
+}
+
+function getByPath(obj, pathStr) {
+
+	if (obj == null || !_.isObject(obj)) return;
+	if (pathStr == null || typeof pathStr != 'string' || pathStr == '') throw new Error('can not get value from object by path. path is empty');
+
+	var pathArray = pathStr.split('.');
+	var prop = pathArray.shift();
+
+	return getByPathArray.call(obj, prop, arr);
+}
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function traverse(fields, root) {
+	root = root || '';
+	if (this == null || _typeof(this) != 'object') return;
+
+	var hash = this instanceof Bb.Model ? this.attributes : this;
+	var props = Object.getOwnPropertyNames(hash);
+	for (var x = 0; x < props.length; x++) {
+		var name = props[x];
+		var prop = this[name];
+
+		if (prop == null || (typeof prop === 'undefined' ? 'undefined' : _typeof(prop)) != 'object' || prop instanceof Date || prop instanceof Array) fields[root + name] = prop;else if ((typeof prop === 'undefined' ? 'undefined' : _typeof(prop)) == 'object') traverse.call(prop, fields, root + name + '.');
+	}
+}
+
+function flattenObject(obj) {
+	if (obj == null || !_.isObject(obj)) return;
+	var res = {};
+	traverse.call(obj, res);
+	return res;
+}
+
+function unFlattenObject(obj) {
+
+	if (obj == null || !_.isObject(obj)) return;
+	var res = {};
+	for (var e in obj) {
+		setByPath(res, e, obj[e], true);
+	}
+	return res;
+}
+
+var fns = {
+	getLabel: getLabel, getName: getName, getValue: getValue, cid: cid, uncid: uncid, setByPath: setByPath, getByPath: getByPath, flattenObject: flattenObject, unFlattenObject: unFlattenObject
+};
+
+var Functions = { view: view, common: fns };
 
 var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
 
@@ -234,7 +370,7 @@ function GetNameLabel (Base) {
 			var options = _.extend({}, opts);
 			options.exclude = 'getName';
 			options.args = [options];
-			return common.getName(this, options);
+			return fns.getName(this, options);
 		},
 		getLabel: function getLabel() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -242,7 +378,7 @@ function GetNameLabel (Base) {
 			var options = _.extend({}, opts);
 			options.exclude = 'getLabel';
 			options.args = [options];
-			return common.getLabel(this, options);
+			return fns.getLabel(this, options);
 		},
 		getValue: function getValue() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -250,7 +386,7 @@ function GetNameLabel (Base) {
 			var options = _.extend({}, opts);
 			options.exclude = 'getValue';
 			options.args = [options];
-			return common.getValue(this, options);
+			return fns.getValue(this, options);
 		}
 	});
 }
@@ -340,6 +476,8 @@ var RadioMixin = (function (Base) {
 	return Mixin;
 });
 
+function _defineProperty$1(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var Stateable = (function (BaseClass) {
 	var Mixin = BaseClass.extend({
 		constructor: function constructor() {
@@ -366,7 +504,7 @@ var Stateable = (function (BaseClass) {
 				options = value;
 				value = key;
 				_(value).each(function (propertyValue, propertyName) {
-					return _this.setState(propertyName, propertyValue, options);
+					return _this.setState(propertyName, propertyValue, _.extend({}, options, { doNotTriggerFullState: true }));
 				});
 				this._triggerStateChange(value, options);
 			} else {
@@ -391,6 +529,9 @@ var Stateable = (function (BaseClass) {
 			if (!_.isObject(key)) {
 				this.triggerMethod('state:' + key, value, options);
 				if (value === true || value === false) this.triggerMethod('state:' + key + ':' + value.toString(), options);
+				if (!options || options && !options.doNotTriggerFullState) {
+					this.triggerMethod('state', _defineProperty$1({}, key, value), options);
+				}
 			} else {
 				//key is a hash of states
 				//value is options
@@ -814,7 +955,10 @@ var Childrenable = (function (Base) {
 var templateContextStore = [function (view) {
 	return {
 		_v: view,
-		_m: view.model || {}
+		_m: view.model || {},
+		_cid: function _cid(arg) {
+			return cid.call(view, arg);
+		}
 	};
 }];
 var compiledContext = {}; //rethink how it can be used
@@ -1069,7 +1213,42 @@ var DragAndDropSingleton = Mn.Object.extend({
 
 var dragAndDrop = new DragAndDropSingleton();
 
-var DraggableBehavior = Mn.Behavior.extend({
+var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
+var Behavior = BaseBehavior.extend({
+	constructor: function constructor() {
+
+		//this._viewInitialized = false;
+		// this.on('initialize',() => {
+		// 	if(!this._viewInitialized){
+		// 		this._viewInitialized = true;
+		// 		this.triggerMethod('view:initialize');
+		// 	}
+		// });		
+		this.on('before:render initialize', _.once(_.partial(this.triggerMethod, 'view:initialize')));
+		BaseBehavior.apply(this, arguments);
+		// this.listenTo(this.view, 'before:render',() => {
+		// 	if(!this._viewInitialized){
+		// 		this._viewInitialized = true;
+		// 		this.triggerMethod('view:initialize');
+		// 	}
+		// });
+	},
+
+	// getProperty(...args){
+	// 	return this.getOption(...args);
+	// },
+	getModel: function getModel() {
+		return this.view.model;
+	},
+	cidle: function cidle(name) {
+		return fns.cid.call(this.view, name);
+	},
+	unCidle: function unCidle(name) {
+		return fns.uncid.call(this.view, name);
+	}
+});
+
+var DraggableBehavior = Behavior.extend({
 
 	startDragOnDistance: 50,
 
@@ -1141,7 +1320,7 @@ var DraggableBehavior = Mn.Behavior.extend({
 	}
 });
 
-var SortByDrag = Mn.Behavior.extend({
+var SortByDrag = Behavior.extend({
 	events: {
 		'drag:drop': '_dragDrop',
 		'drag:over': '_dragOver'
@@ -1286,7 +1465,291 @@ var SortByDrag = Mn.Behavior.extend({
 	}
 });
 
-var Behaviors = { Draggable: DraggableBehavior, SortByDrag: SortByDrag };
+var DynamicClass = Behavior.extend({
+	updateElementClass: function updateElementClass(changeSource) {
+		var viewCls = _.result(this.view, 'className') || '';
+		var addCls = _.result(this.view, 'dynamicClassName') || '';
+		this.$el.attrs({
+			class: viewCls + ' ' + addCls
+		});
+	},
+
+
+	refreshOnModelChange: true,
+	refreshOnDomChange: false,
+	refreshOnViewRefresh: true,
+	refreshOnViewBeforeRender: true,
+	refreshOnViewRender: false,
+
+	modelEvents: {
+		'change': function change() {
+			this.getProperty('refreshOnModelChange') && this.updateElementClass('model:change');
+		}
+	},
+	events: {
+		'change': function change() {
+			this.getProperty('refreshOnDomChange') && this.updateElementClass('dom:change');
+		}
+	},
+	onRefresh: function onRefresh() {
+		this.getProperty('refreshOnViewRefresh') && this.updateElementClass('view:refresh');
+	},
+	onRender: function onRender() {
+		this.getProperty('refreshOnViewRender') && this.updateElementClass('view:render');
+	},
+	onBeforeRender: function onBeforeRender() {
+		this.getProperty('refreshOnViewBeforeRender') && this.updateElementClass('view:before:render');
+	},
+	onRefreshCssClass: function onRefreshCssClass() {
+		this.updateElementClass();
+	},
+	onSetupRefreshCssClass: function onSetupRefreshCssClass(setup) {
+		var _this = this;
+
+		if (setup == null || !_.isObject(setup)) return;
+		_(setup).each(function (value, property) {
+			_this[property] = value === true;
+		});
+	}
+});
+
+function _defineProperty$2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+var FormToHash = mix(Behavior).with(Stateable).extend({
+	applyDelay: 1, //in ms
+	autoApplyToModel: false, //finalize
+	autoChangeModel: false, //on every change
+
+	fillFormFromModel: true,
+
+	applySelector: '.apply',
+	cancelSelector: '.cancel',
+	resetSelector: '.reset',
+
+	initialize: function initialize(opts) {
+
+		this.applyValue = _.debounce(this._applyValue, this.getProperty('applyDelay'));
+		this.mergeOptions(opts, ['values']);
+
+		this.extendDefaultValues({});
+	},
+	extendDefaultValues: function extendDefaultValues(hash) {
+
+		this._values = _.extend(this._values || {}, hash);
+	},
+	onViewInitialize: function onViewInitialize() {
+
+		//this.extendDefaultValues(this.getProperty('values'));
+
+		var model = this.getModel();
+		if (model) {
+			this.extendDefaultValues(model.toJSON());
+		}
+	},
+	onRender: function onRender() {
+
+		if (!this.firstRender) {
+			this.buildFormBindings();
+			this.setState(this._tryFlatValues(this._values));
+			this.setValuesToForm(this.getValues({ raw: true }));
+		}
+		this.firstRender = true;
+	},
+
+
+	//finallizing
+	triggers: function triggers() {
+		var _ref;
+
+		return _ref = {}, _defineProperty$2(_ref, 'click ' + this.getProperty('applySelector'), 'trigger:apply'), _defineProperty$2(_ref, 'click ' + this.getProperty('cancelSelector'), 'trigger:cancel'), _defineProperty$2(_ref, 'click ' + this.getProperty('resetSelector'), 'trigger:reset'), _ref;
+	},
+	_tryFlatValues: function _tryFlatValues(raw) {
+		return flattenObject(raw);
+	},
+	_tryUnFlatValues: function _tryUnFlatValues(raw) {
+		return unFlattenObject(raw);
+	},
+	rollbackToDefaultValues: function rollbackToDefaultValues() {
+		this.clearState();
+		var rawvalues = this._values;
+		var values = this._tryFlatValues(rawvalues);
+		this.setState(values);
+	},
+	getValues: function getValues() {
+		var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		var raw = this.getState();
+		if (options.raw) return raw;
+		var values = this._tryUnFlatValues(raw);
+		return values;
+	},
+	onTriggerApply: function onTriggerApply() {
+		this._apply();
+	},
+	onTriggerCancel: function onTriggerCancel() {
+		this._cancel();
+	},
+	onTriggerReset: function onTriggerReset() {
+		this._reset();
+	},
+	_apply: function _apply() {
+		var values = this.getValues();
+		this.view.triggerMethod('values:apply', values);
+		this._tryChangeModel(values);
+	},
+	_cancel: function _cancel() {
+		this.rollbackToDefaultValues();
+		var values = this._getFullHash(this._values);
+		this.view.triggerMethod('values:cancel', values);
+
+		this.setValuesToForm(values);
+		this._tryChangeModel(values, { clear: true });
+	},
+	_reset: function _reset() {
+		this.clearState();
+		var values = this._getFullHash({});
+		this.view.triggerMethod('values:reset', values);
+
+		this.setValuesToForm(values);
+		this._tryChangeModel(values, { clear: true });
+	},
+	onState: function onState(state) {
+		this._tryChangeModel(state, { type: 'property' });
+	},
+	_tryChangeModel: function _tryChangeModel(hash) {
+		var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		var canChangeProp = options.type === 'property' ? 'autoChangeModel' : 'autoApplyToModel';
+		var canChange = this.getProperty(canChangeProp) === true;
+
+		if (!canChange) return;
+		var model = this.getModel();
+		if (!model) return;
+
+		hash = this._tryUnFlatValues(hash);
+		if (options.clear === true) model.clear();
+		model.set(hash);
+	},
+	_getFullHash: function _getFullHash() {
+		var values = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		var modelHash = this.getModel() && this.getModel().toJSON();
+		var full = _.extend({}, this.values, this.mappings, modelHash);
+		var res = {};
+		_(full).each(function (v, key) {
+			return res[key] = undefined;
+		});
+		return _.extend(res, values);
+	},
+
+
+	//dom manipulations
+	buildFormBindings: function buildFormBindings() {
+		var _this = this;
+
+		this.mappings = {};
+		var tags = ["input", "textarea", "select"];
+		this.$("[name]").each(function (i, el) {
+			if (tags.indexOf(el.tagName.toLowerCase()) == -1) return;
+
+			var property = _this.unCidle(el.name);
+			if (property in _this.mappings) return;
+
+			var info = _this._getElementInfo(el, tags);
+			if (info) _this.mappings[property] = info;
+		});
+		var ext = {};
+		_(this.mappings).each(function (context, name) {
+			context.values && (ext[name] = context.values);
+		});
+
+		this.extendDefaultValues(ext);
+	},
+	_getElementInfo: function _getElementInfo(el, tags) {
+		var context = {
+			name: el.name
+		};
+		var values = void 0;
+		var selector = '[name="' + el.name + '"]';
+		var $found = this.$(selector);
+		if (!$found.length) return;
+
+		if ($found.length > 1) {
+			var foundValues = [];
+			var isArray = false;
+			$found.each(function (i, found) {
+				if (tags.indexOf(found.tagName.toLowerCase()) == -1) return;
+				var $el = $(found);
+				if (found.type != 'checkbox' && found.type != 'radio' || $el.prop('checked')) {
+					var val = $el.val();
+					isArray || (isArray = found.type === 'checkbox' || val instanceof Array);
+					if (val instanceof Array) foundValues = foundValues.concat(val);else foundValues.push($el.val());
+				}
+			});
+			values = !foundValues.length || foundValues.length === 1 && !isArray ? foundValues[0] : foundValues;
+		} else {
+			values = $found.get(0).type === 'checkbox' ? $found.prop('checked') ? [$found.val()] : [] : $found.val();
+		}
+		context.values = values;
+		context.isArray = values instanceof Array;
+		context.$elements = $found;
+		return context;
+	},
+	setValuesToForm: function setValuesToForm(values) {
+		var _this2 = this;
+
+		_(values).each(function (propertyValues, propertyName) {
+			var property = _this2.mappings[propertyName];
+			var $els = property.$elements;
+			var arr = propertyValues instanceof Array ? propertyValues : [propertyValues];
+			$els.each(function (i, el) {
+
+				_this2._setValueToElement(el, i, arr);
+			});
+		});
+	},
+	_setValueToElement: function _setValueToElement(el, index, values) {
+		var value = index < values.length && values[index];
+		var $el = el.jquery ? el : $(el);
+		el = $el.get(0);
+		if (el.type === 'checkbox' || el.type === 'radio') {
+			$el.prop('checked', values.indexOf($el.val()) >= 0);
+		} else {
+			$el.val(value);
+		}
+	},
+
+
+	// dom listeners
+	events: {
+		'change': 'domChange',
+		'input': 'domInput'
+	},
+	domChange: function domChange(e) {
+		this.applyValue(e.target.name, e.target, e);
+	},
+	domInput: function domInput(e) {
+		this.applyValue(e.target.name, e.target, e);
+	},
+	_applyValue: function _applyValue(name, el, event) {
+		if (el.type == 'checkbox') this._applyCheckboxValue(name, el, event);else this._applySimpleValue(name, el, event);
+	},
+	_applySimpleValue: function _applySimpleValue(name, el, event) {
+		name = this.unCidle(name);
+		var $el = $(el);
+		this.setState(name, $el.val());
+	},
+	_applyCheckboxValue: function _applyCheckboxValue(name, el, event) {
+		var selector = 'input[type=checkbox][name="' + name + '"]:checked';
+		var values = this.$(selector).map(function (i, el) {
+			return el.value;
+		}).toArray();
+		name = this.unCidle(name);
+		this.setState(name, values);
+	}
+});
+
+var Behaviors = { Draggable: DraggableBehavior, SortByDrag: SortByDrag, DynamicClass: DynamicClass, FormToHash: FormToHash };
 
 var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
 
@@ -1445,7 +1908,7 @@ var LinkModel = Model.extend({
 	}
 });
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _defineProperty$3(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -1596,7 +2059,7 @@ var YatPage = Base$2.extend({
 		var route = this.getRoute({ asPattern: true });
 		if (route == null) return;
 		var page = this;
-		this._routeHandler = _defineProperty({}, route, { context: page, action: function action() {
+		this._routeHandler = _defineProperty$3({}, route, { context: page, action: function action() {
 				return page.start.apply(page, arguments);
 			} });
 	},

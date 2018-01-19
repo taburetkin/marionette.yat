@@ -1,8 +1,9 @@
 import _ from 'underscore';
 import Mn from 'backbone.marionette';
 import dragAndDrop from '../singletons/drag-and-drop';
+import Behavior from './behavior';
 
-var DraggableBehavior = Mn.Behavior.extend({
+var DraggableBehavior = Behavior.extend({
 
 	startDragOnDistance: 50,
 

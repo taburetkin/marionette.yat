@@ -23,7 +23,7 @@ export default (BaseClass) => {
 				const _this = this;
 				options = value;
 				value = key;
-				_(value).each((propertyValue, propertyName) => _this.setState(propertyName, propertyValue, options));
+				_(value).each((propertyValue, propertyName) => _this.setState(propertyName, propertyValue, _.extend({},options,{doNotTriggerFullState: true})));
 				this._triggerStateChange(value, options);
 			}else{
 				const state = this.getState();
@@ -48,6 +48,9 @@ export default (BaseClass) => {
 				this.triggerMethod('state:' + key, value, options);
 				if(value === true || value === false)
 					this.triggerMethod('state:' + key + ':' + value.toString(), options);
+				if(!options || (options && !options.doNotTriggerFullState)){
+					this.triggerMethod('state', {[key]:value}, options);	
+				}
 			}else{
 				//key is a hash of states
 				//value is options

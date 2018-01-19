@@ -1,9 +1,10 @@
 import _ from 'underscore';
-
+import cid from '../functions/common/cid';
 let templateContextStore = [(view) => {
 	return {
 		_v: view,
-		_m: view.model || {}
+		_m: view.model || {},
+		_cid: (arg) => cid.call(view, arg)
 	}
 }];
 let compiledContext = {}; //rethink how it can be used
