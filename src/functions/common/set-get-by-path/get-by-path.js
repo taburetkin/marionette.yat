@@ -1,5 +1,5 @@
 import _ from 'underscore';
-import getByPathArray from './get-by-path-array';
+import getByPathArray from './_get-by-path-array';
 
 function getByPath (obj, pathStr) {
 

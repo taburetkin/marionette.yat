@@ -16,7 +16,16 @@ const STATE_KEY = 'life';
 
 
 function getPropertyPromise(context, propertyName){
-	let rawPromises = context[propertyName] || [];
+
+	if(context == null || propertyName == null)
+		return Promise.resolve();
+
+	let _promises1 = context['_'+propertyName] || [];
+	let _promises2 = _.result(context, propertyName) || [];
+
+	let rawPromises = _promises1.concat(_promises2);
+		//context[propertyName] || [];
+
 	let promises = [];
 	_(rawPromises).each((promiseArg) => {
 		if(_.isFunction(promiseArg))
@@ -49,6 +58,9 @@ export default (Base) => {
 
 			this._registerStartableLifecycleListeners();
 			this._setLifeState(STATES.INITIALIZED);
+			this._startRuntimePromises = [];
+			this._startPromises = [];
+			this._stopPromises = [];
 		},	
 
 		start(...args){
@@ -74,6 +86,7 @@ export default (Base) => {
 				var currentState = this._getLifeState();
 				this._tryMergeStartOptions(options);		
 				this.triggerMethod('before:start', ...args);
+
 				resultPromise = this._getStartPromise();
 			}
 				
@@ -81,7 +94,7 @@ export default (Base) => {
 			
 			return resultPromise.then(() => {
 				this.triggerStart(options)
-			}, (error) => {
+			}, (error) => {				
 				this._setLifeState(currentState);
 				if(catchMethod) catchMethod();
 				return Promise.reject(error);
@@ -129,11 +142,11 @@ export default (Base) => {
 		isStopNotAllowed(){ },
 
 		addStartPromise(promise){
-			addPropertyPromise(this,'startPromises', promise);
+			addPropertyPromise(this,'_startRuntimePromises', promise);
 		},
 
 		addStopPromise(promise){
-			addPropertyPromise(this,'stopPromises', promise);
+			addPropertyPromise(this,'_stopPromises', promise);
 		},
 
 		//lifecycle state helpers
@@ -159,11 +172,23 @@ export default (Base) => {
 
 
 		_registerStartableLifecycleListeners(){
+			let freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
+			if(freezeWhileStarting && _.isFunction(this.freezeUI))
+				this.on(`state:${STATE_KEY}:${STATES.STARTING}`,() => {
+					this.freezeUI();
+				});
+			if(freezeWhileStarting && _.isFunction(this.unFreezeUI))
+				this.on('start',() => {
+					this.unFreezeUI();
+				});
+
+
 			this.on('before:start', () => this._setLifeState(STATES.STARTING));
 			this.on('start', () => this._setLifeState(STATES.RUNNING));
 			this.on('before:stop',() => this._setLifeState(STATES.STOPPING));
 			this.on('stop',() => this._setLifeState(STATES.WAITING));
-			this.on('destroy',() => this._setLifeState(STATES.DESTROYED))
+			this.on('destroy',() => this._setLifeState(STATES.DESTROYED));
+
 		},	
 
 		_tryMergeStartOptions(options){
@@ -259,25 +284,29 @@ export default (Base) => {
 
 		},	
 		
-		_getStartPromise(){
-			return Promise.all(this._getStartPromises());
+		_getStartPromise(options = {}){
+			return Promise.all(this._getStartPromises(options));
 		},
 
-		_getStartPromises(){
+		_getStartPromises(options = {}){
 			let promises = [];
-			promises.push(this._getStartUserPromise());
 			promises.push(this._getStartParentPromise());
+			promises.push(this._getStartPagePromise());
+			if(options.noruntime !== true)
+				promises.push(this._getStartRuntimePromise());
 			return promises;
 		},
 
-		_getStartUserPromise(){
+		_getStartRuntimePromise(){
+			return getPropertyPromise(this,'startRuntimePromises');
+		},
+		_getStartPagePromise(){
 			return getPropertyPromise(this,'startPromises');
 		},
-
 		_getStartParentPromise(){
 			var parent = _.result(this, 'getParent');
 			if(_.isObject(parent) && _.isFunction(parent._getStartPromise))
-				return parent._getStartPromise();
+				return parent._getStartPromise({noruntime: true});
 		},
 
 		_getStopPromise(){
@@ -286,18 +315,18 @@ export default (Base) => {
 		
 		_getStopPromises(){
 			let promises = [];
-			promises.push(this._getStopUserPromise());
+			promises.push(this._getStopRuntimePromise());
 			return promises;
 		},
 
-		_getStopUserPromise(){
+		_getStopRuntimePromise(){
 			return getPropertyPromise(this,'stopPromises');
 		},
 
 		_getStopParentPromise(){
 			var parent = _.result(this, 'getParent');
 			if(_.isObject(parent) && _.isFunction(parent._getStopPromise))
-				return parent._getStartPromise();
+				return parent._getStopPromise();
 		},
 
 

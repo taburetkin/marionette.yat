@@ -5,10 +5,17 @@ import GetOptionProperty from '../mixins/get-option-property';
 import fns from '../functions/common/common';
 const BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
 export default BaseBehavior.extend({
+
+	listenViewInitialize: true,
+
 	constructor(){
-		this.on('before:render initialize', _.once(_.partial(this.triggerMethod, 'view:initialize')));
+
+		if(this.getProperty('listenViewInitialize') === true)
+			this.on('before:render initialize', _.once(_.partial(this.triggerMethod, 'view:initialize')));
+
 		BaseBehavior.apply(this, arguments);
 	},
+	
 	getModel: function () {
 		return this.view.model;
 	},	

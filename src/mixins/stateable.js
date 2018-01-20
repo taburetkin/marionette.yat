@@ -46,7 +46,7 @@ export default (BaseClass) => {
 
 			if(!_.isObject(key)){
 				this.triggerMethod('state:' + key, value, options);
-				if(value === true || value === false)
+				if(value === true || value === false || (!!value && typeof value === 'string'))
 					this.triggerMethod('state:' + key + ':' + value.toString(), options);
 				if(!options || (options && !options.doNotTriggerFullState)){
 					this.triggerMethod('state', {[key]:value}, options);	

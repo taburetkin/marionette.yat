@@ -85,6 +85,10 @@ export default Base.extend({
 		}
 	},
 
+	freezeWhileStarting: true,
+	freezeUI(){ },
+	unFreezeUI(){ },
+
 	getRouteHash(){
 
 		let hashes = [{},this._routeHandler].concat(this.getChildren({startable:false}).map((children) => children.getRouteHash()))

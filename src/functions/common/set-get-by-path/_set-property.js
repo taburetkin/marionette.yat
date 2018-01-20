@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import Bb from 'backbone';
-import getProperty from './get-property';
+import getProperty from './_get-property';
 
 function setProperty(name, value, silent) {
 	if (this instanceof Bb.Model) {

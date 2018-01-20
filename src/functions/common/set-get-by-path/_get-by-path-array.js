@@ -1,5 +1,5 @@
 import _ from 'underscore';
-import getProperty from './get-property';
+import getProperty from './_get-property';
 
 function getByPathArray(propertyName, pathArr) {
 	if (!_.isObject(this))

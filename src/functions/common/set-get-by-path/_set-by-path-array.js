@@ -1,7 +1,7 @@
 import _ from 'underscore';
 import Bb from 'backbone';
-import getProperty from './set-property'
-import setProperty from './set-property';
+import getProperty from './_get-property'
+import setProperty from './_set-property';
 
 function setByPathArr(propertyName, pathArr, value, force, silent) {
 

@@ -1,4 +1,4 @@
-import get from './smart-get';
+import get from './_smart-get';
 export default (context, opts = {}) => {
 	let fields = ['getName', 'name', 'getLabel', 'label', 'getValue', 'value'];
 	opts.fields = fields.concat(opts.fields || []);

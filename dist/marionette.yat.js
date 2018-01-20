@@ -175,7 +175,7 @@ function setByPathArr(propertyName, pathArr, value, force, silent) {
 
 	if (pathArr.length == 0) return setProperty.call(this, propertyName, value);
 
-	var prop = setProperty.call(this, propertyName);
+	var prop = getProperty.call(this, propertyName);
 	if (!_.isObject(prop) && !force) return;else if (!_.isObject(prop) && force) prop = setProperty.call(this, propertyName, {});
 
 	var nextName = pathArr.shift();
@@ -528,7 +528,7 @@ var Stateable = (function (BaseClass) {
 
 			if (!_.isObject(key)) {
 				this.triggerMethod('state:' + key, value, options);
-				if (value === true || value === false) this.triggerMethod('state:' + key + ':' + value.toString(), options);
+				if (value === true || value === false || !!value && typeof value === 'string') this.triggerMethod('state:' + key + ':' + value.toString(), options);
 				if (!options || options && !options.doNotTriggerFullState) {
 					this.triggerMethod('state', _defineProperty$1({}, key, value), options);
 				}
@@ -560,7 +560,14 @@ var STATE_KEY = 'life';
 function getPropertyPromise(context, propertyName) {
 	var _this = this;
 
-	var rawPromises = context[propertyName] || [];
+	if (context == null || propertyName == null) return Promise.resolve();
+
+	var _promises1 = context['_' + propertyName] || [];
+	var _promises2 = _.result(context, propertyName) || [];
+
+	var rawPromises = _promises1.concat(_promises2);
+	//context[propertyName] || [];
+
 	var promises = [];
 	_(rawPromises).each(function (promiseArg) {
 		if (_.isFunction(promiseArg)) promises.push(promiseArg.call(_this));else promises.push(promiseArg);
@@ -591,6 +598,9 @@ var Startable = (function (Base) {
 
 			this._registerStartableLifecycleListeners();
 			this._setLifeState(STATES.INITIALIZED);
+			this._startRuntimePromises = [];
+			this._startPromises = [];
+			this._stopPromises = [];
 		},
 		start: function start() {
 			var _this2 = this;
@@ -625,6 +635,7 @@ var Startable = (function (Base) {
 				var currentState = this._getLifeState();
 				this._tryMergeStartOptions(options);
 				this.triggerMethod.apply(this, ['before:start'].concat(args));
+
 				resultPromise = this._getStartPromise();
 			}
 
@@ -672,10 +683,10 @@ var Startable = (function (Base) {
 		isStartNotAllowed: function isStartNotAllowed() {},
 		isStopNotAllowed: function isStopNotAllowed() {},
 		addStartPromise: function addStartPromise(promise) {
-			addPropertyPromise(this, 'startPromises', promise);
+			addPropertyPromise(this, '_startRuntimePromises', promise);
 		},
 		addStopPromise: function addStopPromise(promise) {
-			addPropertyPromise(this, 'stopPromises', promise);
+			addPropertyPromise(this, '_stopPromises', promise);
 		},
 
 
@@ -705,6 +716,14 @@ var Startable = (function (Base) {
 		},
 		_registerStartableLifecycleListeners: function _registerStartableLifecycleListeners() {
 			var _this5 = this;
+
+			var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
+			if (freezeWhileStarting && _.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
+				_this5.freezeUI();
+			});
+			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start', function () {
+				_this5.unFreezeUI();
+			});
 
 			this.on('before:start', function () {
 				return _this5._setLifeState(STATES.STARTING);
@@ -813,35 +832,43 @@ var Startable = (function (Base) {
 			}
 		},
 		_getStartPromise: function _getStartPromise() {
-			return Promise.all(this._getStartPromises());
+			var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			return Promise.all(this._getStartPromises(options));
 		},
 		_getStartPromises: function _getStartPromises() {
+			var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
 			var promises = [];
-			promises.push(this._getStartUserPromise());
 			promises.push(this._getStartParentPromise());
+			promises.push(this._getStartPagePromise());
+			if (options.noruntime !== true) promises.push(this._getStartRuntimePromise());
 			return promises;
 		},
-		_getStartUserPromise: function _getStartUserPromise() {
+		_getStartRuntimePromise: function _getStartRuntimePromise() {
+			return getPropertyPromise(this, 'startRuntimePromises');
+		},
+		_getStartPagePromise: function _getStartPagePromise() {
 			return getPropertyPromise(this, 'startPromises');
 		},
 		_getStartParentPromise: function _getStartParentPromise() {
 			var parent = _.result(this, 'getParent');
-			if (_.isObject(parent) && _.isFunction(parent._getStartPromise)) return parent._getStartPromise();
+			if (_.isObject(parent) && _.isFunction(parent._getStartPromise)) return parent._getStartPromise({ noruntime: true });
 		},
 		_getStopPromise: function _getStopPromise() {
 			return Promise.all(this._getStopPromises());
 		},
 		_getStopPromises: function _getStopPromises() {
 			var promises = [];
-			promises.push(this._getStopUserPromise());
+			promises.push(this._getStopRuntimePromise());
 			return promises;
 		},
-		_getStopUserPromise: function _getStopUserPromise() {
+		_getStopRuntimePromise: function _getStopRuntimePromise() {
 			return getPropertyPromise(this, 'stopPromises');
 		},
 		_getStopParentPromise: function _getStopParentPromise() {
 			var parent = _.result(this, 'getParent');
-			if (_.isObject(parent) && _.isFunction(parent._getStopPromise)) return parent._getStartPromise();
+			if (_.isObject(parent) && _.isFunction(parent._getStopPromise)) return parent._getStopPromise();
 		}
 	});
 
@@ -1215,10 +1242,16 @@ var dragAndDrop = new DragAndDropSingleton();
 
 var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
 var Behavior = BaseBehavior.extend({
+
+	listenViewInitialize: true,
+
 	constructor: function constructor() {
-		this.on('before:render initialize', _.once(_.partial(this.triggerMethod, 'view:initialize')));
+
+		if (this.getProperty('listenViewInitialize') === true) this.on('before:render initialize', _.once(_.partial(this.triggerMethod, 'view:initialize')));
+
 		BaseBehavior.apply(this, arguments);
 	},
+
 
 	getModel: function getModel() {
 		return this.view.model;
@@ -1974,6 +2007,11 @@ var YatPage = Base$2.extend({
 			this.addStartPromise(collection.fetch(opts));
 		}
 	},
+
+
+	freezeWhileStarting: true,
+	freezeUI: function freezeUI() {},
+	unFreezeUI: function unFreezeUI() {},
 	getRouteHash: function getRouteHash() {
 
 		var hashes = [{}, this._routeHandler].concat(this.getChildren({ startable: false }).map(function (children) {

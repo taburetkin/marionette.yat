@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import Bb from 'backbone';
-import setByPathArray from './set-by-path-array';
+import setByPathArray from './_set-by-path-array';
 
 const setByPath = function (obj, pathStr, value, force, silent) {
 	
