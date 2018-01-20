@@ -2,26 +2,15 @@
 Takes view `className` result, mix it with view `dynamicClassName` and set it to the view $el as class.
 
 ### default values
-* `refreshOnModelChange` (default: `true`) 
+* `refreshOnModelChange` (default: `true`) - if `true` upplies dynamic style on **model** `change` event.
 
-if `true` upplies dynamic style on **model** `change` event.
+* `refreshOnDomChange` (default: `false`) - if `true` upplies dynamic style on **$el** `change` event.
 
-* `refreshOnDomChange` (default: `false`)
+* `refreshOnViewRefresh` (default: `true`) - if `true` upplies dynamic style on **view** `refresh` event.
 
-if `true` upplies dynamic style on **$el** `change` event.
+* `refreshOnViewBeforeRender` (default: `true`) - if `true` upplies dynamic style on **view** `before:render` event.
 
-* `refreshOnViewRefresh` (default: `true`)
-
-if `true` upplies dynamic style on **view** `refresh` event.
-
-* `refreshOnViewBeforeRender` (default: `true`)
-
-if `true` upplies dynamic style on **view** `before:render` event.
-
-* `refreshOnViewRender` (default: `false`)
-
-if `true` upplies dynamic style on **view** `render` event.
-
+* `refreshOnViewRender` (default: `false`) - if `true` upplies dynamic style on **view** `render` event.
 
 ### example
 ```js
