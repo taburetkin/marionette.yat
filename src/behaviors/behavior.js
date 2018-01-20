@@ -15,14 +15,14 @@ export default BaseBehavior.extend({
 
 		BaseBehavior.apply(this, arguments);
 	},
-	
+
 	getModel: function () {
 		return this.view.model;
 	},	
 	cidle(name){
-		return fns.cid.call(this.view, name);
+		return fns.wrap(this.view.cid, name);
 	},
 	unCidle(name){
-		return fns.uncid.call(this.view, name);
+		return fns.unwrap(name, this.view.cid); 
 	},
 });

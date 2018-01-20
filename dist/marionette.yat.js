@@ -132,23 +132,25 @@ var getValue = (function (context) {
 	return smartGet(context, opts);
 });
 
-function cid (arg) {
+function cid (prefix, value) {
+	var delimeter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : ':';
 
-	var cid = (this.cid || '').toString();
-	if (!cid) return arg;
-
-	if (arg == null) return cid;
-
-	return cid + ':' + arg.toString();
+	prefix || (prefix = '');
+	value = value == null ? '' : value.toString();
+	return prefix + delimeter + value;
 }
 
-function uncid (arg) {
-	var cid = (this.cid || '').toString();
-	if (!cid) return arg;
-	if (arg == null || typeof arg !== 'string') return arg;
+function unwrap (value, prefix) {
+	var delimeter = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : ":";
 
-	var pattern = new RegExp('^' + cid + ':');
-	return arg.replace(pattern, '');
+
+	if (value == null) return;
+	value = value.toString();
+	prefix || (prefix = '');
+	if (!value.length) return value;
+
+	var pattern = new RegExp('^' + prefix + delimeter);
+	return value.replace(pattern, '');
 }
 
 function getProperty(name) {
@@ -269,7 +271,7 @@ function unFlattenObject(obj) {
 }
 
 var fns = {
-	getLabel: getLabel, getName: getName, getValue: getValue, cid: cid, uncid: uncid, setByPath: setByPath, getByPath: getByPath, flattenObject: flattenObject, unFlattenObject: unFlattenObject
+	getLabel: getLabel, getName: getName, getValue: getValue, wrap: cid, unwrap: unwrap, setByPath: setByPath, getByPath: getByPath, flattenObject: flattenObject, unFlattenObject: unFlattenObject
 };
 
 var Functions = { view: view, common: fns };
@@ -984,7 +986,7 @@ var templateContextStore = [function (view) {
 		_v: view,
 		_m: view.model || {},
 		_cid: function _cid(arg) {
-			return cid.call(view, arg);
+			return cid(view.cid, arg);
 		}
 	};
 }];
@@ -1257,10 +1259,10 @@ var Behavior = BaseBehavior.extend({
 		return this.view.model;
 	},
 	cidle: function cidle(name) {
-		return fns.cid.call(this.view, name);
+		return fns.wrap(this.view.cid, name);
 	},
 	unCidle: function unCidle(name) {
-		return fns.uncid.call(this.view, name);
+		return fns.unwrap(name, this.view.cid);
 	}
 });
 

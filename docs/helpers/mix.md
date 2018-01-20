@@ -1,10 +1,10 @@
-# mix - extended mixin functionality
+## mix helper
 Extends a Class or object with mixins and hashes and do not pollute prototypes.
 
-## primary use case
+### primary use case
 `let NewClass = mix(BaseClass).with(Mixin1, Mixin2);`
 
-## mix(argument)
+### mix(argument)
 returns a special `wrapper` object with `class` property and `with` method.
 `argument` can be a class definition or simple object.
 ```js
@@ -16,10 +16,10 @@ let NewClass = mix({prop1:1, prop2:2}).class;
 let instance = new NewClass();
 ```
 
-## mix(BaseClass).with(mixin1, mixin2, mixin3)
+### mix(BaseClass).with(mixin1, mixin2, mixin3)
 `mixin` argument could be an `object` or a `mixin function`. The apply order is left to right, so properties of mixin3 will be the last
 
-## mixin function
+### mixin function
 Its a function that takes as argument Base class and returns extended Base class
 ```js
 
@@ -29,7 +29,7 @@ let MyClass = mix({somedata:123}).with(myMixin);
 
 ```
 
-## resulted class
+### resulted class
 `mix` helper will settle to resulting class static `extend` method, so you can do like that
 ```js
 
