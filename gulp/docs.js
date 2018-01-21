@@ -11,7 +11,7 @@ import clean from 'gulp-clean';
 import str  from 'string-to-stream';
 import source  from 'vinyl-source-stream';
 
-
+import wait from 'gulp-wait';
 
 
 
@@ -197,7 +197,11 @@ gulp.task('createDocsInFolders2',() => {
 		let ps = parsePath(path);
 		return str(content).pipe(source(ps.name + '.md')).pipe(gulp.dest(ps.folderPath));
 	})
-	let merged = merge(files);
+
+	let full = createFullTree(res, docsFolders, docsFiles);
+
+	let merged = merge(files, full);
+	//let wait = [gulp.src('./LICENSE').pipe(wait(2000))];
 	return merged;
 	//str('1.4.27').pipe(source('version.txt')).pipe(gulp.dest('dist'));
 
@@ -210,7 +214,14 @@ gulp.task('mainReadMe2',() => {
 	.pipe(gulp.dest('./'));
 });
 
-gulp.task('docs', gulpSequence('docsClean','createDocsInFolders2', 'mainReadMe2' ))
+gulp.task('docs', gulpSequence('docsClean','wait1000','createDocsInFolders2', 'wait1000', 'mainReadMe2' ))
+
+gulp.task('wait1000', () => {
+
+	return gulp.src('./LICENSE')
+			.pipe(wait(500));
+
+});
 
 function getJsToDocs(){
 	let docs = {};
@@ -238,43 +249,75 @@ function getDocsFolders(){
 	return docs;
 }
 
-function createFolderReadme(root, docsFolders, docsFiles, level, cb){
-	console.log('>', `.${root.path}/README.md`);
+function createFolderReadme(root, docsFolders, docsFiles, level){
+	//console.log('>', `.${root.path}/README.md`);
 	let separate = level == null;
 	if(level == null)
 		level = root.level;
 
 	let text = '';
-	if(separate){
-		text += tab(`# ${root.name}\r\n`);
-		_(root.folders).each((folder) => {
-			text += tab(`* [${folder.name}](${folder.path})\r\n`);
-		});
-		if(_.size(root.files)){
+	let name = root.name == 'src' ? 'marionette.yat' : root.name;
+	text += tab(`# ${root.name}\r\n`);
+	_(root.folders).each((folder) => {
+		text += tab(`* [${folder.name}](${folder.path})\r\n`);
+	});
+	if(_.size(root.files)){
+		if(separate)
 			text += '\r\n' + tab(`## content\r\n`);
-			_(root.files).each((file) => {
-				if(file.path in docsFiles){
-					text += tab(`* [${file.name}](${docsFiles[file.path]})\r\n`);
-				} else {
-					text += tab(`* ${file.name}\r\n`);
-				}
-			});
-		}
-		return { path:`.${root.path}/README.md`, content: text };
-		//fs.writeFile(`.${root.path}/README.md`, text,() => { console.log('	done', root.path)});
+		_(root.files).each((file) => {
+			if(file.path in docsFiles){
+				text += tab(`* [${file.name}](${docsFiles[file.path]})\r\n`);
+			} else {
+				text += tab(`* ${file.name}\r\n`);
+			}
+		});
 	}
-
-
-	//console.log(text);
+	if(separate){
+		return { path:`.${root.path}/README.md`, content: text };
+	} else {
+		return text;
+	}
 }
 
-function traverseFolders(root, docsFolders, docsFiles, hash){
+function createFullTree(res, docsFolders, docsFiles){
+	let result = '## marionette.yat content \r\n';
+	_(res).each((value, name) => {		
+		result += createFullFolderText(value, docsFolders, docsFiles);
+	});
+	return str(result).pipe(source('README.md')).pipe(gulp.dest('./src'));
+}
 
-	let result = createFolderReadme(root, docsFolders, docsFiles);
-	hash[result.path] = result.content;
+function createFullFolderText(root, docsFolders, docsFiles){
+	let text = '';
+	let name = root.name == 'src' ? 'marionette.yat' : root.name;
+	name = `* [${name}](.${root.path})`;
+	if(root.level >= 0)
+		text += tab(`${name}\r\n`, root.level);
+	_(root.folders).each((folder) => {
+		text += createFullFolderText(folder, docsFolders, docsFiles)
+	});
+	_(root.files).each((file) => {
+		let filename = '';
+		if(file.path in docsFiles){
+			filename = `[${file.name}](${docsFiles[file.path]})`;
+		} else {
+			filename = file.name;
+		}
+		text += tab(`* ${filename}\r\n`, root.level + 1)
+	});	
+	return text;
+}
+
+
+function traverseFolders(root, docsFolders, docsFiles, hash){
+	
+	if(root.path !== '/src'){
+		let result = createFolderReadme(root, docsFolders, docsFiles);
+		hash[result.path] = result.content;
+	}
 
 	_(root.folders).each((folder) => traverseFolders(folder, docsFolders, docsFiles, hash));
-	return result;
+	return hash;
 }
 
 function tab(text, level){
@@ -283,6 +326,3 @@ function tab(text, level){
 	return text;
 }
 
-gulp.task('write-file',() => {
-
-})
