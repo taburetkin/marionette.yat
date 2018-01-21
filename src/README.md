@@ -8,11 +8,11 @@
 * [functions](./src/functions)
 	* [common](./src/functions/common)
 		* [flatten-unflatten](./src/functions/common/flatten-unflatten)
-			* flatten-object
-			* unflatten-object
+			* [flatten-object](/docs/functions/common/flatten-unflatten/flatten-object.md)
+			* [unflatten-object](/docs/functions/common/flatten-unflatten/unflatten-object.md)
 		* [set-get-by-path](./src/functions/common/set-get-by-path)
-			* get-by-path
-			* set-by-path
+			* [get-by-path](/docs/functions/common/set-get-by-path/get-by-path.md)
+			* [set-by-path](/docs/functions/common/set-get-by-path/set-by-path.md)
 		* [get-label](/docs/functions/common/get-label.md)
 		* [get-name](/docs/functions/common/get-name.md)
 		* [get-value](/docs/functions/common/get-value.md)

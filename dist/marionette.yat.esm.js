@@ -169,25 +169,12 @@ function setProperty(context, name, value, options) {
 
 	options.passPath.push(name);
 
-	// if(!silent){
-	// 	let passThrough = pass.path.join(':');
-	// 	if(pass.contextModel && context != pass.contextModel){
-	// 		pass.contextModel.trigger('change:' + passThrough, value);
-	// 	}
-	// 	_(pass.models).each((model, path) => {
-	// 		let modelPath = passThrough.substring(path.length);
-	// 		model.trigger('change:' + modelPath, value);
-	// 	});
-	// }
-
 	return getProperty(context, name);
 }
 
 function setByPathArr(context, propertyName, pathArray, value, options) {
 
 	if (context == null || !_.isObject(context) || propertyName == null || propertyName == '') return;
-
-	//options.passPath.push(propertyName);
 
 	if (!pathArray.length) return setProperty(context, propertyName, value, options);
 
