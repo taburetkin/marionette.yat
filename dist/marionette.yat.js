@@ -153,88 +153,139 @@ function unwrap (value, prefix) {
 	return value.replace(pattern, '');
 }
 
-function getProperty(name) {
-	if (this instanceof Bb.Model) return this.get(name);else return this[name];
+function getProperty(context, name) {
+	if (context == null || !_.isObject(context) || name == null || name == '') return;
+	if (context instanceof Bb.Model) return context.get(name);else return context[name];
 }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-function setProperty(name, value, silent) {
-	if (this instanceof Bb.Model) {
-		var hash = _defineProperty({}, name, value);
-		//sethash[name] = value;
-		var options = { silent: silent };
-		//if (silent) optshash.silent = true;
-		this.set(hash, options);
-	} else this[name] = value;
-
-	return getProperty.call(this, name);
-}
-
-function setByPathArr(propertyName, pathArr, value, force, silent) {
-
-	if (typeof propertyName !== 'string' || propertyName == '') throw new Error('can not set value on object by path. propertyName is empty');
-
-	if (pathArr.length == 0) return setProperty.call(this, propertyName, value);
-
-	var prop = getProperty.call(this, propertyName);
-	if (!_.isObject(prop) && !force) return;else if (!_.isObject(prop) && force) prop = setProperty.call(this, propertyName, {});
-
-	var nextName = pathArr.shift();
-
-	return setByPathArr.call(prop, nextName, pathArr, value, force);
-}
-
-var setByPath = function setByPath(obj, pathStr, value, force, silent) {
-
-	if (obj == null || !_.isObject(obj)) return obj;
-
-	if (_.isObject(pathStr)) {
-		value = pathStr.value;
-		force = pathStr.force;
-		silent = pathStr.silent;
-		pathStr = pathStr.path;
+function setProperty(context, name, value, options) {
+	if (context instanceof Bb.Model) {
+		context.set(name, value, { silent: true });
+	} else {
+		context[name] = value;
 	}
-	if (pathStr == null || typeof pathStr !== 'string' || pathStr == '') throw new Error('can not set value to object by path. path is empty');
 
-	var pathArray = pathStr.split('.');
-	var arrlen = pathArray.length;
+	if (value instanceof Bb.Model) {
+		options.models.push({
+			path: options.passPath.join(':'),
+			property: name,
+			model: value
+		});
+	}
+
+	options.passPath.push(name);
+
+	// if(!silent){
+	// 	let passThrough = pass.path.join(':');
+	// 	if(pass.contextModel && context != pass.contextModel){
+	// 		pass.contextModel.trigger('change:' + passThrough, value);
+	// 	}
+	// 	_(pass.models).each((model, path) => {
+	// 		let modelPath = passThrough.substring(path.length);
+	// 		model.trigger('change:' + modelPath, value);
+	// 	});
+	// }
+
+	return getProperty(context, name);
+}
+
+function setByPathArr(context, propertyName, pathArray, value, options) {
+
+	if (context == null || !_.isObject(context) || propertyName == null || propertyName == '') return;
+
+	//options.passPath.push(propertyName);
+
+	if (!pathArray.length) return setProperty(context, propertyName, value, options);
+
+	var prop = getProperty(context, propertyName);
+
+	if (!_.isObject(prop) && !options.force) return;else if (!_.isObject(prop) && options.force) prop = setProperty(context, propertyName, {}, options);
+
+	var nextName = pathArray.shift();
+
+	return setByPathArr(prop, nextName, pathArray, value, options);
+}
+
+var setByPath = function setByPath(context, path, value, opts) {
+
+	if (context == null || !_.isObject(context) || path == null || path == '') return;
+
+	var options = _.extend({}, opts);
+	options.silent = options.silent === true;
+	options.force = options.force !== false;
+
+	if (_.isObject(path) && !(path instanceof Array)) {
+		value = path.value;
+		options.force = path.force !== false;
+		options.silent = path.silent === true;
+		path = path.path;
+	}
+
+	options.path = path;
+	options.passPath = [];
+	options.models = [];
+
+	if (path == null || path == '') return;
+
+	var pathArray = typeof path === 'string' ? path.split('.') : path instanceof Array ? [].slice.call(path) : [path];
+
+	options.pathArray = [].slice.call(pathArray);
+
+	if (!pathArray.length) return;
+
+	var chunksCount = pathArray.length;
 	var prop = pathArray.shift();
-	force = force != false;
 
-	setByPathArr.call(obj, prop, pathArray, value, force, silent);
-
-	if (obj instanceof Bb.Model && arrlen > 1 && !silent) {
-		obj.trigger('change:' + prop, this);
-		obj.trigger('change', this);
+	if (context instanceof Bb.Model) {
+		options.models.push({
+			path: '',
+			property: prop,
+			model: context
+		});
 	}
 
-	return obj;
+	var result = setByPathArr(context, prop, pathArray, value, options);
+
+	if (result === undefined && value !== undefined) return result;
+
+	//triggering change event on all met models
+	if (!options.silent) {
+		var originPath = options.pathArray.join(':');
+		while (options.models.length) {
+			var modelContext = options.models.pop();
+			var propertyEventName = modelContext.path == '' ? originPath : originPath.substring(modelContext.path.length + 1);
+			if (propertyEventName) {
+				modelContext.model.trigger('change:' + propertyEventName, value);
+			}
+			modelContext.model.trigger('change', modelContext.model);
+		}
+	}
+
+	return result;
 };
 
-function getByPathArray(propertyName, pathArr) {
-	if (!_.isObject(this)) return;
+function getByPathArray(context, propertyName, pathArray) {
 
-	if (typeof propertyName != 'string' || propertyName == '') throw 'can not get value from object by path. propertyName is empty';
+	if (context == null || !_.isObject(context) || propertyName == null || propertyName == '') return;
 
-	var prop = getProperty.call(this, propertyName);
+	var prop = getProperty(context, propertyName);
 
-	if (pathArr.length == 0) return prop;
+	if (!pathArray.length || pathArray.length && prop == null) return prop;
 
-	var nextName = pathArr.shift();
+	var nextName = pathArray.shift();
 
-	return getByPathArray.call(prop, nextName, pathArr);
+	return getByPathArray(prop, nextName, pathArray);
 }
 
-function getByPath(obj, pathStr) {
+function getByPath(obj, path) {
 
-	if (obj == null || !_.isObject(obj)) return;
-	if (pathStr == null || typeof pathStr != 'string' || pathStr == '') throw new Error('can not get value from object by path. path is empty');
+	if (obj == null || !_.isObject(obj) || path == null || path == '') return;
 
-	var pathArray = pathStr.split('.');
+	var pathArray = typeof path === 'string' ? path.split('.') : path instanceof Array ? [].slice.call(path) : [path];
+
 	var prop = pathArray.shift();
 
-	return getByPathArray.call(obj, prop, arr);
+	return getByPathArray(obj, prop, pathArray);
 }
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -478,7 +529,7 @@ var RadioMixin = (function (Base) {
 	return Mixin;
 });
 
-function _defineProperty$1(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var Stateable = (function (BaseClass) {
 	var Mixin = BaseClass.extend({
@@ -532,7 +583,7 @@ var Stateable = (function (BaseClass) {
 				this.triggerMethod('state:' + key, value, options);
 				if (value === true || value === false || !!value && typeof value === 'string') this.triggerMethod('state:' + key + ':' + value.toString(), options);
 				if (!options || options && !options.doNotTriggerFullState) {
-					this.triggerMethod('state', _defineProperty$1({}, key, value), options);
+					this.triggerMethod('state', _defineProperty({}, key, value), options);
 				}
 			} else {
 				//key is a hash of states
@@ -1531,7 +1582,7 @@ var DynamicClass = Behavior.extend({
 	}
 });
 
-function _defineProperty$2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _defineProperty$1(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var FormToHash = mix(Behavior).with(Stateable).extend({
 	applyDelay: 1, //in ms
@@ -1579,7 +1630,7 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 	triggers: function triggers() {
 		var _ref;
 
-		return _ref = {}, _defineProperty$2(_ref, 'click ' + this.getProperty('applySelector'), 'trigger:apply'), _defineProperty$2(_ref, 'click ' + this.getProperty('cancelSelector'), 'trigger:cancel'), _defineProperty$2(_ref, 'click ' + this.getProperty('resetSelector'), 'trigger:reset'), _ref;
+		return _ref = {}, _defineProperty$1(_ref, 'click ' + this.getProperty('applySelector'), 'trigger:apply'), _defineProperty$1(_ref, 'click ' + this.getProperty('cancelSelector'), 'trigger:cancel'), _defineProperty$1(_ref, 'click ' + this.getProperty('resetSelector'), 'trigger:reset'), _ref;
 	},
 	_tryFlatValues: function _tryFlatValues(raw) {
 		return flattenObject(raw);
@@ -1926,7 +1977,7 @@ var LinkModel = Model.extend({
 	}
 });
 
-function _defineProperty$3(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _defineProperty$2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -2082,7 +2133,7 @@ var YatPage = Base$2.extend({
 		var route = this.getRoute({ asPattern: true });
 		if (route == null) return;
 		var page = this;
-		this._routeHandler = _defineProperty$3({}, route, { context: page, action: function action() {
+		this._routeHandler = _defineProperty$2({}, route, { context: page, action: function action() {
 				return page.start.apply(page, arguments);
 			} });
 	},

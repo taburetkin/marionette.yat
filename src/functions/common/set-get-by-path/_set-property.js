@@ -2,18 +2,25 @@ import _ from 'underscore';
 import Bb from 'backbone';
 import getProperty from './_get-property';
 
-function setProperty(name, value, silent) {
-	if (this instanceof Bb.Model) {
-		var hash = {[name]:value};
-		//sethash[name] = value;
-		var options = { silent };
-		//if (silent) optshash.silent = true;
-		this.set(hash, options);
+function setProperty(context, name, value, options) {
+	if (context instanceof Bb.Model) {
+		context.set(name, value, { silent: true });
 	}
-	else
-		this[name] = value;
+	else {
+		context[name] = value;
+	}
 
-	return getProperty.call(this, name);
+	if(value instanceof Bb.Model){
+		options.models.push({
+			path: options.passPath.join(':'),
+			property: name,
+			model: value
+		});		
+	}
+
+	options.passPath.push(name);
+
+	return getProperty(context, name);
 }
 
 export default setProperty;

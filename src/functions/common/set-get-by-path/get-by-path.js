@@ -1,16 +1,17 @@
 import _ from 'underscore';
 import getByPathArray from './_get-by-path-array';
 
-function getByPath (obj, pathStr) {
+function getByPath (obj, path) {
 
-	if(obj == null || !_.isObject(obj)) return;
-	if (pathStr == null || typeof pathStr != 'string' || pathStr == '')
-		throw new Error('can not get value from object by path. path is empty');
+	if(obj == null || !_.isObject(obj) || path == null || path == '') return;
 
-	var pathArray = pathStr.split('.');
+	var pathArray = typeof path === 'string' ? path.split('.') 
+					: path instanceof Array ? [].slice.call(path)
+					: [path];
+
 	var prop = pathArray.shift();
 
-	return getByPathArray.call(obj, prop, arr);
+	return getByPathArray(obj, prop, pathArray);
 }
 
 export default getByPath;

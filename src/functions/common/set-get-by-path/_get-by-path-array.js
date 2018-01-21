@@ -1,21 +1,19 @@
 import _ from 'underscore';
 import getProperty from './_get-property';
 
-function getByPathArray(propertyName, pathArr) {
-	if (!_.isObject(this))
+function getByPathArray(context, propertyName, pathArray) {
+	
+	if (context == null || !_.isObject(context) || propertyName == null || propertyName == '')
 		return;
 
-	if (typeof propertyName != 'string' || propertyName == '')
-		throw 'can not get value from object by path. propertyName is empty';
+	var prop = getProperty(context, propertyName);
 
-	var prop = getProperty.call(this, propertyName);
-
-	if (pathArr.length == 0)
+	if (!pathArray.length || (pathArray.length && prop == null))
 		return prop;
 
-	var nextName = pathArr.shift();
+	var nextName = pathArray.shift();
 
-	return getByPathArray.call(prop, nextName, pathArr);
+	return getByPathArray(prop, nextName, pathArray);
 
 }
 

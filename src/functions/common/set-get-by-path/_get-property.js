@@ -1,10 +1,11 @@
 import _ from 'underscore';
 import Bb from 'backbone';
-function getProperty(name)
+function getProperty(context, name)
 {
-	if (this instanceof Bb.Model)
-		return this.get(name);
+	if(context == null || !_.isObject(context) || name == null || name == '') return;
+	if (context instanceof Bb.Model)
+		return context.get(name);
 	else
-		return this[name];
+		return context[name];
 }
 export default getProperty;	

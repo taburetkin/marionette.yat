@@ -2,32 +2,69 @@ import _ from 'underscore';
 import Bb from 'backbone';
 import setByPathArray from './_set-by-path-array';
 
-const setByPath = function (obj, pathStr, value, force, silent) {
+const setByPath = function (context, path, value, opts) {
 	
-	if(obj == null || !_.isObject(obj)) return obj;
-
-	if (_.isObject(pathStr)) {
-		value = pathStr.value;
-		force = pathStr.force;
-		silent = pathStr.silent;
-		pathStr = pathStr.path;
+	
+	if(context == null || !_.isObject(context) || path == null || path == '') return;
+	
+	let options = _.extend({}, opts);
+	options.silent = options.silent === true;
+	options.force = options.force !== false;
+	
+	
+	if (_.isObject(path) && !(path instanceof Array)) {
+		value = path.value;
+		options.force = path.force !== false;
+		options.silent = path.silent === true;
+		path = path.path;
 	}
-	if (pathStr == null || typeof pathStr !== 'string' || pathStr == '')
-		throw new Error('can not set value to object by path. path is empty');
+	
+	options.path = path;
+	options.passPath = [];
+	options.models = [];
 
-	var pathArray = pathStr.split('.');
-	var arrlen = pathArray.length;
+
+	if (path == null || path == '') return;
+
+	var pathArray = typeof path === 'string' ? path.split('.') 
+					: path instanceof Array ? [].slice.call(path)
+					: [path];
+	
+	options.pathArray = [].slice.call(pathArray);
+
+	if(!pathArray.length) return;
+
+	let chunksCount = pathArray.length;
 	var prop = pathArray.shift();
-	force = force != false; 
 
-	setByPathArray.call(obj, prop, pathArray, value, force, silent);
-
-	if (obj instanceof Bb.Model && arrlen > 1 && !silent) {
-		obj.trigger('change:' + prop, this);
-		obj.trigger('change', this);
+	if(context instanceof Bb.Model){
+		options.models.push({
+			path: '',
+			property: prop,
+			model: context
+		});
 	}
 
-	return obj;
+	let result = setByPathArray(context, prop, pathArray, value, options);
+
+	if(result === undefined && value !== undefined)
+		return result;
+
+	//triggering change event on all met models
+	if(!options.silent){
+		let originPath = options.pathArray.join(':');
+		while(options.models.length){
+			let modelContext = options.models.pop();
+			let propertyEventName = modelContext.path == '' ? originPath : originPath.substring(modelContext.path.length + 1);
+			if(propertyEventName){
+				modelContext.model.trigger('change:' + propertyEventName, value);
+			}
+			modelContext.model.trigger('change', modelContext.model);
+		}
+	}
+	
+
+	return result;
 };
 
 export default setByPath;

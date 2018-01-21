@@ -15,57 +15,24 @@ marked with asterisk is not yet implemented.
 * [Page and PageManager](https://codepen.io/dimatabu/full/opGPoQ) - simple application with pages.
 * [sort CollectionView by drag'n'drop](https://codepen.io/dimatabu/pen/JMaZXP)
 
-## table of contents 
+# src
+* [behaviors](/src/behaviors)
+* [functions](/src/functions)
+* [helpers](/src/helpers)
+* [mixins](/src/mixins)
+* [models](/src/models)
+* [singletons](/src/singletons)
 
-* [`behaviors`](/src/behaviors)
-	* `behavior`
-	* `draggable`
-	* `dynamic-class`
-	* `form-to-hash`
-	* `sort-by-drag`
-* [`functions`](/src/functions)
-	* [`common`](/src/functions/common)
-		* [`flatten-unflatten`](/src/functions/common/flatten-unflatten)
-			* `flatten-object`
-			* `unflatten-object`
-		* [`set-get-by-path`](/src/functions/common/set-get-by-path)
-			* `get-by-path`
-			* `set-by-path`
-		* `get-label`
-		* `get-name`
-		* `get-value`
-		* `unwrap`
-		* `wrap`
-	* [`view`](/src/functions/view)
-		* `compare-ab`
-		* `view-comparator`
-* [`helpers`](/src/helpers)
-	* `isKnownCtor`
-	* `mix`
-* [`mixins`](/src/mixins)
-	* `childrenable`
-	* `get-name-label`
-	* `get-option-property`
-	* `global-template-context`
-	* `radioable`
-	* `startable`
-	* `stateable`
-* [`models`](/src/models)
-	* `link`
-	* `model`
-* [`singletons`](/src/singletons)
-	* `drag-and-drop`
-	* `identity`
-	* `template-context`
-* `YatApp`
-* `YatCollectionView`
-* `YatError`
-* `YatModal`
-* `YatObject`
-* `YatPage`
-* `YatPageManager`
-* `YatRouter`
-* `YatView`
+## content
+* [YatApp](/docs/YatApp.md)
+* YatCollectionView
+* [YatError](/docs/YatError.md)
+* YatModal
+* [YatObject](/docs/YatObject.md)
+* [YatPage](/docs/YatPage.md)
+* [YatPageManager](/docs/YatPageManager.md)
+* [YatRouter](/docs/YatRouter.md)
+* YatView
 
 [![Travis build status](http://img.shields.io/travis/taburetkin/marionette.yat.svg?style=flat)](https://travis-ci.org/taburetkin/marionette.yat)
 [![Code Climate](https://codeclimate.com/github/taburetkin/marionette.yat/badges/gpa.svg)](https://codeclimate.com/github/taburetkin/marionette.yat)

@@ -3,24 +3,25 @@ import Bb from 'backbone';
 import getProperty from './_get-property'
 import setProperty from './_set-property';
 
-function setByPathArr(propertyName, pathArr, value, force, silent) {
+function setByPathArr(context, propertyName, pathArray, value, options) {
 
-	if (typeof propertyName !== 'string' || propertyName == '')
-		throw new Error('can not set value on object by path. propertyName is empty');
+	if(context == null || !_.isObject(context) || propertyName == null || propertyName == '') return;
+	
 
-	if (pathArr.length == 0)
-		return setProperty.call(this, propertyName, value);
+	if (!pathArray.length)
+		return setProperty(context, propertyName, value, options);
 
-	var prop = getProperty.call(this, propertyName);
-	if (!_.isObject(prop) && !force)
+	var prop = getProperty(context, propertyName);
+
+	if (!_.isObject(prop) && !options.force)
 		return;
-	else if (!_.isObject(prop) && force)
-		prop = setProperty.call(this, propertyName, {});
+	else if (!_.isObject(prop) && options.force)
+		prop = setProperty(context, propertyName, {}, options);
 
 
-	var nextName = pathArr.shift();
+	var nextName = pathArray.shift();
 
-	return setByPathArr.call(prop, nextName, pathArr, value, force);
+	return setByPathArr(prop, nextName, pathArray, value, options);
 }
 
 export default setByPathArr;
