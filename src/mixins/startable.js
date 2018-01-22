@@ -52,6 +52,20 @@ export default (Base) => {
 			this.initializeStartable();
 		},
 
+		freezeWhileStarting: false,
+		freezeUI(){ },
+		unFreezeUI(){ },
+		isStartNotAllowed(){ },
+		isStopNotAllowed(){ },
+
+		addStartPromise(promise){
+			addPropertyPromise(this,'_startRuntimePromises', promise);
+		},
+
+		addStopPromise(promise){
+			addPropertyPromise(this,'_stopPromises', promise);
+		},		
+
 		initializeStartable(){
 			
 			if(!(this.constructor.Startable && this.constructor.Stateable)) return;
@@ -138,16 +152,9 @@ export default (Base) => {
 			this.triggerMethod('stop', options);
 		},
 
-		isStartNotAllowed(){ },
-		isStopNotAllowed(){ },
 
-		addStartPromise(promise){
-			addPropertyPromise(this,'_startRuntimePromises', promise);
-		},
 
-		addStopPromise(promise){
-			addPropertyPromise(this,'_stopPromises', promise);
-		},
+
 
 		//lifecycle state helpers
 		_setLifeState(newstate){
