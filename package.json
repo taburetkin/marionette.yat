@@ -1,6 +1,6 @@
 {
   "name": "marionette.yat",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "Marionette Yet Another Toolkit",
   "main": "dist/marionette.yat.js",
   "scripts": {
