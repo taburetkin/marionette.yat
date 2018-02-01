@@ -75,7 +75,7 @@ function makeBundle(buildPath, entry) {
 function build(buildPath, entry, output, doMinify) {
 	// gulp.src(distPath, {read: false})
 	// .pipe(clean());
-	if(doMinify == null) doMinify = true;
+  //if(doMinify == null) doMinify = true;
 
   return makeBundle(buildPath, entry).then(gen => {
 	output || (output = pkg.name);
@@ -83,23 +83,24 @@ function build(buildPath, entry, output, doMinify) {
       '//# sourceMappingURL=' + output + '.js.map\n' );
 	fs.writeFileSync(buildPath + output + '.js.map', gen.map.toString());
 	
-	if(doMinify){
+	if(doMinify != false){
 
-		var minified = uglifyjs.minify(gen.code, {sourceMap: {
-			content: gen.map,
-			filename: 'marionette.yat.min.js',
-			url: 'marionette.yat.min.js.map'
-		},
-		output: {
-			comments: 'some'
-		}
+		var minified = uglifyjs.minify(gen.code, {
+			sourceMap: {
+				content: gen.map,
+				filename: output + '.min.js',
+				url: output + '.min.js.map'
+			},
+			output: {
+				comments: 'some'
+			}
 		});
 
 		if (minified.error) {
 		throw 'uglify-js error: ' + minified.error
 		}
-		fs.writeFileSync(buildPath + pkg.name + '.min.js', minified.code);
-		fs.writeFileSync(buildPath + pkg.name + '.min.js.map', minified.map);
+		fs.writeFileSync(buildPath + output + '.min.js', minified.code);
+		fs.writeFileSync(buildPath + output + '.min.js.map', minified.map);
 	}
 	
   });
