@@ -15,5 +15,10 @@ require('./setup')();
   PhantomJS. Setting that up is currently outside of the scope of this
   boilerplate.
 */
-// import simpleJSDom from 'simple-jsdom';
+// var simpleJSDom = require('simple-jsdom');
 // simpleJSDom.install();
+const jsdom = require('jsdom');
+const { JSDOM } = jsdom;
+const { window } = new JSDOM('<!DOCTYPE html>');
+global.window = window;
+global.document = window.document;

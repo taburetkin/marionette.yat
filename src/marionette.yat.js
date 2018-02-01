@@ -5,6 +5,7 @@ import Mixins from './mixins/Mixins';
 import Behaviors from './behaviors/behaviors';
 import Singletons from './singletons/singletons';
 import TemplateContext from './singletons/template-context';
+import modals from './singletons/modals/modals';
 import identity from './singletons/identity';
 import YatObject from './YatObject';
 import YatError from './YatError';
@@ -15,6 +16,11 @@ import YatPageManager from './YatPageManager';
 import YatView from './YatView';
 import YatCollectionView from './YatCollectionView';
 
+import YatModel from './models/model';
+import YatCollection from './models/collection';
+
+import CollectionGroups from './YatCollectionGroups';
+
 const marionetteYat = {
 	VERSION: version,
 	Functions: Functions,
@@ -23,6 +29,7 @@ const marionetteYat = {
 	Behaviors: Behaviors,
 	Singletons: Singletons,
 	TemplateContext: TemplateContext,
+	modals: modals,
 	identity: identity,
 	Object: YatObject,
 	Error: YatError,
@@ -31,7 +38,10 @@ const marionetteYat = {
 	Router: YatRouter,
 	PageManager: YatPageManager,
 	View: YatView,
-	CollectionView: YatCollectionView
+	CollectionView: YatCollectionView,
+	Model: YatModel,
+	Collection: YatCollection,
+	CollectionGroups, 
 };
 
 export default marionetteYat;

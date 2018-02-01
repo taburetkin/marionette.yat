@@ -19,9 +19,9 @@ marked with asterisk is not yet implemented.
 * [behaviors](./src/behaviors)
 	* [behavior](/docs/behaviors/behavior.md)
 	* [draggable](/docs/behaviors/draggable.md)
+	* droppable
 	* [dynamic-class](/docs/behaviors/dynamic-class.md)
 	* [form-to-hash](/docs/behaviors/form-to-hash.md)
-	* [sort-by-drag](/docs/behaviors/sort-by-drag.md)
 * [functions](./src/functions)
 	* [common](./src/functions/common)
 		* [flatten-unflatten](./src/functions/common/flatten-unflatten)
@@ -33,6 +33,7 @@ marked with asterisk is not yet implemented.
 		* [get-label](/docs/functions/common/get-label.md)
 		* [get-name](/docs/functions/common/get-name.md)
 		* [get-value](/docs/functions/common/get-value.md)
+		* is-view
 		* [unwrap](/docs/functions/common/unwrap.md)
 		* [wrap](/docs/functions/common/wrap.md)
 	* [view](./src/functions/view)
@@ -50,16 +51,20 @@ marked with asterisk is not yet implemented.
 	* [startable](/docs/mixins/startable.md)
 	* [stateable](/docs/mixins/stateable.md)
 * [models](./src/models)
+	* collection
 	* link
 	* model
 * [singletons](./src/singletons)
-	* drag-and-drop
+	* [modals](./src/singletons/modals)
+		* config
+		* modalView
 	* identity
 	* template-context
 * [YatApp](/docs/YatApp.md)
+* YatCollectionGroups
 * YatCollectionView
+* YatConfig
 * [YatError](/docs/YatError.md)
-* YatModal
 * [YatObject](/docs/YatObject.md)
 * [YatPage](/docs/YatPage.md)
 * [YatPageManager](/docs/YatPageManager.md)

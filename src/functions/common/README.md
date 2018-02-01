@@ -6,5 +6,6 @@
 * [get-label](/docs/functions/common/get-label.md)
 * [get-name](/docs/functions/common/get-name.md)
 * [get-value](/docs/functions/common/get-value.md)
+* is-view
 * [unwrap](/docs/functions/common/unwrap.md)
 * [wrap](/docs/functions/common/wrap.md)

@@ -7,7 +7,7 @@ const DynamicClass = Behavior.extend({
 		let viewCls = _.result(this.view, 'className') || '';
 		let addCls = _.result(this.view, 'dynamicClassName') || '';
 		this.$el.attr({
-			class: viewCls + ' ' + addCls
+			class: (viewCls + ' ' + addCls).trim()
 		});
 
 	},

@@ -48,11 +48,11 @@ function generateBundle(bundle) {
   });
 }
 
-function makeBundle(buildPath) {
+function makeBundle(buildPath, entry) {
   const buildFile = buildPath + pkg.name + '.js';
-
+  entry || (entry = srcPath + pkg.name + '.js');
   return rollup({
-    input: srcPath + pkg.name + '.js',
+    input: entry,
     external: ['jquery', 'underscore', 'backbone', 'backbone.radio','backbone.marionette'],
     plugins: [
 		rollupClean(),
@@ -72,30 +72,36 @@ function makeBundle(buildPath) {
   });
 }
 
-function build(buildPath) {
+function build(buildPath, entry, output, doMinify) {
 	// gulp.src(distPath, {read: false})
 	// .pipe(clean());
+	if(doMinify == null) doMinify = true;
 
-  return makeBundle(buildPath).then(gen => {
-    fs.writeFileSync(buildPath + pkg.name + '.js', gen.code  +
-      '//# sourceMappingURL=' + pkg.name + '.js.map\n' );
-    fs.writeFileSync(buildPath + pkg.name + '.js.map', gen.map.toString());
-    var minified = uglifyjs.minify(gen.code, {sourceMap: {
-        content: gen.map,
-        filename: 'marionette.yat.min.js',
-        url: 'marionette.yat.min.js.map'
-      },
-      output: {
-        comments: 'some'
-      }
-    });
+  return makeBundle(buildPath, entry).then(gen => {
+	output || (output = pkg.name);
+    fs.writeFileSync(buildPath + output + '.js', gen.code  +
+      '//# sourceMappingURL=' + output + '.js.map\n' );
+	fs.writeFileSync(buildPath + output + '.js.map', gen.map.toString());
+	
+	if(doMinify){
 
-    if (minified.error) {
-      throw 'uglify-js error: ' + minified.error
-    }
+		var minified = uglifyjs.minify(gen.code, {sourceMap: {
+			content: gen.map,
+			filename: 'marionette.yat.min.js',
+			url: 'marionette.yat.min.js.map'
+		},
+		output: {
+			comments: 'some'
+		}
+		});
 
-    fs.writeFileSync(buildPath + pkg.name + '.min.js', minified.code);
-    fs.writeFileSync(buildPath + pkg.name + '.min.js.map', minified.map);
+		if (minified.error) {
+		throw 'uglify-js error: ' + minified.error
+		}
+		fs.writeFileSync(buildPath + pkg.name + '.min.js', minified.code);
+		fs.writeFileSync(buildPath + pkg.name + '.min.js.map', minified.map);
+	}
+	
   });
 }
 
@@ -109,4 +115,9 @@ gulp.task('build-lib', ['lint-src'], function() {
 
 gulp.task('build', function(done) {
   runSequence('build-lib', done);
+});
+
+
+gulp.task('build-board', function() {
+	return build('demo/kb/','demo/kb/index.js','kanban-board');
 });

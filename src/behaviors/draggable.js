@@ -1,85 +1,103 @@
 import _ from 'underscore';
-import Mn from 'backbone.marionette';
-import dragAndDrop from '../singletons/drag-and-drop';
-import Behavior from './behavior';
+import BaseDraggable from './_base-draggable';
 
-var DraggableBehavior = Behavior.extend({
+const DraggableBehavior = BaseDraggable.extend({
 
-	startDragOnDistance: 50,
+	useGhost: true,
+	viewCssClass: 'dragging',
+	ghostCssClass: 'ghost',
 
-	events: {
-		'dragged:over': '_dragOver'
-	},
-	_dragOver(event, part, context){
-		event.stopPropagation();
-		event.preventDefault();
-
-		if (this.wrongScope(context)) return;
-		this.view.triggerMethod('dragged:over', part, context, this);
-		this.view.triggerMethod('dragged:over:' + part, context, this);
-	},
-	onInitialize() {
-		this._setup();
-	},
-	getScope () {
-		return this.getOption("scope") || "default";
-	},
-	wrongScope (context) {
-		return this.getScope() !== context.scope;
-	},
-	onDragStart (ev, context) {
-
-		var ghost = this.getOption('ghost') || "clone";
-
-		if (ghost == 'clone') {
-			var $g = this.$ghost = this.$el.clone();
-			$g.css({
-				top: ev.pageY + 'px',
-				left: ev.pageX + 'px',
-				width: this.$el.width(),
-			});
-
-			if (this.getOption('elementClass'))
-				this.$el.addClass(this.getOption('elementClass'));
-			if (this.getOption('ghostClass'))
-				$g.addClass(this.getOption('ghostClass'));
-
-			var $dragContext = $('body');
-			// var ghostContext = this.getOption('ghostContext');
-			// var $dragContext = ghostContext == null ? $('body')
-			// 	: ghostContext == "parent" ? this.$el.parent()
-			// 		: $(ghostContext);
-			$g.appendTo($dragContext);
-			context.draggingContext = $dragContext;
-		}
-
-	},
-	onDrag (ev) {
-		if (!this.$ghost) return;
+	constructor: function(...args){
 		
-		this.$ghost.css({
-			top: ev.pageY + 'px',
-			left: ev.pageX + 'px',
+		BaseDraggable.apply(this, args);
+
+		this.on('drag', this._onDrag);
+		this.on('drag:start', this._onDragStart);
+		this.on('drag:end', this._onDragEnd);
+
+	},
+
+	events:{
+		'drag:enter'(e, dragging){
+			if(!this.shouldHandleDomEvents(dragging)) return;
+		},
+		'drag:over'(e, dragging){
+			if(!this.isSameScope(dragging)) return;
+			e.stopPropagation();
+
+			let newEvent = this._createCustomDomEvent('drag:over', e);
+
+			let parent = this.$el.parent();
+			if(parent)
+				parent.trigger(newEvent, [dragging, this]);			
+		}
+	},
+
+
+	_onDragEnd(ev){
+
+		if(this.getOption('useGhost'))
+			this._removeGhost();
+		if(this.getOption('viewCssClass'))
+			this.view.$el.removeClass(this.getOption('viewCssClass'));
+
+		this._clearDragData();
+	},
+	_onDragStart(ev){
+		if(this.getOption('useGhost'))
+			this._createGhost();
+		if(this.getOption('viewCssClass'))
+			this.view.$el.addClass(this.getOption('viewCssClass'));
+	},
+	_onDrag(ev){
+		this.setGhostPosition(ev.pageY, ev.pageX);
+	},
+	_removeGhost(){
+		this.$ghost.remove();
+		delete this.$ghost;
+	},
+	createGhost(){
+		let $g = this.$el.clone();
+		let {top,left} = this.$el.offset();
+		$g.css({
+			top: top + 'px',
+			left: left + 'px',
+			width: this.$el.width(),
+			height: this.$el.height(),
 		});
+		return $g;
 	},
-	onDragEnd () {
+	_createGhost(){
+		var $g = this.createGhost();
+		if($g.css('position') != 'absolute')
+			$g.css('position','absolute');
 
-		if (this.$ghost)
-			this.$ghost.remove();
+		let addClasses = this.getOption('ghostCssClass');
+		if(addClasses)
+			$g.addClass(addClasses);
 
-		if (this.getOption('elementClass'))
-			this.$el.removeClass(this.getOption('elementClass'));
+		$g.appendTo($('body'));
+		this._setGhost($g);
 	},
-
-	getDragTrigger() {
-		if (this.getOption('dragTrigger'))
-			return this.getOption('dragTrigger');
-
-		return this.$el;
+	_setGhost($g){
+		this.$ghost = $g;
 	},
-	_setup() {
-		dragAndDrop.setupDraggable(this.getDragTrigger(), this);
+	getGhost(){
+		return this.$ghost;	
 	},
+	setGhostPosition(top, left){
+		
+		let $ghost = this.getGhost();
+		if (!$ghost) return;
+
+		$ghost.css({
+			top: top + 'px',
+			left: left + 'px',
+		});		
+
+	}
+
 });
+
 
 export default DraggableBehavior;

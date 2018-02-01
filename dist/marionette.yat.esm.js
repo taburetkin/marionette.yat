@@ -11,13 +11,14 @@
 
 
 import Bb from 'backbone';
-import Mn from 'backbone.marionette';
+import Mn$1 from 'backbone.marionette';
 import _ from 'underscore';
+import $$1 from 'jquery';
 
 var version = "0.0.21";
 
 var getCompareABModel = function getCompareABModel(arg) {
-	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
+	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn$1.View) return arg.model;else return;
 };
 var getCompareABView = function getCompareABView(arg) {
 	if (arg instanceof Bb.View) return arg;else return;
@@ -302,13 +303,17 @@ function unFlattenObject(obj) {
 	return res;
 }
 
-var fns = {
-	getLabel: getLabel, getName: getName, getValue: getValue, wrap: cid, unwrap: unwrap, setByPath: setByPath, getByPath: getByPath, flattenObject: flattenObject, unFlattenObject: unFlattenObject
+var isView = (function (arg) {
+  return arg instanceof Bb.View;
+});
+
+var __ = {
+	getLabel: getLabel, getName: getName, getValue: getValue, wrap: cid, unwrap: unwrap, setByPath: setByPath, getByPath: getByPath, flattenObject: flattenObject, unFlattenObject: unFlattenObject, isView: isView
 };
 
-var Functions = { view: view, common: fns };
+var Functions = { view: view, common: __ };
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _.isFunction(arg);
@@ -318,7 +323,7 @@ function isKnownCtor(arg) {
 	return isFn && result;
 }
 
-var YatError = Mn.Error.extend({}, {
+var YatError = Mn$1.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -367,14 +372,14 @@ function mix(BaseClass) {
 		Mixed = BaseClass;
 	} else if (_.isObject(BaseClass) && BaseClass !== null) {
 		var tmp = function tmp() {};
-		tmp.extend = Mn.extend;
+		tmp.extend = Mn$1.extend;
 		Mixed = tmp.extend(BaseClass);
 	} else {
 		throw new Error('argument should be an object or class definition');
 	}
 	if (!Mixed.extend) {
-		Mixed = Mn.extend.call(BaseClass, {});
-		Mixed.extend = Mn.extend;
+		Mixed = Mn$1.extend.call(BaseClass, {});
+		Mixed.extend = Mn$1.extend;
 	}
 	var fake = {
 		with: function _with() {
@@ -404,7 +409,7 @@ function GetNameLabel (Base) {
 			var options = _.extend({}, opts);
 			options.exclude = 'getName';
 			options.args = [options];
-			return fns.getName(this, options);
+			return __.getName(this, options);
 		},
 		getLabel: function getLabel() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -412,7 +417,7 @@ function GetNameLabel (Base) {
 			var options = _.extend({}, opts);
 			options.exclude = 'getLabel';
 			options.args = [options];
-			return fns.getLabel(this, options);
+			return __.getLabel(this, options);
 		},
 		getValue: function getValue() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -420,7 +425,7 @@ function GetNameLabel (Base) {
 			var options = _.extend({}, opts);
 			options.exclude = 'getValue';
 			options.args = [options];
-			return fns.getValue(this, options);
+			return __.getValue(this, options);
 		}
 	});
 }
@@ -495,7 +500,7 @@ var RadioMixin = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn.Object.prototype._initRadio.call(this);
+			Mn$1.Object.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -626,6 +631,19 @@ var Startable = (function (Base) {
 			Middle.apply(this, args);
 			this.initializeStartable();
 		},
+
+
+		freezeWhileStarting: false,
+		freezeUI: function freezeUI() {},
+		unFreezeUI: function unFreezeUI() {},
+		isStartNotAllowed: function isStartNotAllowed() {},
+		isStopNotAllowed: function isStopNotAllowed() {},
+		addStartPromise: function addStartPromise(promise) {
+			addPropertyPromise(this, '_startRuntimePromises', promise);
+		},
+		addStopPromise: function addStopPromise(promise) {
+			addPropertyPromise(this, '_stopPromises', promise);
+		},
 		initializeStartable: function initializeStartable() {
 
 			if (!(this.constructor.Startable && this.constructor.Stateable)) return;
@@ -713,14 +731,6 @@ var Startable = (function (Base) {
 		},
 		triggerStop: function triggerStop(options) {
 			this.triggerMethod('stop', options);
-		},
-		isStartNotAllowed: function isStartNotAllowed() {},
-		isStopNotAllowed: function isStopNotAllowed() {},
-		addStartPromise: function addStartPromise(promise) {
-			addPropertyPromise(this, '_startRuntimePromises', promise);
-		},
-		addStopPromise: function addStopPromise(promise) {
-			addPropertyPromise(this, '_stopPromises', promise);
 		},
 
 
@@ -1121,160 +1131,7 @@ var Mixins = {
 	GlobalTemplateContext: GlobalTemplateContext
 };
 
-var isEqualOrContains = function isEqualOrContains(node1, node2) {
-	if (node1.jquery) node1 = node1.get(0);
-	if (node2.jquery) node2 = node2.get(0);
-
-	return node1 === node2 || $.contains(node1, node2);
-};
-
-var DragAndDropSingleton = Mn.Object.extend({
-	name: 'draggable manager',
-	buildDraggableContext: function buildDraggableContext($el, beh, event) {
-		var context = {
-			id: _.uniqueId('draggable'),
-			state: 'pending',
-			$trigger: $el,
-			scope: beh.getOption("scope") || "default",
-			behavior: beh,
-			view: beh.view,
-			model: beh.view.model,
-			mouse: {
-				startAt: { x: event.pageX, y: event.pageY }
-			},
-			_documentHandlers: {},
-			_triggerHandlers: {},
-			_elementHandlers: {}
-		};
-
-		context.mouse.getOffset = function (ev) {
-			var res = {
-				x: ev.pageX - this.startAt.x,
-				y: ev.pageY - this.startAt.y
-			};
-			res.absX = Math.abs(res.x);
-			res.absY = Math.abs(res.y);
-			res.distance = Math.round(Math.sqrt(res.absX * res.absX + res.absY * res.absY));
-			return res;
-		};
-
-		context._documentHandlers.mousemove = _.bind(this.__documentMouseMoveHandler, this, $el, context);
-		context._documentHandlers.mouseup = _.bind(this.__documentMouseUpHandler, this, $el, context);
-		context._documentHandlers.mouseleave = _.bind(this.__documentMouseLeaveHandler, this, $el, context);
-		context._documentHandlers.mouseenter = _.bind(this.__documentMouseEnterHandler, this, $el, context);
-
-		context._elementHandlers.dragover = _.bind(this.__dragOverHandler, this, $el, context);
-
-		return context;
-	},
-	setupDraggable: function setupDraggable($el, behavior) {
-		if (!$el.jquery && !(typeof $el === 'string')) throw new Error('first argument should be jquery element or string selector');
-		if (!(behavior instanceof Mn.Behavior)) throw new Error('second argument should be marionette behavior instance');
-
-		var $handler = $el.jquery ? $el : behavior.$el;
-		var selector = typeof $el === 'string' ? $el : null;
-
-		$handler.on('mousedown', selector, null, _.bind(this.__triggerMouseDownHandler, this, $handler, behavior));
-	},
-	__triggerMouseDownHandler: function __triggerMouseDownHandler($el, behavior, ev) {
-
-		ev.preventDefault();
-		ev.stopPropagation();
-
-		var context = this.buildDraggableContext($el, behavior, ev);
-
-		$(document).on('mousemove', null, null, context._documentHandlers.mousemove);
-		$(document).one('mouseup', null, null, context._documentHandlers.mouseup);
-
-		return false;
-	},
-	__documentMouseUpHandler: function __documentMouseUpHandler($el, context, ev) {
-		if (context.state === 'pending') {
-			//dragging do not occurs
-		} else if (context.state === "dragging") {
-			context.state = 'dropped';
-			context.view.triggerMethod('drag:end', context);
-			$(ev.target).trigger('drag:drop', context);
-		}
-
-		this._clearAllHandlers($el, context);
-	},
-
-	__documentMouseMoveHandler: function __documentMouseMoveHandler($el, context, ev) {
-		if (context.state === 'pending') {
-			var startDistance = context.behavior.getOption('startDragOnDistance') || 1;
-			var distance = context.mouse.getOffset(ev).distance;
-			if (distance < startDistance) return;
-
-			this._initializeDragging($el, context, ev);
-		}
-
-		if (context.state === 'dragging') context.view.triggerMethod('drag', ev, context);
-	},
-
-	_initializeDragging: function _initializeDragging($el, context, ev) {
-		if (context.state === 'dragging') return;
-
-		context.state = 'dragging';
-		context.view.triggerMethod('drag:start', ev, context);
-
-		$(document).on('mouseleave', '*', null, context._documentHandlers.mouseleave);
-		$(document).on('mouseenter', '*', null, context._documentHandlers.mouseenter);
-	},
-
-	__documentMouseLeaveHandler: function __documentMouseLeaveHandler($el, context, ev) {
-		if (isEqualOrContains(context.behavior.$el, ev.target)) return;
-
-		$(ev.target).trigger('drag:leave', context);
-	},
-	__documentMouseEnterHandler: function __documentMouseEnterHandler($el, context, ev) {
-		if (context.$entered) {
-			context.$entered.off('mousemove', null, context._elementHandlers.dragover);
-		}
-
-		if (isEqualOrContains(context.behavior.$el, ev.target)) return;
-
-		var event = this._createCustomDomEvent("drag:enter", ev);
-		context.$entered = $(ev.target);
-		context.$entered.trigger(event, context);
-
-		context.$entered.on('mousemove', null, null, context._elementHandlers.dragover);
-	},
-
-	__dragOverHandler: function __dragOverHandler($el, context, ev) {
-		var event = this._createCustomDomEvent("drag:over", ev);
-		$(ev.target).trigger(event, context);
-	},
-
-	_createCustomDomEvent: function _createCustomDomEvent(name, event, merge) {
-		if (!merge) merge = ["pageX", "pageY", "clientX", "clientY", "offsetX", "offsetY"];
-
-		var customEvent = jQuery.Event(name);
-		_(merge).each(function (prop) {
-			customEvent[prop] = event[prop];
-		});
-
-		return customEvent;
-	},
-
-	_clearAllHandlers: function _clearAllHandlers($el, context) {
-		var $doc = $(document);
-		_(context._documentHandlers).each(function (handler, name) {
-			$doc.off(name, null, handler);
-		});
-		_(context._triggerHandlers).each(function (handler, name) {
-			$el.off(name, null, handler);
-		});
-
-		if (context.$entered) {
-			context.$entered.off('mousemove', null, context._elementHandlers.dragover);
-		}
-	}
-});
-
-var dragAndDrop = new DragAndDropSingleton();
-
-var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
+var BaseBehavior = mix(Mn$1.Behavior).with(GetOptionProperty);
 var Behavior = BaseBehavior.extend({
 
 	listenViewInitialize: true,
@@ -1291,227 +1148,375 @@ var Behavior = BaseBehavior.extend({
 		return this.view.model;
 	},
 	cidle: function cidle(name) {
-		return fns.wrap(this.view.cid, name);
+		return __.wrap(this.view.cid, name);
 	},
 	unCidle: function unCidle(name) {
-		return fns.unwrap(name, this.view.cid);
+		return __.unwrap(name, this.view.cid);
 	}
 });
 
-var DraggableBehavior = Behavior.extend({
+var BaseDraggable = Behavior.extend({
 
-	startDragOnDistance: 50,
+	triggerEl: undefined, //drag initialization element, if not set equal to view.$el
+	moveBeforeStart: 10,
+	scope: 'drag',
 
-	events: {
-		'dragged:over': '_dragOver'
+	getDragEventsContext: function getDragEventsContext() {
+		return this.$doc;
 	},
-	_dragOver: function _dragOver(event, part, context) {
-		event.stopPropagation();
-		event.preventDefault();
+	getDragEventsElementSelector: function getDragEventsElementSelector() {
+		return '*';
+	},
+	getTriggerEl: function getTriggerEl() {
+		if (this._$el) return this._$el;
 
-		if (this.wrongScope(context)) return;
-		this.view.triggerMethod('dragged:over', part, context, this);
-		this.view.triggerMethod('dragged:over:' + part, context, this);
+		var el = this.getOption('triggerEl');
+		if (el == null && this.view.$el) this._$el = this.view.$el;else if (el && el.jquery) this._$el = el;else if (el instanceof HTMLElement) this._$el = $(el);else if (typeof el === 'string' && el.length) this._$el = this.view.$(el);else throw new Error('trigger element should be a DOM or jQuery object or string selector.', el);
+
+		return this._$el;
+	},
+	isSameScope: function isSameScope(dragging) {
+		return dragging.scope === this.scope;
+	},
+	shouldHandleDomEvents: function shouldHandleDomEvents(dragging) {
+		return this.isSameScope(dragging) && this !== dragging;
+	},
+
+
+	constructor: function constructor() {
+
+		this._clearDragData();
+
+		this.$doc = $(document);
+
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
+
+		Behavior.apply(this, args);
+
+		this._defineDocumentBindings();
+	},
+	_clearDragData: function _clearDragData() {
+		this._dragData = {};
+	},
+	_defineDocumentBindings: function _defineDocumentBindings() {
+		this.__b = {};
+		this.__b.setupDragDetection = _.bind(this._setupDragDetection, this);
+		this.__b.handleMouseUp = _.bind(this._handleMouseUp, this);
+		this.__b.handleMoveAfterMouseDown = _.bind(this._handleMoveAfterMouseDown, this);
+		this.__b.handleDragMove = _.bind(this._handleDragMove, this);
+		this.__b.handleElementEnter = _.bind(this._handleElementEnter, this);
+		this.__b.handleElementLeave = _.bind(this._handleElementLeave, this);
+		this.__b.handleElementOver = _.bind(this._handleElementOver, this);
 	},
 	onInitialize: function onInitialize() {
-		this._setup();
+		this._initializeDragListener();
 	},
-	getScope: function getScope() {
-		return this.getOption("scope") || "default";
+	_initializeDragListener: function _initializeDragListener() {
+		var $el = this.getTriggerEl();
+		$el.one('mousedown', this.__b.setupDragDetection);
 	},
-	wrongScope: function wrongScope(context) {
-		return this.getScope() !== context.scope;
-	},
-	onDragStart: function onDragStart(ev, context) {
+	_setupDragDetection: function _setupDragDetection(e) {
+		e.stopPropagation();
+		this.$doc.one('mouseup', this.__b.handleMouseUp);
 
-		var ghost = this.getOption('ghost') || "clone";
+		this._dragData.startX = e.pageX;
+		this._dragData.startY = e.pageY;
+		this.$doc.on('mousemove', this.__b.handleMoveAfterMouseDown);
+	},
+	_handleMouseUp: function _handleMouseUp(e) {
+		if (this._dragData.dragging) this._handleDragEnd(e);else this._handleEndWithoutDrag(e);
 
-		if (ghost == 'clone') {
-			var $g = this.$ghost = this.$el.clone();
-			$g.css({
-				top: ev.pageY + 'px',
-				left: ev.pageX + 'px',
-				width: this.$el.width()
+		this._initializeDragListener();
+	},
+	_handleEndWithoutDrag: function _handleEndWithoutDrag(e) {
+		this.$doc.off('mousemove', this.__b.handleMoveAfterMouseDown);
+	},
+	_handleDragEnd: function _handleDragEnd(e) {
+		this._dragData.dragging = false;
+
+		this.$doc.off('mousemove', this.__b.handleDragMove);
+
+		var $context = this.getDragEventsContext();
+		$context.off('mouseenter', this.__b.handleElementEnter);
+		$context.off('mousemove', this.__b.handleElementOver);
+
+		if (this._dragData.drop && this._dragData.drop.context) {
+			this._dragData.drop.context.catchDraggable(this, this._dragData.drop);
+			this.triggerMethod('drag:drop', this._dragData.drop);
+		}
+
+		this.triggerMethod('drag:end');
+	},
+	_handleMoveAfterMouseDown: function _handleMoveAfterMouseDown(e) {
+		e.stopPropagation();
+
+		var distance = this._getStartPositionPixelOffset(e);
+		var startIfMoreThan = this.getOption('moveBeforeStart');
+		if (distance >= startIfMoreThan) this._startDragSession();
+	},
+	_getStartPositionPixelOffset: function _getStartPositionPixelOffset(e) {
+		var x = Math.abs(e.pageX - this._dragData.startX);
+		var y = Math.abs(e.pageY - this._dragData.startY);
+		return x > y ? x : y;
+	},
+	_startDragSession: function _startDragSession() {
+		this._dragData.dragging = true;
+		this.$doc.off('mousemove', this.__b.handleMoveAfterMouseDown);
+
+		this.$doc.on('mousemove', this.__b.handleDragMove);
+
+		var $context = this.getDragEventsContext();
+		var selector = this.getDragEventsElementSelector();
+
+		$context.on('mouseenter', selector, this.__b.handleElementEnter);
+
+		$context.on('mousemove', selector, this.__b.handleElementOver);
+
+		this.view.triggerMethod('drag:start');
+	},
+	_handleDragMove: function _handleDragMove(ev) {
+		ev.stopPropagation();
+
+		this.triggerMethod('drag', ev);
+	},
+	_handleElementEnter: function _handleElementEnter(e) {
+		var _this = this;
+
+		var $over = $(e.target);
+
+		if (this._dragData.over != $over) {
+			this._dragData.over = $over;
+			$over.trigger('drag:enter', this);
+			$over.one('mouseleave', function () {
+				return _this.trigger('drag:leave', _this);
 			});
-
-			if (this.getOption('elementClass')) this.$el.addClass(this.getOption('elementClass'));
-			if (this.getOption('ghostClass')) $g.addClass(this.getOption('ghostClass'));
-
-			var $dragContext = $('body');
-			// var ghostContext = this.getOption('ghostContext');
-			// var $dragContext = ghostContext == null ? $('body')
-			// 	: ghostContext == "parent" ? this.$el.parent()
-			// 		: $(ghostContext);
-			$g.appendTo($dragContext);
-			context.draggingContext = $dragContext;
 		}
 	},
-	onDrag: function onDrag(ev) {
-		if (!this.$ghost) return;
+	_handleElementLeave: function _handleElementLeave(e) {
+		var $over = $(e.target);
+		$over.trigger('drag:leave', this);
+	},
+	_handleElementOver: function _handleElementOver(e) {
+		var $over = $(e.target);
+		var event = this._createCustomDomEvent('drag:over', e);
+		$over.trigger(event, this);
+	},
 
-		this.$ghost.css({
-			top: ev.pageY + 'px',
-			left: ev.pageX + 'px'
+	_createCustomDomEvent: function _createCustomDomEvent(name, event, merge) {
+		if (!merge) merge = ["pageX", "pageY", "clientX", "clientY", "offsetX", "offsetY", "target"];
+
+		var customEvent = jQuery.Event(name);
+		_(merge).each(function (prop) {
+			return customEvent[prop] = event[prop];
 		});
-	},
-	onDragEnd: function onDragEnd() {
 
-		if (this.$ghost) this.$ghost.remove();
-
-		if (this.getOption('elementClass')) this.$el.removeClass(this.getOption('elementClass'));
-	},
-	getDragTrigger: function getDragTrigger() {
-		if (this.getOption('dragTrigger')) return this.getOption('dragTrigger');
-
-		return this.$el;
-	},
-	_setup: function _setup() {
-		dragAndDrop.setupDraggable(this.getDragTrigger(), this);
+		return customEvent;
 	}
 });
 
-var SortByDrag = Behavior.extend({
+var DraggableBehavior = BaseDraggable.extend({
+
+	useGhost: true,
+	viewCssClass: 'dragging',
+	ghostCssClass: 'ghost',
+
+	constructor: function constructor() {
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
+
+		BaseDraggable.apply(this, args);
+
+		this.on('drag', this._onDrag);
+		this.on('drag:start', this._onDragStart);
+		this.on('drag:end', this._onDragEnd);
+	},
+
 	events: {
-		'drag:drop': '_dragDrop',
-		'drag:over': '_dragOver'
-	},
-	_dragOver: function _dragOver(ev, context) {
-		if (this.wrongScope(context)) return;
-		ev.stopPropagation();
-		ev.preventDefault();
+		'drag:enter': function dragEnter(e, dragging) {
+			if (!this.shouldHandleDomEvents(dragging)) return;
+		},
+		'drag:over': function dragOver(e, dragging) {
+			if (!this.isSameScope(dragging)) return;
+			e.stopPropagation();
 
-		if (ev.target === this.$el.get(0)) {
-			this._insert(context);
-			return;
-		}
+			var newEvent = this._createCustomDomEvent('drag:over', e);
 
-		var oldpos = this.dragOverPosition || '';
-		var m = { y: ev.pageY, x: ev.pageX };
-		var $el = this.getChildEl(ev.target);
-		var position = "top:left";
-		if ($el.length) {
-			var i = this._get$elInfo($el);
-			var hor = m.x < i.center.x ? 'left' : 'right';
-			var ver = m.y < i.center.y ? 'top' : 'bottom';
-			position = ver + ":" + hor;
-		} else {
-			console.warn(ev.target);
-		}
-
-		var dragBy = this.getOption("dragBy") || "both";
-		if (oldpos != position) {
-			var apos = oldpos.split(':');
-
-			var eventContext = $el;
-			if (dragBy == "both") {
-				eventContext.trigger('dragged:over', [position, context]);
-			}
-			if (apos.indexOf(hor) === -1 && (dragBy === "horizontal" || dragBy === "both")) {
-				eventContext.trigger('dragged:over', [hor, context]);
-			}
-			if (apos.indexOf(ver) == -1 && (dragBy === "vertical" || dragBy === "both")) {
-				eventContext.trigger('dragged:over', [ver, context]);
-			}
-			this.dragOverPosition = position;
+			var parent = this.$el.parent();
+			if (parent) parent.trigger(newEvent, [dragging, this]);
 		}
 	},
-	_dragDrop: function _dragDrop(ev, context) {
-		if (this.wrongScope(context)) return;
-		ev.stopPropagation();
-		ev.preventDefault();
 
-		this._tryInsertBetween(context);
-		return false;
+	_onDragEnd: function _onDragEnd(ev) {
+
+		if (this.getOption('useGhost')) this._removeGhost();
+		if (this.getOption('viewCssClass')) this.view.$el.removeClass(this.getOption('viewCssClass'));
+
+		this._clearDragData();
 	},
-	_tryInsertBetween: function _tryInsertBetween(context) {
-
-		var model = context.model;
-		var view = context.view;
-
-		if (!this.view.collection) {
-			console.warn('collection not defined');
-			return;
-		}
-
-		view.$el.detach();
-		view.destroy();
-
-		this.removeModelFromCollection(model);
-		this.insertModelAt(model, context.insertAt);
+	_onDragStart: function _onDragStart(ev) {
+		if (this.getOption('useGhost')) this._createGhost();
+		if (this.getOption('viewCssClass')) this.view.$el.addClass(this.getOption('viewCssClass'));
 	},
-	removeModelFromCollection: function removeModelFromCollection(model) {
-		var col = model.collection;
-		if (!col) return;
-		col.remove(model);
-		delete model.collection;
-		col.each(function (m, i) {
-			m.set("order", i);
+	_onDrag: function _onDrag(ev) {
+		this.setGhostPosition(ev.pageY, ev.pageX);
+	},
+	_removeGhost: function _removeGhost() {
+		this.$ghost.remove();
+		delete this.$ghost;
+	},
+	createGhost: function createGhost() {
+		var $g = this.$el.clone();
+
+		var _$el$offset = this.$el.offset(),
+		    top = _$el$offset.top,
+		    left = _$el$offset.left;
+
+		$g.css({
+			top: top + 'px',
+			left: left + 'px',
+			width: this.$el.width(),
+			height: this.$el.height()
+		});
+		return $g;
+	},
+	_createGhost: function _createGhost() {
+		var $g = this.createGhost();
+		if ($g.css('position') != 'absolute') $g.css('position', 'absolute');
+
+		var addClasses = this.getOption('ghostCssClass');
+		if (addClasses) $g.addClass(addClasses);
+
+		$g.appendTo($('body'));
+		this._setGhost($g);
+	},
+	_setGhost: function _setGhost($g) {
+		this.$ghost = $g;
+	},
+	getGhost: function getGhost() {
+		return this.$ghost;
+	},
+	setGhostPosition: function setGhostPosition(top, left) {
+
+		var $ghost = this.getGhost();
+		if (!$ghost) return;
+
+		$ghost.css({
+			top: top + 'px',
+			left: left + 'px'
+		});
+	}
+});
+
+var DroppableBehavior = Behavior.extend({
+	scope: 'drag',
+	events: {
+		'drag:over': '_onDomDragOver'
+	},
+	isSameScope: function isSameScope(dragging) {
+		return dragging.scope === this.scope;
+	},
+	getEventXY: function getEventXY(e) {
+		return { x: e.pageX, y: e.pageY };
+	},
+	getChildren: function getChildren() {
+		return _(this.view.children._views).filter(function (v) {
+			return v.model && v.isRendered() && v.isAttached();
 		});
 	},
-	insertModelAt: function insertModelAt(model, at) {
-		var col = this.view.collection;
-		if (!col) return;
+	catchDraggable: function catchDraggable(draggable, dropContext) {
+		this._onDrop(draggable, dropContext);
+	},
 
-		if (at <= 0) at = 0;
 
-		if (at >= col.length) {
-			model.set('order', col.length);
-			model.collection = col;
-			col.push(model);
-		} else {
-			model.set('order', at);
-
-			if (at > 0) col.add(model, { at: at });else col.unshift(model);
-
-			col.each(function (exist, ind) {
-				exist.set('order', ind);
-			});
+	constructor: function constructor() {
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
 		}
 
-		this.view.sort();
+		Behavior.apply(this, args);
+		this.listenTo(this.view, 'render:children', this._onRenderChildren);
 	},
-	getScope: function getScope() {
-		return this.getOption("scope") || "default";
+	_onRenderChildren: function _onRenderChildren() {
+		this.children = this.getChildren();
+		this.hasChildren = this.children.length > 0;
 	},
-	wrongScope: function wrongScope(context) {
-		return this.getScope() !== context.scope;
+	_onDomDragOver: function _onDomDragOver(e, dragging, child) {
+		if (!this.isSameScope(dragging)) return;
+		e.stopPropagation();
+
+		if (dragging === child || this.hasChildren && !child) return;
+
+		dragging._dragData.drop || (dragging._dragData.drop = {});
+		var storedDrop = dragging._dragData.drop;
+
+		var xy = this.getEventXY(e);
+
+		var drop = this._getDropContext(xy, child);
+		drop.context = this;
+
+		var mixedDrop = _.extend({}, storedDrop, drop);
+		var keys = _.keys(mixedDrop);
+		var hasChanges = _(keys).some(function (k) {
+			return storedDrop[k] !== drop[k];
+		});
+		if (hasChanges) {
+			dragging._dragData.drop = drop;
+			this._onDropContextChange(dragging, drop);
+		}
 	},
-	getChildEl: function getChildEl(el) {
-		var selector = this.getOption('childSelector');
-		return $(el).closest(selector);
+	_getDropContext: function _getDropContext(xy, child) {
+
+		var children = this.children || [];
+		if (!children.length) return { insert: 'before' };
+
+		var $el = child ? child.$el : this.$el;
+		var position = this._getPositionByEventXY(xy, $el);
+		return this._getDropContextByPosisiton(position, child);
 	},
-	_get$elInfo: function _get$elInfo($el, force) {
-		var i = this._$elInfo = {
-			size: { width: $el.width(), height: $el.height() },
-			offset: $el.offset()
+	_getPositionByEventXY: function _getPositionByEventXY(xy, $el) {
+
+		var elOffset = $el.offset();
+		var elDimension = { width: $el.outerWidth(), height: $el.outerHeight() };
+		var xHalf = elOffset.left + elDimension.width / 2;
+		var yHalf = elOffset.top + elDimension.height / 2;
+		var r = { x: undefined, y: undefined };
+
+		r.x = xy.x <= xHalf ? 'left' : 'right';
+		r.y = xy.y <= yHalf ? 'top' : 'bottom';
+
+		return r;
+	},
+	_getDropContextByPosisiton: function _getDropContextByPosisiton(position, child) {
+
+		var direction = this.getOption('direction') || 'vertical';
+
+		var insert = direction == 'horizontal' ? position.x == 'left' ? 'before' : 'after' : position.y == 'top' ? 'before' : 'after';
+
+		var childView = undefined;
+
+		if (child) {
+			childView = child.view;
+		} else {
+			childView = insert == 'before' ? this.children[0] : this.children.length && _(this.children).last();
+		}
+
+		var index = this.view.children._views.indexOf(childView);
+
+		return {
+			insert: insert,
+			childView: childView,
+			index: index,
+			noChild: !child
 		};
-		i.center = { x: i.size.width / 2 + i.offset.left, y: i.size.height / 2 + i.offset.top };
-		return i;
 	},
-	getOrder: function getOrder(beh) {
-		return beh.view.model.getOrder() || 0;
+	_onDropContextChange: function _onDropContextChange(dragging, context) {
+		this.triggerMethod('drop:context:change', dragging, context);
 	},
-	_updateInsert: function _updateInsert(context, order) {
-		context.insertAt = order;
-	},
-	onChildviewDraggedOverLeft: function onChildviewDraggedOverLeft(context, childBeh) {
-		this._insert(context, "insertBefore", childBeh.$el, this.getOrder(childBeh));
-	},
-	onChildviewDraggedOverTop: function onChildviewDraggedOverTop(context, childBeh) {
-		this._insert(context, "insertBefore", childBeh.$el, this.getOrder(childBeh));
-	},
-	onChildviewDraggedOverRight: function onChildviewDraggedOverRight(context, childBeh) {
-		this._insert(context, "insertAfter", childBeh.$el, this.getOrder(childBeh) + 1);
-	},
-	onChildviewDraggedOverBottom: function onChildviewDraggedOverBottom(context, childBeh) {
-		this._insert(context, "insertAfter", childBeh.$el, this.getOrder(childBeh) + 1);
-	},
-	_insert: function _insert(context, method, $el, order) {
-		order || (order = 0);
-
-		if (method) context.view.$el[method]($el);else context.view.$el.appendTo(this.$el);
-
-		this._updateInsert(context, order);
+	_onDrop: function _onDrop(draggable, dropContext) {
+		this.triggerMethod('drop', draggable, dropContext);
 	}
 });
 
@@ -1520,7 +1525,7 @@ var DynamicClass = Behavior.extend({
 		var viewCls = _.result(this.view, 'className') || '';
 		var addCls = _.result(this.view, 'dynamicClassName') || '';
 		this.$el.attr({
-			class: viewCls + ' ' + addCls
+			class: (viewCls + ' ' + addCls).trim()
 		});
 	},
 
@@ -1799,9 +1804,9 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 	}
 });
 
-var Behaviors = { Draggable: DraggableBehavior, SortByDrag: SortByDrag, DynamicClass: DynamicClass, FormToHash: FormToHash };
+var Behaviors = { Behavior: Behavior, Draggable: DraggableBehavior, Droppable: DroppableBehavior, DynamicClass: DynamicClass, FormToHash: FormToHash };
 
-var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
+var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
 
 var IDENTITY_CHANNEL = 'identity';
 
@@ -1844,9 +1849,431 @@ var Identity = Base.extend({
 });
 var identity = new Identity();
 
-var Singletons = { dragAndDrop: dragAndDrop, TemplateContext: GlobalTemplateContext$1, identity: identity };
+var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty).extend({
 
-var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
+	instantRender: false,
+	renderOnReady: false,
+	triggerReady: false,
+
+	manualAfterInitialize: true,
+
+	constructor: function constructor() {
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
+
+		Mn$1.View.apply(this, args);
+
+		var options = args[0];
+		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
+
+		if (this.manualAfterInitialize === true) this._afterInitialize();
+	},
+	_afterInitialize: function _afterInitialize() {
+
+		if (this.instantRender === true) this.render();
+
+		if (this.renderOnReady === true) this.once('ready', this.render);
+
+		if (this.renderOnReady === true || this.triggerReady === true) this.trigger('ready', this);
+	}
+});
+
+var YatConfig = YatObject.extend({
+	initialize: function initialize(options) {
+		this.mergeOptions(options, ['name', 'channelName', 'noRadio']);
+		if (this.noRadio !== true && this.channelName == null) this.channelName = name;
+	},
+	getStore: function getStore() {
+		this.store || (this.store = {});
+		return this.store;
+	},
+
+	radioRequest: {
+		get: function get() {
+			this.get.apply(this, arguments);
+		},
+		set: function set(path, value) {
+			this.set(path, value);
+		}
+	},
+	get: function get(path) {
+		var store = this.getStore();
+		var value = getByPath(store, path);
+		if (_.isFunction(value)) {
+			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+				args[_key - 1] = arguments[_key];
+			}
+
+			value = value.apply(this, args);
+		}
+
+		return value;
+	},
+	set: function set(path, value) {
+		var store = this.getStore();
+		var result = setByPath(store, path, value);
+		this.triggerSet(path, value);
+	},
+	triggerSet: function triggerSet(path, value) {
+		if (!path) return;
+		var arr = path.split('/');
+		var radio = this.getChannel();
+		do {
+			var event = arr.join(':');
+			this.triggerMethod(event, value);
+			radio && radio.trigger(event, value);
+			arr.pop();
+		} while (arr.length > 0);
+	}
+});
+
+function Config (name) {
+	var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+	options.name = name;
+	return new YatConfig(options);
+}
+
+var config$1 = new Config('yat:modals:singleton', { noRadio: true });
+
+var modalsShowFull = {
+	bg: true,
+	close: true
+};
+
+var modalsShowSimple = {
+	bg: false,
+	close: false
+};
+
+var modalOptionsDefault = {
+	closeOnClickOutside: true,
+	closeOnPromise: true,
+	preventClose: false,
+	asPromise: false
+};
+
+var modalsCssDefaults = {
+	wrapper: 'yat-modal-wrapper',
+	bg: 'yat-modal-bg',
+	contentWrapper: 'yat-modal-content-wrapper',
+	close: 'yat-modal-close',
+	header: 'yat-modal-header',
+	content: 'yat-modal-content',
+	actions: 'yat-modal-actions',
+	resolve: 'yat-modal-resolve',
+	reject: 'yat-modal-reject'
+};
+
+var modalsLabelsDefaults = {
+	close: '&times;',
+	resolve: 'ok',
+	reject: 'cancel'
+};
+
+var modalsTypes = {
+	full: {
+		css: modalsCssDefaults,
+		show: modalsShowFull,
+		labels: modalsLabelsDefaults,
+		options: modalOptionsDefault
+	},
+	simple: {
+		css: modalsCssDefaults,
+		show: modalsShowSimple,
+		labels: modalsLabelsDefaults,
+		options: modalOptionsDefault
+	},
+	confirm: {
+		css: modalsCssDefaults,
+		show: modalsShowFull,
+		labels: modalsLabelsDefaults,
+		options: {
+			closeOnClickOutside: true,
+			closeOnPromise: true,
+			preventClose: false,
+			asPromise: true
+		}
+	}
+};
+
+config$1.set('types.full', modalsTypes.full);
+config$1.set('types.simple', modalsTypes.simple);
+config$1.set('types.confirm', modalsTypes.confirm);
+
+config$1.set('defaultShow', modalsShowFull);
+config$1.set('defaultCss', modalsCssDefaults);
+config$1.set('defaultLabels', modalsLabelsDefaults);
+
+var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
+
+var ModalView = mix(YatView).with(GetOptionProperty).extend({
+
+	renderOnReady: true,
+	template: template,
+
+	attributes: function attributes() {
+		return { 'data-role': 'modal-wrapper' };
+	},
+	initialize: function initialize(options) {
+		var _this2 = this;
+
+		this.mergeOptions(options, ['content', 'header', 'text']);
+
+		var _this = this;
+
+		if (this.getOption('asPromise') === true) {
+			this.promise = new Promise(function (resolve, reject) {
+				_this.once('resolve', function (arg) {
+					return resolve(arg);
+				});
+				_this.once('reject', function (arg) {
+					return reject(arg);
+				});
+			});
+		}
+
+		this.once('resolve reject', function (arg, destroying) {
+			_this2.preventClose = false;
+
+			if (_this2.getConfigValue('options', 'closeOnPromise') && !destroying) {
+				console.log('YAY');
+				_this2.destroy();
+			}
+		});
+	},
+	canBeClosed: function canBeClosed() {
+		return this.getProperty('preventClose') !== true;
+	},
+	destroy: function destroy() {
+
+		if (!this.canBeClosed()) return;
+
+		return Mn.View.prototype.destroy.apply(this, arguments);
+	},
+
+
+	ui: {
+		'bg': '[data-role="modal-bg"]',
+		'contentWrapper': '[data-role="modal-content-wrapper"]',
+		'text': '[data-role="modal-content"]',
+		'header': '[data-role="modal-header"]',
+		'close': '[data-role="modal-close"]',
+		'resolve': '[data-role="modal-resolve"]',
+		'reject': '[data-role="modal-reject"]'
+	},
+	triggers: {
+		'click @ui.close': { event: 'click:close', stopPropagation: true },
+		'click @ui.reject': { event: 'click:reject', stopPropagation: true },
+		'click @ui.resolve': { event: 'click:resolve', stopPropagation: true },
+		'click @ui.text': { event: 'click:content', stopPropagation: true },
+		'click @ui.contentWrapper': { event: 'click:content:wrapper', stopPropagation: true },
+		'click @ui.bg': { event: 'click:bg', stopPropagation: true },
+		'click': { event: 'click:wrapper', stopPropagation: true }
+	},
+	onBeforeDestroy: function onBeforeDestroy() {
+		this.trigger('reject', this.getProperty('reject'), true);
+	},
+	onClickClose: function onClickClose() {
+		this.destroy();
+	},
+	onClickResolve: function onClickResolve() {
+		this.trigger('resolve', this.getProperty('resolve'));
+	},
+	onClickReject: function onClickReject() {
+		this.trigger('reject', this.getProperty('reject'));
+	},
+	onClickBg: function onClickBg() {
+		this.clickedOutsideOfModal();
+	},
+	onClickWrapper: function onClickWrapper() {
+		this.clickedOutsideOfModal();
+	},
+	clickedOutsideOfModal: function clickedOutsideOfModal() {
+		if (this.getConfigValue('options', 'closeOnClickOutside') === true) this.destroy();
+	},
+	onBeforeRender: function onBeforeRender() {
+		//apply wrapper class here;
+		var cfg = this.getConfig();
+		cfg.css.wrapper && this.$el.addClass(cfg.css.wrapper);
+
+		this.$el.appendTo($('body'));
+	},
+	onRender: function onRender() {
+		if (this.content instanceof Bb.View) {
+			this.showChildView('content', this.content);
+			this.content.inModal = this;
+		}
+	},
+	_getModalOptions: function _getModalOptions() {
+		var h = {};
+		if (this.getOption('closeOnClickOutside') != null) h.closeOnClickOutside = this.getOption('closeOnClickOutside');
+		if (this.getOption('closeOnPromise') != null) h.closeOnPromise = this.getOption('closeOnPromise');
+		if (this.getOption('preventClose') != null) h.preventClose = this.getOption('preventClose');
+		if (this.getOption('asPromise') != null) h.asPromise = this.getOption('asPromise');
+
+		return h;
+	},
+	getConfigValue: function getConfigValue(section, name) {
+		var cfg = this.getConfig() || {};
+		return (cfg[section] || {})[name];
+	},
+	getConfig: function getConfig(key) {
+		if (this.config) return this.config;
+
+		var typeName = this.getOption('type') || 'simple';
+		var type = _.extend({}, config$1.get('types.' + typeName) || {});
+
+		type.show = _.extend({}, config$1.get('dafaultShow'), type.show, this.getOption('show'));
+		type.labels = _.extend({}, config$1.get('defaultLabels'), type.labels, this.getOption('labels'));
+		type.css = _.extend({}, config$1.get('defaultCss'), type.css, this.getOption('css'));
+
+		type.options = _.extend({}, config$1.get('defaultOptions'), type.options, this._getModalOptions());
+
+		if (type.show.header == null && this.getOption('header')) type.show.header = true;
+
+		if (type.show.resolve == null && (this.getOption('resolve') || type.options.asPromise)) type.show.resolve = true;
+		if (type.show.reject == null && this.getOption('reject')) type.show.reject = true;
+
+		if (type.show.actions == null && (type.show.resolve || type.show.reject)) type.show.actions = true;
+
+		console.log(typeName, type);
+		console.log(config$1);
+
+		return this.config = type;
+	},
+	templateContext: function templateContext() {
+		var cfg = this.getConfig();
+		return {
+			css: function css(name) {
+				return cfg.css[name] ? ' class="' + cfg.css[name] + '"' : '';
+			},
+			label: function label(name) {
+				return cfg.labels[name] || '';
+			},
+
+			show: cfg.show,
+			text: this.getOption('text'),
+			header: this.getOption('header')
+		};
+	}
+});
+
+var ModalEngine = mix(YatObject).with(Stateable).extend({
+	constructor: function constructor() {
+		var _this2 = this;
+
+		this.modals = [];
+
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
+
+		YatObject.apply(this, args);
+		this.listenForEsc = _.bind(this._listenForEsc, this);
+		$$1(function () {
+			_this2.doc = $$1(document);
+			_this2.doc.on('keyup', _this2.listenForEsc);
+		});
+	},
+
+	channelName: 'modals',
+
+	show: function show() {
+		var options = this._normalizeArguments.apply(this, arguments);
+		return this._create(options);
+	},
+	remove: function remove(modal) {
+
+		if (!modal) modal = _.last(this.modals);
+
+		modal && modal.destroy();
+	},
+	_listenForEsc: function _listenForEsc() {
+
+		if (this.modals.length) this.remove();
+	},
+	_create: function _create(options) {
+		var modal = new ModalView(options);
+		var _this = this;
+		this.listenToOnce(modal, 'destroy', function () {
+			_this._remove(modal);
+		});
+		this.modals.push(modal);
+		return modal;
+	},
+	_remove: function _remove(modal) {
+
+		if (!modal) return;
+
+		var ind = this.modals.indexOf(modal);
+		if (ind > -1) this.modals.splice(ind, 1);
+
+		this.stopListening(modal);
+	},
+	_normalizeArguments: function _normalizeArguments() {
+
+		var options = {};
+		var len = arguments.length;
+		if (!len) return;
+
+		if (len === 1) {
+			if (__.isView(arguments.length <= 0 ? undefined : arguments[0])) options.content = arguments.length <= 0 ? undefined : arguments[0];else if (_.isString(arguments.length <= 0 ? undefined : arguments[0])) options.text = arguments.length <= 0 ? undefined : arguments[0];else if (_.isObject(arguments.length <= 0 ? undefined : arguments[0])) _.extend(options, arguments.length <= 0 ? undefined : arguments[0]);
+		} else if (len === 2) {
+			if (_.isString(arguments.length <= 0 ? undefined : arguments[0]) && _.isString(arguments.length <= 1 ? undefined : arguments[1])) {
+				options.header = arguments.length <= 0 ? undefined : arguments[0];
+				options.text = arguments.length <= 1 ? undefined : arguments[1];
+			} else if (_.isString(arguments.length <= 0 ? undefined : arguments[0]) && __.isView(arguments.length <= 1 ? undefined : arguments[1])) {
+				options.header = arguments.length <= 0 ? undefined : arguments[0];
+				options.content = arguments.length <= 1 ? undefined : arguments[1];
+			} else if (_.isString(arguments.length <= 1 ? undefined : arguments[1]) && __.isView(arguments.length <= 0 ? undefined : arguments[0])) {
+				options.header = arguments.length <= 1 ? undefined : arguments[1];
+				options.content = arguments.length <= 0 ? undefined : arguments[0];
+			} else if (_.isString(arguments.length <= 0 ? undefined : arguments[0]) && _.isObject(arguments.length <= 1 ? undefined : arguments[1])) {
+				_.extend(options, arguments.length <= 1 ? undefined : arguments[1]);
+				if (__.isView(options.content)) options.header = arguments.length <= 0 ? undefined : arguments[0];else options.text = arguments.length <= 0 ? undefined : arguments[0];
+			} else if (__.isView(arguments.length <= 0 ? undefined : arguments[0]) && _.isObject(arguments.length <= 1 ? undefined : arguments[1])) {
+				_.extend(options, arguments.length <= 1 ? undefined : arguments[1]);
+				options.content = arguments.length <= 0 ? undefined : arguments[0];
+			}
+		} else {
+			if (_.isObject(arguments.length <= 3 ? undefined : arguments[3])) _.extend(options, arguments.length <= 3 ? undefined : arguments[3]);
+			if (_.isObject(arguments.length <= 2 ? undefined : arguments[2])) _.extend(options, arguments.length <= 2 ? undefined : arguments[2]);else if (_.isString(arguments.length <= 2 ? undefined : arguments[2])) options.type = arguments.length <= 2 ? undefined : arguments[2];
+
+			var two = this._normalizeArguments(arguments.length <= 0 ? undefined : arguments[0], arguments.length <= 1 ? undefined : arguments[1]);
+			_.extend(options, two);
+		}
+
+		return options;
+	},
+	onBeforeDestroy: function onBeforeDestroy() {
+		if (this.doc) this.doc.off('keyup', this.listenForEsc);
+	}
+});
+
+var modalEngine = new ModalEngine();
+
+//console.log(modalEngine.modals);
+
+
+var modals = {
+	show: function show() {
+		return modalEngine.show.apply(modalEngine, arguments);
+	},
+	addTypeConfig: function addTypeConfig(name, cfg) {
+		if (!name || !_.isString(name)) return;
+		config.set('types.' + name, cfg);
+	},
+	getTypeConfig: function getTypeConfig(name) {
+		if (!name || !_.isString(name)) return;
+		return config.get('types.' + name);
+	}
+};
+
+var Singletons = { TemplateContext: GlobalTemplateContext$1, identity: identity, modals: modals };
+
+var Base$1 = mix(Mn$1.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -1913,7 +2340,7 @@ var App = Base$1.extend({
 	}
 });
 
-var Router = Mn.AppRouter.extend({}, {
+var Router = Mn$1.AppRouter.extend({}, {
 	create: function create(hash, context) {
 		var appRoutes = {};
 		var controller = {};
@@ -2345,9 +2772,141 @@ var YatPageManager = Base$3.extend({
 	}
 });
 
-var YatView = mix(Mn.View).with(GlobalTemplateContext);
+var YatCollectionView = mix(Mn$1.NextCollectionView).with(GlobalTemplateContext);
 
-var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
+var Collection = Bb.Collection.extend({});
+
+var CollectionGroups = YatObject.extend({
+
+	collection: undefined,
+	groupBy: undefined,
+
+	getGroups: function getGroups() {
+		return this.groups;
+	},
+	getGroup: function getGroup(name) {
+		var groups = this.getGroups();
+		return groups[name];
+	},
+	isGroupExists: function isGroupExists(name) {
+		return name in this.getGroups();
+	},
+	addGroup: function addGroup(name, models) {
+		if (this.isGroupExists(name)) return;
+		var groups = this.getGroups();
+		groups[name] = this._createGroup(name, models);
+		return groups[name];
+	},
+	removeGroup: function removeGroup(name) {
+		var group = this.getGroup(name);
+
+		if (!group) return;
+
+		if (_.isFunction(group.destroy)) group.destroy();else if (_.isFunction(group.stopListening)) group.stopListening();
+
+		delete this.groups[name];
+	},
+	group: function group() {
+		var result = {};
+		var colGroups = this.collection.groupBy(this.groupBy);
+		var optionGroups = this.getOption('groups');
+		_(optionGroups).each(function (name) {
+			if (name in colGroups) {
+				result[name] = colGroups[name];
+				delete colGroups[name];
+			} else result[name] = [];
+		});
+		_(colGroups).each(function (models, name) {
+			return result[name] = models;
+		});
+		return result;
+	},
+
+
+	constructor: function constructor(options) {
+		YatObject.apply(this, arguments);
+		this._initializeGrouppedCollection(options);
+	},
+	_initializeGrouppedCollection: function _initializeGrouppedCollection(options) {
+		if (this._initializedGC == true) return;
+
+		this.mergeOptions(options, ['collection', 'groupBy']);
+		this._ensureOptions();
+		this._initializeGroups();
+		this._initializeEventHandlers();
+
+		this._initializedGC == true;
+	},
+	_ensureOptions: function _ensureOptions() {
+		if (!this.collection) throw new Error('collection must be set');
+
+		if (!this.groupBy) throw new Error('groupBy must be set');
+
+		if (typeof this.groupBy === 'string') {
+			var propertyName = this.getOption('groupBy');
+			this.groupBy = function (model) {
+				return model.get(propertyName);
+			};
+		}
+	},
+	_initializeGroups: function _initializeGroups() {
+		var _this = this;
+
+		this.groups = {};
+		var groups = this.group();
+		_(groups).each(function (models, name) {
+			return _this.addGroup(name, models);
+		});
+	},
+	_createGroup: function _createGroup(name, models) {
+		var groupBy = this.groupBy;
+		var groupCol = new Collection(models);
+		groupCol.on('change', function (model) {
+			if (groupBy(model) !== name) groupCol.remove(model);
+		});
+		groupCol.name = name;
+		return groupCol;
+	},
+	_initializeEventHandlers: function _initializeEventHandlers() {
+		this.listenTo(this.collection, 'update', this._onCollectionUpdate);
+		this.listenTo(this.collection, 'change', this._onModelChange);
+	},
+	_onCollectionUpdate: function _onCollectionUpdate(col, opts) {
+		var _this2 = this;
+
+		var toAdd = _(opts.changes.added).groupBy(this.groupBy);
+		var toRemove = _(opts.changes.removed).groupBy(this.groupBy);
+
+		var groups = this.groups;
+		_(toAdd).each(function (models, groupName) {
+			if (groupName in groups) groups[groupName].add(models);else if (_this2.getOption('autoCreateNewGroups')) _this2.addGroup(groupName, models);
+		});
+
+		_(toRemove).each(function (models, groupName) {
+			if (groupName in groups) groups[groupName].remove(models);
+		});
+	},
+	_onModelChange: function _onModelChange(model) {
+		var groupName = this.groupBy(model);
+		if (this.groups[groupName]) this.groups[groupName].add(model);else {
+			console.warn('model is out of groupping', model, groupName);
+		}
+	},
+	destroy: function destroy() {
+
+		_(this.groups).each(function (group) {
+			group.stopListening();
+			if (_.isFunction(group.destroy)) group.destroy();
+		});
+		delete this.groups;
+
+		if (_.isFunction(YatObject.prototype.destroy)) YatObject.prototype.destroy.apply(this, arguments);
+
+		if (_.isFunction(this.collection.destroy)) this.collection.destroy();
+
+		delete this.collection;
+	}
+});
 
 var marionetteYat = {
 	VERSION: version,
@@ -2357,6 +2916,7 @@ var marionetteYat = {
 	Behaviors: Behaviors,
 	Singletons: Singletons,
 	TemplateContext: GlobalTemplateContext$1,
+	modals: modals,
 	identity: identity,
 	Object: YatObject,
 	Error: YatError,
@@ -2365,7 +2925,10 @@ var marionetteYat = {
 	Router: Router,
 	PageManager: YatPageManager,
 	View: YatView,
-	CollectionView: YatCollectionView
+	CollectionView: YatCollectionView,
+	Model: Model,
+	Collection: Collection,
+	CollectionGroups: CollectionGroups
 };
 
 export default marionetteYat;

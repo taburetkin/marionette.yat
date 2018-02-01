@@ -11,6 +11,8 @@
     "node": true
   },
   "globals": {
-	  "define":true
+	  "define":true,
+		"document": true,
+		"window": true
   }  
 }

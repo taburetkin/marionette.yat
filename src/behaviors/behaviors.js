@@ -1,5 +1,6 @@
+import Behavior from './behavior';
 import Draggable from './draggable';
-import SortByDrag from './sort-by-drag';
+import Droppable from './droppable';
 import DynamicClass from './dynamic-class';
 import FormToHash from './form-to-hash';
-export default { Draggable, SortByDrag, DynamicClass, FormToHash };
+export default { Behavior, Draggable, Droppable, DynamicClass, FormToHash };

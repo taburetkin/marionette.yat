@@ -1,6 +1,6 @@
 # singletons
+* [modals](/src/singletons/modals)
 
 ## content
-* drag-and-drop
 * identity
 * template-context
