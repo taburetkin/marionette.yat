@@ -17,7 +17,7 @@ const srcPath = 'src/';
 const distPath = './dist/**/*';
 
 const rollupGlobals = {
-	'jquery':'$',
+	'jquery':'jQuery',
 	'underscore': '_',
 	'backbone': 'Backbone',
 	'backbone.radio': 'Backbone.Radio',

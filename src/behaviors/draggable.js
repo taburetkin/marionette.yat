@@ -62,8 +62,8 @@ const DraggableBehavior = BaseDraggable.extend({
 		$g.css({
 			top: top + 'px',
 			left: left + 'px',
-			width: this.$el.width(),
-			height: this.$el.height(),
+			width: this.$el.outerWidth(),
+			height: this.$el.outerHeight(),
 		});
 		return $g;
 	},

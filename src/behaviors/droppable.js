@@ -6,6 +6,10 @@ const DroppableBehavior = Behavior.extend({
 	events:{
 		'drag:over':'_onDomDragOver'
 	},
+
+	//because of mn 3.5.1 bug of first render isAtached flag
+	_skipFirstAttach: true,
+
 	isSameScope(dragging){
 		return dragging.scope === this.scope;
 	},
@@ -22,12 +26,51 @@ const DroppableBehavior = Behavior.extend({
 	
 	constructor: function(...args){
 		Behavior.apply(this, args);
-		this.listenTo(this.view, 'render:children', this._onRenderChildren)
+		this._initReorderBehavior();
 	},
-	_onRenderChildren(){
-		this.children = this.getChildren();
+	_initReorderBehavior(){
+		this.listenToOnce(this.view, 'render', () => {
+			this.reOrder({ silent: true })
+			this.listenTo(this.view.collection, 'update', function (collection, options) {
+				let changes = (options || {}).changes || {};
+				this.reOrder();
+			});
+		});
+	},
+	reOrder(options = {}){
+		
+		this.view.sort();
+
+		var children = this.children = [];
+		var skipAttach = this._skipFirstAttach
+		_(this.view.children._views).each((view, index) => {
+			if (!view.model) return;
+			view.model.set('order', index);
+			if (view.isRendered() && (skipAttach || view.isAttached()))
+				children.push(view);
+		});
+
 		this.hasChildren = this.children.length > 0;
+
+		if (options.silent != true && this.view.collection)
+			this.view.collection.trigger('reordered');
+
+		this._skipFirstAttach = false;
+
 	},
+
+	// _triggerChildrenReady(){ this.triggerMethod('children:ready',this); },
+	// _onChildrenReady(){
+	// 	this._refreshChildren();
+	// },
+	// _refreshChildren(){
+		
+	// 	this.children = this.getChildren();
+	// 	this.hasChildren = this.children.length > 0;
+
+	// 	this.view.collection.trigger('reordered', this.view.collection.cid);
+	// },
+
 
 	_onDomDragOver(e, dragging, child){
 		if(!this.isSameScope(dragging)) return;

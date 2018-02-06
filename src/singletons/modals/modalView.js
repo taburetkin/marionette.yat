@@ -1,6 +1,7 @@
 import _ from 'underscore';
 import config from './config';
 import Bb from 'backbone';
+import Mn from 'backbone.marionette';
 import YatView from './../../YatView.js';
 import mix from './../../helpers/mix';
 import OptionProperty from './../../mixins/get-option-property';

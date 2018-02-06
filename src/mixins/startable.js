@@ -79,13 +79,14 @@ export default (Base) => {
 
 		start(...args){
 			let options = args[0];
+			/*
 			let canNotBeStarted = this._ensureStartableCanBeStarted();
 			let resultPromise = null;
 			let catchMethod = null;
 
 			if(canNotBeStarted){
 				catchMethod = () => this.triggerMethod('start:decline',canNotBeStarted);
-				resultPromise = Promise.reject(canNotBeStarted);				
+				//resultPromise = Promise.reject(canNotBeStarted);				
 			}
 
 			if(resultPromise == null){
@@ -103,24 +104,55 @@ export default (Base) => {
 
 				resultPromise = this._getStartPromise();
 			}
-				
+			*/	
 			
 			
-			return resultPromise.then(() => {
-				this.triggerStart(options)
-			}, (error) => {				
-				this._setLifeState(currentState);
-				if(catchMethod) catchMethod();
-				return Promise.reject(error);
-			});	
+			// return resultPromise.then(() => {
+			// 	this.triggerStart(options)
+			// }, (error) => {				
+			// 	this._setLifeState(currentState);
+			// 	if(catchMethod) catchMethod();
+			// 	return Promise.reject(error);
+			// });	
+			let _this = this;
+			let promise = new Promise(function(resolve, reject){
+				let canNotBeStarted = _this._ensureStartableCanBeStarted();
 
+				if(canNotBeStarted){
+					_this.triggerMethod('start:decline',canNotBeStarted);
+					reject(canNotBeStarted)
+					return;
+				}
+
+				let declineReason = _this.isStartNotAllowed(options);
+				if(declineReason) {
+					_this.triggerMethod('start:decline',declineReason);
+					reject(declineReason);
+					return;
+				}				
+
+				let currentState = _this._getLifeState();
+				let dependedOn = _this._getStartPromise();
+				_this.triggerMethod('before:start', ...args);
+				dependedOn.then(() => {
+					_this._tryMergeStartOptions(options);		
+					_this.once('start', (...args) => resolve(...args));
+					_this.triggerStart(options);
+				},(...args) => {
+					_this._setLifeState(currentState);
+					reject(...args);
+				});
+			});
+			return promise;
 		},
 
 		triggerStart(options) {
 			this.triggerMethod('start', options);
 		},
 
-		stop(options){
+		stop(...args){
+			let options = args[0];
+			/*
 			let canNotBeStopped = this._ensureStartableCanBeStopped();
 			if(canNotBeStopped){
 				this.triggerMethod('stop:decline',canNotBeStopped);
@@ -145,6 +177,38 @@ export default (Base) => {
 			}, () => {
 				this._setLifeState(currentState);
 			});	
+			*/
+
+			let _this = this;
+			let promise = new Promise(function(resolve, reject){
+				let canNotBeStopped = _this._ensureStartableCanBeStopped();
+
+				if(canNotBeStopped){
+					_this.triggerMethod('stop:decline',canNotBeStopped);
+					reject(canNotBeStopped)
+					return;
+				}
+
+				let declineReason = _this.isStopNotAllowed(options);
+				if(declineReason) {
+					_this.triggerMethod('stop:decline',declineReason);
+					reject(declineReason);
+					return;
+				}				
+
+				let currentState = _this._getLifeState();
+				let dependedOn = _this._getStopPromise();
+				_this.triggerMethod('before:stop', ...args);
+				dependedOn.then(() => {
+					_this._tryMergeStopOptions(options);		
+					_this.once('stop', (...args) => resolve(...args));
+					_this.triggerStop(options);
+				},(...args) => {
+					_this._setLifeState(currentState);
+					reject(...args);
+				});
+			});
+			return promise;
 
 		},
 

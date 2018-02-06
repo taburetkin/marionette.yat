@@ -81,9 +81,13 @@ var CollectionGroups = YatObject.extend({
 		var groups = this.group();
 		_(groups).each((models, name) => this.addGroup(name, models));
 	},
+	_getCollectionClass(){
+		return this.getOption('CollectionClass') || Collection;
+	},
 	_createGroup(name,models){
-		var groupBy = this.groupBy;
-		var groupCol = new Collection(models);
+		let groupBy = this.groupBy;
+		let Collection = this._getCollectionClass();
+		let groupCol = new Collection(models);
 		groupCol.on('change', (model) => {
 			if (groupBy(model) !== name)
 				groupCol.remove(model);
@@ -94,11 +98,12 @@ var CollectionGroups = YatObject.extend({
 
 	_initializeEventHandlers() {
 		this.listenTo(this.collection, 'update', this._onCollectionUpdate);
-		this.listenTo(this.collection, 'change', this._onModelChange);
 	},
 	_onCollectionUpdate(col, opts) {
+		
+		var data = (opts.changes.added || []).concat(opts.changes.merged || []);
 
-		var toAdd = _(opts.changes.added).groupBy(this.groupBy);
+		var toAdd = _(data).groupBy(this.groupBy);
 		var toRemove = _(opts.changes.removed).groupBy(this.groupBy);
 
 		var groups = this.groups;

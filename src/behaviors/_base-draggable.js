@@ -72,7 +72,13 @@ const BaseDraggable = Behavior.extend({
 		$el.one('mousedown', this.__b.setupDragDetection);
 	},
 	_setupDragDetection(e){
+		if(this.view.dragDisabled === true){ 
+			this._initializeDragListener();
+			return;
+		}
+
 		e.stopPropagation();
+
 		this.$doc.one('mouseup', this.__b.handleMouseUp);
 
 		this._dragData.startX = e.pageX;
