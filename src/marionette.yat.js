@@ -7,6 +7,7 @@ import Singletons from './singletons/singletons';
 import TemplateContext from './singletons/template-context';
 import modals from './singletons/modals/modals';
 import identity from './singletons/identity';
+import yatConfig from './YatConfig';
 import YatObject from './YatObject';
 import YatError from './YatError';
 import YatApp from './YatApp';
@@ -21,6 +22,7 @@ import YatCollection from './models/collection';
 
 import CollectionGroups from './YatCollectionGroups';
 
+
 const marionetteYat = {
 	VERSION: version,
 	Functions: Functions,
@@ -31,6 +33,7 @@ const marionetteYat = {
 	TemplateContext: TemplateContext,
 	modals: modals,
 	identity: identity,
+	createConfig: yatConfig,
 	Object: YatObject,
 	Error: YatError,
 	App: YatApp,
