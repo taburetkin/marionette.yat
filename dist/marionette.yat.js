@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.23
+* v0.0.24
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -21,7 +21,7 @@ Mn = Mn && Mn.hasOwnProperty('default') ? Mn['default'] : Mn;
 _ = _ && _.hasOwnProperty('default') ? _['default'] : _;
 $$1 = $$1 && $$1.hasOwnProperty('default') ? $$1['default'] : $$1;
 
-var version = "0.0.23";
+var version = "0.0.24";
 
 var getCompareABModel = function getCompareABModel(arg) {
 	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
@@ -3040,6 +3040,7 @@ var marionetteYat = {
 	TemplateContext: GlobalTemplateContext$1,
 	modals: modals,
 	identity: identity,
+	createConfig: Config,
 	Object: YatObject,
 	Error: YatError,
 	App: App,
