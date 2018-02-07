@@ -54,16 +54,15 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 	},
 
 	canBeClosed(){
-		return this.getProperty('preventClose') !== true;
+		return this.getConfigValue('options','preventClose') !== true;
 	},
-	destroy(){
+	destroy(opts = {}){
 		
-		if(!this.canBeClosed()) return;
+		if(!this.canBeClosed() && opts.force !== true) return;
 
-		return Mn.View.prototype.destroy.apply(this, arguments);
+		return YatView.prototype.destroy.apply(this, arguments);
 
 	},
-
 	ui:{
 		'bg': '[data-role="modal-bg"]',
 		'contentWrapper': '[data-role="modal-content-wrapper"]',		
@@ -132,7 +131,7 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 
 		return h;
 	},
-	getConfigValue(section,name){
+	getConfigValue(section, name){
 		let cfg = this.getConfig() || {};
 		return (cfg[section] || {})[name];
 	},
@@ -158,9 +157,6 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 
 		if(type.show.actions == null && (type.show.resolve || type.show.reject))
 			type.show.actions = true;
-
-		console.log(typeName,type);
-		console.log(config);
 
 		return this.config = type;
 	},
