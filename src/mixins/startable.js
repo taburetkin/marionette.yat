@@ -30,7 +30,7 @@ function getPropertyPromise(context, propertyName){
 	_(rawPromises).each((promiseArg) => {
 		if(_.isFunction(promiseArg))
 			promises.push(promiseArg.call(this));
-		else
+		else if(promiseArg != null)
 			promises.push(promiseArg);
 	});
 	return Promise.all(promises);
@@ -131,9 +131,9 @@ export default (Base) => {
 					return;
 				}				
 
+				_this.triggerMethod('before:start', ...args);
 				let currentState = _this._getLifeState();
 				let dependedOn = _this._getStartPromise();
-				_this.triggerMethod('before:start', ...args);
 				dependedOn.then(() => {
 					_this._tryMergeStartOptions(options);		
 					_this.once('start', (...args) => resolve(...args));

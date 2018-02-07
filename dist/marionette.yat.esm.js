@@ -609,7 +609,7 @@ function getPropertyPromise(context, propertyName) {
 
 	var promises = [];
 	_(rawPromises).each(function (promiseArg) {
-		if (_.isFunction(promiseArg)) promises.push(promiseArg.call(_this2));else promises.push(promiseArg);
+		if (_.isFunction(promiseArg)) promises.push(promiseArg.call(_this2));else if (promiseArg != null) promises.push(promiseArg);
 	});
 	return Promise.all(promises);
 }
@@ -707,9 +707,9 @@ var Startable = (function (Base) {
 					return;
 				}
 
+				_this.triggerMethod.apply(_this, ['before:start'].concat(args));
 				var currentState = _this._getLifeState();
 				var dependedOn = _this._getStartPromise();
-				_this.triggerMethod.apply(_this, ['before:start'].concat(args));
 				dependedOn.then(function () {
 					_this._tryMergeStartOptions(options);
 					_this.once('start', function () {
