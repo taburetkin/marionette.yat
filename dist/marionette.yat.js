@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.25
+* v0.0.26
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -21,7 +21,7 @@ Mn = Mn && Mn.hasOwnProperty('default') ? Mn['default'] : Mn;
 _ = _ && _.hasOwnProperty('default') ? _['default'] : _;
 $$1 = $$1 && $$1.hasOwnProperty('default') ? $$1['default'] : $$1;
 
-var version = "0.0.25";
+var version = "0.0.26";
 
 var getCompareABModel = function getCompareABModel(arg) {
 	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
@@ -2052,7 +2052,7 @@ function Config (name) {
 	return new YatConfig(options);
 }
 
-var config$1 = new Config('yat:modals:singleton', { noRadio: true });
+var config = new Config('yat:modals:singleton', { noRadio: true });
 
 var modalsShowFull = {
 	bg: true,
@@ -2115,13 +2115,13 @@ var modalsTypes = {
 	}
 };
 
-config$1.set('types.full', modalsTypes.full);
-config$1.set('types.simple', modalsTypes.simple);
-config$1.set('types.confirm', modalsTypes.confirm);
+config.set('types.full', modalsTypes.full);
+config.set('types.simple', modalsTypes.simple);
+config.set('types.confirm', modalsTypes.confirm);
 
-config$1.set('defaultShow', modalsShowFull);
-config$1.set('defaultCss', modalsCssDefaults);
-config$1.set('defaultLabels', modalsLabelsDefaults);
+config.set('defaultShow', modalsShowFull);
+config.set('defaultCss', modalsCssDefaults);
+config.set('defaultLabels', modalsLabelsDefaults);
 
 var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
 
@@ -2155,7 +2155,6 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 			_this2.preventClose = false;
 
 			if (_this2.getConfigValue('options', 'closeOnPromise') && !destroying) {
-				console.log('YAY');
 				_this2.destroy();
 			}
 		});
@@ -2240,13 +2239,13 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		if (this.config) return this.config;
 
 		var typeName = this.getOption('type') || 'simple';
-		var type = _.extend({}, config$1.get('types.' + typeName) || {});
+		var type = _.extend({}, config.get('types.' + typeName) || {});
 
-		type.show = _.extend({}, config$1.get('dafaultShow'), type.show, this.getOption('show'));
-		type.labels = _.extend({}, config$1.get('defaultLabels'), type.labels, this.getOption('labels'));
-		type.css = _.extend({}, config$1.get('defaultCss'), type.css, this.getOption('css'));
+		type.show = _.extend({}, config.get('dafaultShow'), type.show, this.getOption('show'));
+		type.labels = _.extend({}, config.get('defaultLabels'), type.labels, this.getOption('labels'));
+		type.css = _.extend({}, config.get('defaultCss'), type.css, this.getOption('css'));
 
-		type.options = _.extend({}, config$1.get('defaultOptions'), type.options, this._getModalOptions());
+		type.options = _.extend({}, config.get('defaultOptions'), type.options, this._getModalOptions());
 
 		if (type.show.header == null && this.getOption('header')) type.show.header = true;
 
@@ -2256,7 +2255,7 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		if (type.show.actions == null && (type.show.resolve || type.show.reject)) type.show.actions = true;
 
 		console.log(typeName, type);
-		console.log(config$1);
+		console.log(config);
 
 		return this.config = type;
 	},
@@ -2370,9 +2369,6 @@ var ModalEngine = mix(YatObject).with(Stateable).extend({
 });
 
 var modalEngine = new ModalEngine();
-
-//console.log(modalEngine.modals);
-
 
 var modals = {
 	show: function show() {
