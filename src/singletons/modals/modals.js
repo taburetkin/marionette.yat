@@ -8,6 +8,7 @@ import YatError from './../../YatError.js';
 import View from './../../YatView.js';
 import __ from './../../functions/common/common.js';
 import ModalView from './modalView';
+import config from './config';
 
 let ModalEngine = mixin(YatObject).with(Stateable).extend({
 	constructor(...args){
@@ -110,8 +111,6 @@ let ModalEngine = mixin(YatObject).with(Stateable).extend({
 });
 
 const modalEngine = new ModalEngine();
-
-//console.log(modalEngine.modals);
 
 
 export default {

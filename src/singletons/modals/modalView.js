@@ -47,7 +47,6 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 			this.preventClose = false;
 			
 			if(this.getConfigValue('options','closeOnPromise') && !destroying){
-				console.log('YAY');
 				this.destroy();
 			}			
 		});
