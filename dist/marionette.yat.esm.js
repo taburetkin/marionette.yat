@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.29
+* v0.0.30
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -15,7 +15,7 @@ import Mn from 'backbone.marionette';
 import _$1 from 'underscore';
 import $$1 from 'jquery';
 
-var version = "0.0.29";
+var version = "0.0.30";
 
 var getCompareABModel = function getCompareABModel(arg) {
 	if (arg instanceof Bb$1.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
@@ -2444,7 +2444,8 @@ var ModalEngine = mix(YatObject).with(Stateable).extend({
 
 		modal && modal.destroy();
 	},
-	_listenForEsc: function _listenForEsc() {
+	_listenForEsc: function _listenForEsc(e) {
+		if (e.keyCode !== 27) return;
 
 		if (this.modals.length) this.remove();
 	},
