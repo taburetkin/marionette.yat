@@ -10,18 +10,18 @@
 */
 
 
-import Bb from 'backbone';
+import Bb$1 from 'backbone';
 import Mn from 'backbone.marionette';
-import _ from 'underscore';
+import _$1 from 'underscore';
 import $$1 from 'jquery';
 
 var version = "0.0.27";
 
 var getCompareABModel = function getCompareABModel(arg) {
-	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
+	if (arg instanceof Bb$1.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
 };
 var getCompareABView = function getCompareABView(arg) {
-	if (arg instanceof Bb.View) return arg;else return;
+	if (arg instanceof Bb$1.View) return arg;else return;
 };
 
 var compareAB = function compareAB(a, b, func) {
@@ -54,7 +54,7 @@ var viewComparator = function viewComparator() {
 		return compareAB.apply(null, args);else if (args.length === 1 && args[0] instanceof Array) // array of compare
 		compareArray = args[0];
 
-	_(compareArray).every(function (singleCompare) {
+	_$1(compareArray).every(function (singleCompare) {
 		result = compareAB.apply(null, singleCompare);
 		return result === 0;
 	});
@@ -65,7 +65,7 @@ var viewComparator = function viewComparator() {
 var view = { compareAB: compareAB, viewComparator: viewComparator };
 
 function normalizeValue(context, value, args) {
-	if (_.isFunction(value)) value = value.apply(context, args || []);
+	if (_$1.isFunction(value)) value = value.apply(context, args || []);
 	return value;
 }
 
@@ -79,11 +79,11 @@ function smartGet(context) {
 	if (context == null) return;
 
 	var value = void 0;
-	var isModel = context instanceof Bb.Model;
-	var hasOptions = _.isObject(context.options);
+	var isModel = context instanceof Bb$1.Model;
+	var hasOptions = _$1.isObject(context.options);
 	var exclude = opts.exclude instanceof Array ? opts.exclude : typeof opts.exclude === 'string' ? [opts.exclude] : [];
 
-	_(opts.fields).some(function (fieldName) {
+	_$1(opts.fields).some(function (fieldName) {
 		if (fieldName in opts.checked) return;
 		opts.checked[fieldName] = true;
 
@@ -149,18 +149,18 @@ function unwrap (value, prefix) {
 }
 
 function getProperty(context, name) {
-	if (context == null || !_.isObject(context) || name == null || name == '') return;
-	if (context instanceof Bb.Model) return context.get(name);else return context[name];
+	if (context == null || !_$1.isObject(context) || name == null || name == '') return;
+	if (context instanceof Bb$1.Model) return context.get(name);else return context[name];
 }
 
 function setProperty(context, name, value, options) {
-	if (context instanceof Bb.Model) {
+	if (context instanceof Bb$1.Model) {
 		context.set(name, value, { silent: true });
 	} else {
 		context[name] = value;
 	}
 
-	if (value instanceof Bb.Model) {
+	if (value instanceof Bb$1.Model) {
 		options.models.push({
 			path: options.passPath.join(':'),
 			property: name,
@@ -175,13 +175,13 @@ function setProperty(context, name, value, options) {
 
 function setByPathArr(context, propertyName, pathArray, value, options) {
 
-	if (context == null || !_.isObject(context) || propertyName == null || propertyName == '') return;
+	if (context == null || !_$1.isObject(context) || propertyName == null || propertyName == '') return;
 
 	if (!pathArray.length) return setProperty(context, propertyName, value, options);
 
 	var prop = getProperty(context, propertyName);
 
-	if (!_.isObject(prop) && !options.force) return;else if (!_.isObject(prop) && options.force) prop = setProperty(context, propertyName, {}, options);
+	if (!_$1.isObject(prop) && !options.force) return;else if (!_$1.isObject(prop) && options.force) prop = setProperty(context, propertyName, {}, options);
 
 	var nextName = pathArray.shift();
 
@@ -190,13 +190,13 @@ function setByPathArr(context, propertyName, pathArray, value, options) {
 
 var setByPath = function setByPath(context, path, value, opts) {
 
-	if (context == null || !_.isObject(context) || path == null || path == '') return;
+	if (context == null || !_$1.isObject(context) || path == null || path == '') return;
 
-	var options = _.extend({}, opts);
+	var options = _$1.extend({}, opts);
 	options.silent = options.silent === true;
 	options.force = options.force !== false;
 
-	if (_.isObject(path) && !(path instanceof Array)) {
+	if (_$1.isObject(path) && !(path instanceof Array)) {
 		value = path.value;
 		options.force = path.force !== false;
 		options.silent = path.silent === true;
@@ -218,7 +218,7 @@ var setByPath = function setByPath(context, path, value, opts) {
 	var chunksCount = pathArray.length;
 	var prop = pathArray.shift();
 
-	if (context instanceof Bb.Model) {
+	if (context instanceof Bb$1.Model) {
 		options.models.push({
 			path: '',
 			property: prop,
@@ -248,7 +248,7 @@ var setByPath = function setByPath(context, path, value, opts) {
 
 function getByPathArray(context, propertyName, pathArray) {
 
-	if (context == null || !_.isObject(context) || propertyName == null || propertyName == '') return;
+	if (context == null || !_$1.isObject(context) || propertyName == null || propertyName == '') return;
 
 	var prop = getProperty(context, propertyName);
 
@@ -261,7 +261,7 @@ function getByPathArray(context, propertyName, pathArray) {
 
 function getByPath(obj, path) {
 
-	if (obj == null || !_.isObject(obj) || path == null || path == '') return;
+	if (obj == null || !_$1.isObject(obj) || path == null || path == '') return;
 
 	var pathArray = typeof path === 'string' ? path.split('.') : path instanceof Array ? [].slice.call(path) : [path];
 
@@ -276,7 +276,7 @@ function traverse(fields, root) {
 	root = root || '';
 	if (this == null || _typeof(this) != 'object') return;
 
-	var hash = this instanceof Bb.Model ? this.attributes : this;
+	var hash = this instanceof Bb$1.Model ? this.attributes : this;
 	var props = Object.getOwnPropertyNames(hash);
 	for (var x = 0; x < props.length; x++) {
 		var name = props[x];
@@ -287,7 +287,7 @@ function traverse(fields, root) {
 }
 
 function flattenObject(obj) {
-	if (obj == null || !_.isObject(obj)) return;
+	if (obj == null || !_$1.isObject(obj)) return;
 	var res = {};
 	traverse.call(obj, res);
 	return res;
@@ -295,7 +295,7 @@ function flattenObject(obj) {
 
 function unFlattenObject(obj) {
 
-	if (obj == null || !_.isObject(obj)) return;
+	if (obj == null || !_$1.isObject(obj)) return;
 	var res = {};
 	for (var e in obj) {
 		setByPath(res, e, obj[e], true);
@@ -304,7 +304,7 @@ function unFlattenObject(obj) {
 }
 
 var isView = (function (arg) {
-  return arg instanceof Bb.View;
+  return arg instanceof Bb$1.View;
 });
 
 var __ = {
@@ -313,11 +313,11 @@ var __ = {
 
 var Functions = { view: view, common: __ };
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
+var knownCtors = [Bb$1.Model, Bb$1.Collection, Bb$1.View, Bb$1.Router, Mn.Object];
 
 function isKnownCtor(arg) {
-	var isFn = _.isFunction(arg);
-	var result = _(knownCtors).some(function (ctor) {
+	var isFn = _$1.isFunction(arg);
+	var result = _$1(knownCtors).some(function (ctor) {
 		return arg === ctor || arg.prototype instanceof ctor;
 	});
 	return isFn && result;
@@ -359,18 +359,18 @@ var YatError = Mn.Error.extend({}, {
 });
 
 function smartExtend(Src, Dst) {
-	if (_.isFunction(Dst)) {
+	if (_$1.isFunction(Dst)) {
 		return Dst(Src);
-	} else if (_.isObject(Dst)) {
+	} else if (_$1.isObject(Dst)) {
 		return Src.extend(Dst);
 	} else throw new YatError('Mixin fail, argument should be an object hash or mixin function');
 }
 
 function mix(BaseClass) {
 	var Mixed = null;
-	if (_.isFunction(BaseClass)) {
+	if (_$1.isFunction(BaseClass)) {
 		Mixed = BaseClass;
-	} else if (_.isObject(BaseClass) && BaseClass !== null) {
+	} else if (_$1.isObject(BaseClass) && BaseClass !== null) {
 		var tmp = function tmp() {};
 		tmp.extend = Mn.extend;
 		Mixed = tmp.extend(BaseClass);
@@ -387,7 +387,7 @@ function mix(BaseClass) {
 				args[_key] = arguments[_key];
 			}
 
-			return _.reduce(args, function (memo, arg) {
+			return _$1.reduce(args, function (memo, arg) {
 				return smartExtend(memo, arg);
 			}, Mixed);
 		},
@@ -406,7 +406,7 @@ function GetNameLabel (Base) {
 		getName: function getName() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-			var options = _.extend({}, opts);
+			var options = _$1.extend({}, opts);
 			options.exclude = 'getName';
 			options.args = [options];
 			return __.getName(this, options);
@@ -414,7 +414,7 @@ function GetNameLabel (Base) {
 		getLabel: function getLabel() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-			var options = _.extend({}, opts);
+			var options = _$1.extend({}, opts);
 			options.exclude = 'getLabel';
 			options.args = [options];
 			return __.getLabel(this, options);
@@ -422,7 +422,7 @@ function GetNameLabel (Base) {
 		getValue: function getValue() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-			var options = _.extend({}, opts);
+			var options = _$1.extend({}, opts);
 			options.exclude = 'getValue';
 			options.args = [options];
 			return __.getValue(this, options);
@@ -456,15 +456,15 @@ var GetOptionProperty = (function (Base) {
 			var value = valueContext[key];
 
 			//if there is no raw value and deep option is true then getting value from fallback
-			if (value === undefined && options.deep && _.isFunction(fallback)) {
-				var fallbackOptions = _.extend({}, options, { deep: false, force: false });
+			if (value === undefined && options.deep && _$1.isFunction(fallback)) {
+				var fallbackOptions = _$1.extend({}, options, { deep: false, force: false });
 				value = fallback.call(this, key, fallbackOptions);
 			}
 
 			//if returned value is function and is not any of known constructors and options property force set to true 
 			//we should return value of that function
 			//options.args will be passed as arguments
-			if (_.isFunction(value) && options.force && !isKnownCtor(value)) value = value.apply(this, options.args || []);
+			if (_$1.isFunction(value) && options.force && !isKnownCtor(value)) value = value.apply(this, options.args || []);
 
 			//console.log('key', key, value);
 
@@ -538,12 +538,12 @@ var Stateable = (function (BaseClass) {
 
 			if (key == null) return;
 
-			if (_.isObject(key)) {
+			if (_$1.isObject(key)) {
 				var _this = this;
 				options = value;
 				value = key;
-				_(value).each(function (propertyValue, propertyName) {
-					return _this.setState(propertyName, propertyValue, _.extend({}, options, { doNotTriggerFullState: true }));
+				_$1(value).each(function (propertyValue, propertyName) {
+					return _this.setState(propertyName, propertyValue, _$1.extend({}, options, { doNotTriggerFullState: true }));
 				});
 				this._triggerStateChange(value, options);
 			} else {
@@ -554,8 +554,8 @@ var Stateable = (function (BaseClass) {
 		},
 		clearState: function clearState() {
 			var state = this.getState();
-			var broadcast = _.extend({}, state);
-			_(state).each(function (s, key) {
+			var broadcast = _$1.extend({}, state);
+			_$1(state).each(function (s, key) {
 				broadcast[key] = undefined;
 				delete state[key];
 			});
@@ -563,9 +563,9 @@ var Stateable = (function (BaseClass) {
 		},
 		_triggerStateChange: function _triggerStateChange(key, value, options) {
 
-			if (!_.isFunction(this.triggerMethod)) return;
+			if (!_$1.isFunction(this.triggerMethod)) return;
 
-			if (!_.isObject(key)) {
+			if (!_$1.isObject(key)) {
 				this.triggerMethod('state:' + key, value, options);
 				if (value === true || value === false || !!value && typeof value === 'string') this.triggerMethod('state:' + key + ':' + value.toString(), options);
 				if (!options || options && !options.doNotTriggerFullState) {
@@ -602,14 +602,14 @@ function getPropertyPromise(context, propertyName) {
 	if (context == null || propertyName == null) return Promise.resolve();
 
 	var _promises1 = context['_' + propertyName] || [];
-	var _promises2 = _.result(context, propertyName) || [];
+	var _promises2 = _$1.result(context, propertyName) || [];
 
 	var rawPromises = _promises1.concat(_promises2);
 	//context[propertyName] || [];
 
 	var promises = [];
-	_(rawPromises).each(function (promiseArg) {
-		if (_.isFunction(promiseArg)) promises.push(promiseArg.call(_this2));else if (promiseArg != null) promises.push(promiseArg);
+	_$1(rawPromises).each(function (promiseArg) {
+		if (_$1.isFunction(promiseArg)) promises.push(promiseArg.call(_this2));else if (promiseArg != null) promises.push(promiseArg);
 	});
 	return Promise.all(promises);
 }
@@ -810,7 +810,7 @@ var Startable = (function (Base) {
 				states[_key4] = arguments[_key4];
 			}
 
-			return _(states).some(function (state) {
+			return _$1(states).some(function (state) {
 				return _this3._isLifeState(state);
 			});
 		},
@@ -821,10 +821,10 @@ var Startable = (function (Base) {
 			var _this4 = this;
 
 			var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
-			if (freezeWhileStarting && _.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
+			if (freezeWhileStarting && _$1.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
 				_this4.freezeUI();
 			});
-			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start', function () {
+			if (freezeWhileStarting && _$1.isFunction(this.unFreezeUI)) this.on('start', function () {
 				_this4.unFreezeUI();
 			});
 
@@ -955,8 +955,8 @@ var Startable = (function (Base) {
 			return getPropertyPromise(this, 'startPromises');
 		},
 		_getStartParentPromise: function _getStartParentPromise() {
-			var parent = _.result(this, 'getParent');
-			if (_.isObject(parent) && _.isFunction(parent._getStartPromise)) return parent._getStartPromise({ noruntime: true });
+			var parent = _$1.result(this, 'getParent');
+			if (_$1.isObject(parent) && _$1.isFunction(parent._getStartPromise)) return parent._getStartPromise({ noruntime: true });
 		},
 		_getStopPromise: function _getStopPromise() {
 			return Promise.all(this._getStopPromises());
@@ -970,8 +970,8 @@ var Startable = (function (Base) {
 			return getPropertyPromise(this, 'stopPromises');
 		},
 		_getStopParentPromise: function _getStopParentPromise() {
-			var parent = _.result(this, 'getParent');
-			if (_.isObject(parent) && _.isFunction(parent._getStopPromise)) return parent._getStopPromise();
+			var parent = _$1.result(this, 'getParent');
+			if (_$1.isObject(parent) && _$1.isFunction(parent._getStopPromise)) return parent._getStopPromise();
 		}
 	});
 
@@ -1017,7 +1017,7 @@ var Childrenable = (function (Base) {
 		},
 		hasParent: function hasParent() {
 			var parent = this.getParent();
-			return _.isObject(parent);
+			return _$1.isObject(parent);
 		},
 		getParent: function getParent() {
 			return this.getProperty('parent', { deep: false });
@@ -1027,7 +1027,7 @@ var Childrenable = (function (Base) {
 
 			var _children = this.getProperty('children');
 			var children = [];
-			_(_children).each(function (child) {
+			_$1(_children).each(function (child) {
 
 				var childContext = _this._normalizeChildContext(child);
 				var initialized = _this._initializeChild(childContext);
@@ -1036,7 +1036,7 @@ var Childrenable = (function (Base) {
 			this[CHILDREN_FIELD] = children;
 		},
 		_initializeChild: function _initializeChild(childContext) {
-			if (childContext == null || !_.isFunction(childContext.Child)) return;
+			if (childContext == null || !_$1.isFunction(childContext.Child)) return;
 
 			var Child = childContext.Child;
 			var opts = this._normalizeChildOptions(childContext);
@@ -1045,19 +1045,19 @@ var Childrenable = (function (Base) {
 		_normalizeChildContext: function _normalizeChildContext(child) {
 			var childContext = {};
 
-			if (_.isFunction(child) && child.Childrenable) {
-				_.extend(childContext, { Child: child });
-			} else if (_.isFunction(child)) {
+			if (_$1.isFunction(child) && child.Childrenable) {
+				_$1.extend(childContext, { Child: child });
+			} else if (_$1.isFunction(child)) {
 				childContext = this._normalizeChildContext(child.call(this));
-			} else if (_.isObject(child)) {
+			} else if (_$1.isObject(child)) {
 				childContext = child;
 			}
 			return childContext;
 		},
 		_normalizeChildOptions: function _normalizeChildOptions(options) {
-			var opts = _.extend({}, options);
+			var opts = _$1.extend({}, options);
 			if (this.getOption('passToChildren') === true) {
-				_.extend(opts, this.options);
+				_$1.extend(opts, this.options);
 			}
 			opts.parent = this;
 			delete opts.Child;
@@ -1066,7 +1066,7 @@ var Childrenable = (function (Base) {
 
 
 		_buildChildOptions: function _buildChildOptions(def) {
-			return _.extend(def, this.getProperty('childOptions'));
+			return _$1.extend(def, this.getProperty('childOptions'));
 		},
 
 		buildChild: function buildChild(ChildClass, options) {
@@ -1099,7 +1099,7 @@ function normalizeValue$1(value) {
 		args[_key - 1] = arguments[_key];
 	}
 
-	if (_.isFunction(value)) return value.apply(undefined, args);else if (_.isObject(value)) return value;else return {};
+	if (_$1.isFunction(value)) return value.apply(undefined, args);else if (_$1.isObject(value)) return value;else return {};
 }
 
 var GlobalTemplateContext$1 = {
@@ -1109,7 +1109,7 @@ var GlobalTemplateContext$1 = {
 		}
 
 		var global = this.get.apply(this, args);
-		return _.extend(global, viewTemplateContext);
+		return _$1.extend(global, viewTemplateContext);
 	},
 	get: function get() {
 		return this.compile.apply(this, arguments);
@@ -1121,7 +1121,7 @@ var GlobalTemplateContext$1 = {
 			args[_key3] = arguments[_key3];
 		}
 
-		_(args).each(function (item) {
+		_$1(args).each(function (item) {
 			return _this.push(item);
 		});
 	},
@@ -1134,12 +1134,12 @@ var GlobalTemplateContext$1 = {
 
 		var newcontext = {};
 
-		_(templateContextStore).each(function (cntx) {
-			if (_.isFunction(cntx)) _.extend(newcontext, normalizeValue$1.apply(undefined, [cntx].concat(args)));else if (hasChanges) {
-				_.extend(compiledContext, cntx);
+		_$1(templateContextStore).each(function (cntx) {
+			if (_$1.isFunction(cntx)) _$1.extend(newcontext, normalizeValue$1.apply(undefined, [cntx].concat(args)));else if (hasChanges) {
+				_$1.extend(compiledContext, cntx);
 			}
 		});
-		if (!hasChanges) _.extend(newcontext, compiledContext);
+		if (!hasChanges) _$1.extend(newcontext, compiledContext);
 
 		hasChanges = false;
 		return newcontext;
@@ -1173,9 +1173,9 @@ var GlobalTemplateContext = (function (Base) {
 			var target = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 
-			var templateContext = GlobalTemplateContext$1.mix(_.result(this, 'templateContext'), this);
+			var templateContext = GlobalTemplateContext$1.mix(_$1.result(this, 'templateContext'), this);
 
-			return _.extend(target, templateContext);
+			return _$1.extend(target, templateContext);
 		}
 	});
 });
@@ -1197,7 +1197,7 @@ var Behavior = BaseBehavior.extend({
 
 	constructor: function constructor() {
 
-		if (this.getProperty('listenViewInitialize') === true) this.on('before:render initialize', _.once(_.partial(this.triggerMethod, 'view:initialize')));
+		if (this.getProperty('listenViewInitialize') === true) this.on('before:render initialize', _$1.once(_$1.partial(this.triggerMethod, 'view:initialize')));
 
 		BaseBehavior.apply(this, arguments);
 	},
@@ -1261,13 +1261,13 @@ var BaseDraggable = Behavior.extend({
 	},
 	_defineDocumentBindings: function _defineDocumentBindings() {
 		this.__b = {};
-		this.__b.setupDragDetection = _.bind(this._setupDragDetection, this);
-		this.__b.handleMouseUp = _.bind(this._handleMouseUp, this);
-		this.__b.handleMoveAfterMouseDown = _.bind(this._handleMoveAfterMouseDown, this);
-		this.__b.handleDragMove = _.bind(this._handleDragMove, this);
-		this.__b.handleElementEnter = _.bind(this._handleElementEnter, this);
-		this.__b.handleElementLeave = _.bind(this._handleElementLeave, this);
-		this.__b.handleElementOver = _.bind(this._handleElementOver, this);
+		this.__b.setupDragDetection = _$1.bind(this._setupDragDetection, this);
+		this.__b.handleMouseUp = _$1.bind(this._handleMouseUp, this);
+		this.__b.handleMoveAfterMouseDown = _$1.bind(this._handleMoveAfterMouseDown, this);
+		this.__b.handleDragMove = _$1.bind(this._handleDragMove, this);
+		this.__b.handleElementEnter = _$1.bind(this._handleElementEnter, this);
+		this.__b.handleElementLeave = _$1.bind(this._handleElementLeave, this);
+		this.__b.handleElementOver = _$1.bind(this._handleElementOver, this);
 	},
 	onInitialize: function onInitialize() {
 		this._initializeDragListener();
@@ -1373,7 +1373,7 @@ var BaseDraggable = Behavior.extend({
 		if (!merge) merge = ["pageX", "pageY", "clientX", "clientY", "offsetX", "offsetY", "target"];
 
 		var customEvent = jQuery.Event(name);
-		_(merge).each(function (prop) {
+		_$1(merge).each(function (prop) {
 			return customEvent[prop] = event[prop];
 		});
 
@@ -1491,7 +1491,7 @@ var DroppableBehavior = Behavior.extend({
 		return { x: e.pageX, y: e.pageY };
 	},
 	getChildren: function getChildren() {
-		return _(this.view.children._views).filter(function (v) {
+		return _$1(this.view.children._views).filter(function (v) {
 			return v.model && v.isRendered() && v.isAttached();
 		});
 	},
@@ -1527,7 +1527,7 @@ var DroppableBehavior = Behavior.extend({
 
 		var children = this.children = [];
 		var skipAttach = this._skipFirstAttach;
-		_(this.view.children._views).each(function (view, index) {
+		_$1(this.view.children._views).each(function (view, index) {
 			if (!view.model) return;
 			view.model.set('order', index);
 			if (view.isRendered() && (skipAttach || view.isAttached())) children.push(view);
@@ -1568,9 +1568,9 @@ var DroppableBehavior = Behavior.extend({
 		var drop = this._getDropContext(xy, child);
 		drop.context = this;
 
-		var mixedDrop = _.extend({}, storedDrop, drop);
-		var keys = _.keys(mixedDrop);
-		var hasChanges = _(keys).some(function (k) {
+		var mixedDrop = _$1.extend({}, storedDrop, drop);
+		var keys = _$1.keys(mixedDrop);
+		var hasChanges = _$1(keys).some(function (k) {
 			return storedDrop[k] !== drop[k];
 		});
 		if (hasChanges) {
@@ -1611,7 +1611,7 @@ var DroppableBehavior = Behavior.extend({
 		if (child) {
 			childView = child.view;
 		} else {
-			childView = insert == 'before' ? this.children[0] : this.children.length && _(this.children).last();
+			childView = insert == 'before' ? this.children[0] : this.children.length && _$1(this.children).last();
 		}
 
 		var index = this.view.children._views.indexOf(childView);
@@ -1633,8 +1633,8 @@ var DroppableBehavior = Behavior.extend({
 
 var DynamicClass = Behavior.extend({
 	updateElementClass: function updateElementClass(changeSource) {
-		var viewCls = _.result(this.view, 'className') || '';
-		var addCls = _.result(this.view, 'dynamicClassName') || '';
+		var viewCls = _$1.result(this.view, 'className') || '';
+		var addCls = _$1.result(this.view, 'dynamicClassName') || '';
 		this.$el.attr({
 			class: (viewCls + ' ' + addCls).trim()
 		});
@@ -1672,8 +1672,8 @@ var DynamicClass = Behavior.extend({
 	onSetupRefreshCssClass: function onSetupRefreshCssClass(setup) {
 		var _this = this;
 
-		if (setup == null || !_.isObject(setup)) return;
-		_(setup).each(function (value, property) {
+		if (setup == null || !_$1.isObject(setup)) return;
+		_$1(setup).each(function (value, property) {
 			_this[property] = value === true;
 		});
 	}
@@ -1694,14 +1694,14 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 
 	initialize: function initialize(opts) {
 
-		this.applyValue = _.debounce(this._applyValue, this.getProperty('applyDelay'));
+		this.applyValue = _$1.debounce(this._applyValue, this.getProperty('applyDelay'));
 		this.mergeOptions(opts, ['values']);
 
 		this.extendDefaultValues({});
 	},
 	extendDefaultValues: function extendDefaultValues(hash) {
 
-		this._values = _.extend(this._values || {}, hash);
+		this._values = _$1.extend(this._values || {}, hash);
 	},
 	onViewInitialize: function onViewInitialize() {
 
@@ -1800,12 +1800,12 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 		var values = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 		var modelHash = this.getModel() && this.getModel().toJSON();
-		var full = _.extend({}, this.values, this.mappings, modelHash);
+		var full = _$1.extend({}, this.values, this.mappings, modelHash);
 		var res = {};
-		_(full).each(function (v, key) {
+		_$1(full).each(function (v, key) {
 			return res[key] = undefined;
 		});
-		return _.extend(res, values);
+		return _$1.extend(res, values);
 	},
 
 
@@ -1825,7 +1825,7 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 			if (info) _this.mappings[property] = info;
 		});
 		var ext = {};
-		_(this.mappings).each(function (context, name) {
+		_$1(this.mappings).each(function (context, name) {
 			context.values && (ext[name] = context.values);
 		});
 
@@ -1864,7 +1864,7 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 	setValuesToForm: function setValuesToForm(values) {
 		var _this2 = this;
 
-		_(values).each(function (propertyValues, propertyName) {
+		_$1(values).each(function (propertyValues, propertyName) {
 			var property = _this2.mappings[propertyName];
 			var $els = property.$elements;
 			var arr = propertyValues instanceof Array ? propertyValues : [propertyValues];
@@ -1934,6 +1934,7 @@ var Identity = Base.extend({
 	_initializeYatUser: function _initializeYatUser() {},
 
 	channelName: IDENTITY_CHANNEL,
+	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
 	isAnonym: function isAnonym() {
 		return !this.getState('id');
 	},
@@ -1956,8 +1957,147 @@ var Identity = Base.extend({
 		this.clearState();
 		this.trigger('change');
 		this.trigger('log:out');
+	},
+	getBearerToken: function getBearerToken(data) {
+		var _this = this;
+
+		var url = this.getOption('bearerTokenUrl');
+		var promise = new Promise(function (resolve, reject) {
+			nativeAjax({ url: url, data: data, method: 'POST' }).then(function (token) {
+				_this.setTokenObject(token);
+				resolve(token);
+				_this.triggerMethod('token', token);
+			}, function (error) {
+				return reject(error);
+			});
+		});
+		return promise;
+	},
+	ajax: function ajax() {
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
+		}
+
+		var options = args[0];
+		options.headers = _.extend({}, options.headers, this.getAjaxHeaders());
+		var needRefresh = this.isTokenRefreshNeeded();
+		if (!needRefresh) {
+			var _$;
+
+			return (_$ = $).ajax.apply(_$, args); //nativeAjax.apply($, args);
+		} else {
+			return this.refreshBearerToken().then(function () {
+				return nativeAjax.apply($, args);
+			}).catch(function (error) {
+				var promise = $.Deferred();
+				promise.reject(error);
+				return promise;
+			});
+		}
+	},
+	getAjaxHeaders: function getAjaxHeaders() {
+		this._ajaxHeaders || (this._ajaxHeaders = {});
+		return this._ajaxHeaders;
+	},
+	_updateHeaders: function _updateHeaders() {
+		var token = this.getTokenValue();
+		var headers = this.getAjaxHeaders();
+
+		if (token) {
+			headers.Authorization = 'Bearer ' + token;
+			headers.Accept = 'application/json';
+		} else {
+			delete headers.Authorization;
+		}
+	},
+	setTokenObject: function setTokenObject(token) {
+
+		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
+
+		this._token = token;
+		this._updateHeaders();
+		this._replaceBackboneAjax();
+
+		this.triggerMethod('tocken:change');
+	},
+	getTokenObject: function getTokenObject() {
+		return this._token;
+	},
+	_replaceBackboneAjax: function _replaceBackboneAjax() {
+		var token = this.getTokenValue();
+		if (!token) Bb.ajax = $.ajax; //$.ajax = nativeAjax;
+		else Bb.ajax = function () {
+				var _Yat$identity;
+
+				return (_Yat$identity = Yat.identity).ajax.apply(_Yat$identity, arguments);
+			}; //$.ajax = (...args) => Yat.identity.ajax(...args);
+	},
+	getTokenValue: function getTokenValue() {
+		var token = this.getTokenObject();
+		return token.access_token;
+	},
+	getRefreshToken: function getRefreshToken() {
+		var token = this.getTokenObject();
+		return token.refresh_token;
+	},
+	getTokenExpires: function getTokenExpires() {
+		var token = this.getTokenObject();
+		return (token || {}).expires;
+	},
+	getTokenSeconds: function getTokenSeconds() {
+		var expires = this.getTokenExpires();
+
+		if (expires == null || isNaN(expires.valueOf())) {
+			console.warn('expires is null or wrong');
+			return 0;
+		}
+
+		var offset = this.getProperty('tokenExpireOffset');
+		if (offset == null) offset = 30000; //30 sec
+
+		var deadline = expires.valueOf() - offset;
+		var deadlineMs = deadline - Date.now();
+		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
+	},
+	isTokenRefreshNeeded: function isTokenRefreshNeeded() {
+		var token = this.getTokenValue();
+		if (!token) return false;
+		return !this.getTokenSeconds();
+	},
+	refreshBearerToken: function refreshBearerToken() {
+		var _this2 = this;
+
+		var bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
+		var doRefresh = this.isTokenRefreshNeeded();
+		return new Promise(function (resolve, reject) {
+			if (!doRefresh) {
+				resolve();
+				return;
+			}
+
+			if (bearerTokenRenewUrl == null) {
+				reject(new Error('Token expired and `bearerTokenRenewUrl` not set'));
+				return;
+			}
+			var data = {
+				'grant_type': 'refresh_token',
+				'refresh_token': _this2.getRefreshToken()
+			};
+			nativeAjax({
+				url: bearerTokenRenewUrl,
+				data: data,
+				method: 'POST'
+			}).then(function (token) {
+				_this2.setTokenObject(token);
+				resolve();
+			}, function () {
+				_this2.triggerMethod('refresh:token:expired');
+				reject(Yat.Error.Http401());
+			});
+		});
 	}
 });
+
 var identity = new Identity();
 
 var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend({
@@ -2011,7 +2151,7 @@ var YatConfig = YatObject.extend({
 	get: function get(path) {
 		var store = this.getStore();
 		var value = getByPath(store, path);
-		if (_.isFunction(value)) {
+		if (_$1.isFunction(value)) {
 			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
 				args[_key - 1] = arguments[_key];
 			}
@@ -2117,7 +2257,7 @@ config.set('defaultShow', modalsShowFull);
 config.set('defaultCss', modalsCssDefaults);
 config.set('defaultLabels', modalsLabelsDefaults);
 
-var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
+var template = _$1.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
 
 var ModalView = mix(YatView).with(GetOptionProperty).extend({
 
@@ -2183,6 +2323,9 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		'click @ui.bg': { event: 'click:bg', stopPropagation: true },
 		'click': { event: 'click:wrapper', stopPropagation: true }
 	},
+	regions: {
+		'content': '[data-role="modal-content"]'
+	},
 	onBeforeDestroy: function onBeforeDestroy() {
 		this.trigger('reject', this.getProperty('reject'), true);
 	},
@@ -2212,7 +2355,7 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		this.$el.appendTo($('body'));
 	},
 	onRender: function onRender() {
-		if (this.content instanceof Bb.View) {
+		if (this.content instanceof Bb$1.View) {
 			this.showChildView('content', this.content);
 			this.content.inModal = this;
 		}
@@ -2234,13 +2377,13 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		if (this.config) return this.config;
 
 		var typeName = this.getOption('type') || 'simple';
-		var type = _.extend({}, config.get('types.' + typeName) || {});
+		var type = _$1.extend({}, config.get('types.' + typeName) || {});
 
-		type.show = _.extend({}, config.get('dafaultShow'), type.show, this.getOption('show'));
-		type.labels = _.extend({}, config.get('defaultLabels'), type.labels, this.getOption('labels'));
-		type.css = _.extend({}, config.get('defaultCss'), type.css, this.getOption('css'));
+		type.show = _$1.extend({}, config.get('dafaultShow'), type.show, this.getOption('show'));
+		type.labels = _$1.extend({}, config.get('defaultLabels'), type.labels, this.getOption('labels'));
+		type.css = _$1.extend({}, config.get('defaultCss'), type.css, this.getOption('css'));
 
-		type.options = _.extend({}, config.get('defaultOptions'), type.options, this._getModalOptions());
+		type.options = _$1.extend({}, config.get('defaultOptions'), type.options, this._getModalOptions());
 
 		if (type.show.header == null && this.getOption('header')) type.show.header = true;
 
@@ -2279,7 +2422,7 @@ var ModalEngine = mix(YatObject).with(Stateable).extend({
 		}
 
 		YatObject.apply(this, args);
-		this.listenForEsc = _.bind(this._listenForEsc, this);
+		this.listenForEsc = _$1.bind(this._listenForEsc, this);
 		$$1(function () {
 			_this2.doc = $$1(document);
 			_this2.doc.on('keyup', _this2.listenForEsc);
@@ -2294,7 +2437,7 @@ var ModalEngine = mix(YatObject).with(Stateable).extend({
 	},
 	remove: function remove(modal) {
 
-		if (!modal) modal = _.last(this.modals);
+		if (!modal) modal = _$1.last(this.modals);
 
 		modal && modal.destroy();
 	},
@@ -2327,30 +2470,30 @@ var ModalEngine = mix(YatObject).with(Stateable).extend({
 		if (!len) return;
 
 		if (len === 1) {
-			if (__.isView(arguments.length <= 0 ? undefined : arguments[0])) options.content = arguments.length <= 0 ? undefined : arguments[0];else if (_.isString(arguments.length <= 0 ? undefined : arguments[0])) options.text = arguments.length <= 0 ? undefined : arguments[0];else if (_.isObject(arguments.length <= 0 ? undefined : arguments[0])) _.extend(options, arguments.length <= 0 ? undefined : arguments[0]);
+			if (__.isView(arguments.length <= 0 ? undefined : arguments[0])) options.content = arguments.length <= 0 ? undefined : arguments[0];else if (_$1.isString(arguments.length <= 0 ? undefined : arguments[0])) options.text = arguments.length <= 0 ? undefined : arguments[0];else if (_$1.isObject(arguments.length <= 0 ? undefined : arguments[0])) _$1.extend(options, arguments.length <= 0 ? undefined : arguments[0]);
 		} else if (len === 2) {
-			if (_.isString(arguments.length <= 0 ? undefined : arguments[0]) && _.isString(arguments.length <= 1 ? undefined : arguments[1])) {
+			if (_$1.isString(arguments.length <= 0 ? undefined : arguments[0]) && _$1.isString(arguments.length <= 1 ? undefined : arguments[1])) {
 				options.header = arguments.length <= 0 ? undefined : arguments[0];
 				options.text = arguments.length <= 1 ? undefined : arguments[1];
-			} else if (_.isString(arguments.length <= 0 ? undefined : arguments[0]) && __.isView(arguments.length <= 1 ? undefined : arguments[1])) {
+			} else if (_$1.isString(arguments.length <= 0 ? undefined : arguments[0]) && __.isView(arguments.length <= 1 ? undefined : arguments[1])) {
 				options.header = arguments.length <= 0 ? undefined : arguments[0];
 				options.content = arguments.length <= 1 ? undefined : arguments[1];
-			} else if (_.isString(arguments.length <= 1 ? undefined : arguments[1]) && __.isView(arguments.length <= 0 ? undefined : arguments[0])) {
+			} else if (_$1.isString(arguments.length <= 1 ? undefined : arguments[1]) && __.isView(arguments.length <= 0 ? undefined : arguments[0])) {
 				options.header = arguments.length <= 1 ? undefined : arguments[1];
 				options.content = arguments.length <= 0 ? undefined : arguments[0];
-			} else if (_.isString(arguments.length <= 0 ? undefined : arguments[0]) && _.isObject(arguments.length <= 1 ? undefined : arguments[1])) {
-				_.extend(options, arguments.length <= 1 ? undefined : arguments[1]);
+			} else if (_$1.isString(arguments.length <= 0 ? undefined : arguments[0]) && _$1.isObject(arguments.length <= 1 ? undefined : arguments[1])) {
+				_$1.extend(options, arguments.length <= 1 ? undefined : arguments[1]);
 				if (__.isView(options.content)) options.header = arguments.length <= 0 ? undefined : arguments[0];else options.text = arguments.length <= 0 ? undefined : arguments[0];
-			} else if (__.isView(arguments.length <= 0 ? undefined : arguments[0]) && _.isObject(arguments.length <= 1 ? undefined : arguments[1])) {
-				_.extend(options, arguments.length <= 1 ? undefined : arguments[1]);
+			} else if (__.isView(arguments.length <= 0 ? undefined : arguments[0]) && _$1.isObject(arguments.length <= 1 ? undefined : arguments[1])) {
+				_$1.extend(options, arguments.length <= 1 ? undefined : arguments[1]);
 				options.content = arguments.length <= 0 ? undefined : arguments[0];
 			}
 		} else {
-			if (_.isObject(arguments.length <= 3 ? undefined : arguments[3])) _.extend(options, arguments.length <= 3 ? undefined : arguments[3]);
-			if (_.isObject(arguments.length <= 2 ? undefined : arguments[2])) _.extend(options, arguments.length <= 2 ? undefined : arguments[2]);else if (_.isString(arguments.length <= 2 ? undefined : arguments[2])) options.type = arguments.length <= 2 ? undefined : arguments[2];
+			if (_$1.isObject(arguments.length <= 3 ? undefined : arguments[3])) _$1.extend(options, arguments.length <= 3 ? undefined : arguments[3]);
+			if (_$1.isObject(arguments.length <= 2 ? undefined : arguments[2])) _$1.extend(options, arguments.length <= 2 ? undefined : arguments[2]);else if (_$1.isString(arguments.length <= 2 ? undefined : arguments[2])) options.type = arguments.length <= 2 ? undefined : arguments[2];
 
 			var two = this._normalizeArguments(arguments.length <= 0 ? undefined : arguments[0], arguments.length <= 1 ? undefined : arguments[1]);
-			_.extend(options, two);
+			_$1.extend(options, two);
 		}
 
 		return options;
@@ -2367,11 +2510,11 @@ var modals = {
 		return modalEngine.show.apply(modalEngine, arguments);
 	},
 	addTypeConfig: function addTypeConfig(name, cfg) {
-		if (!name || !_.isString(name)) return;
+		if (!name || !_$1.isString(name)) return;
 		config.set('types.' + name, cfg);
 	},
 	getTypeConfig: function getTypeConfig(name) {
-		if (!name || !_.isString(name)) return;
+		if (!name || !_$1.isString(name)) return;
 		return config.get('types.' + name);
 	}
 };
@@ -2431,15 +2574,15 @@ var App = Base$1.extend({
 
 		if (this._menuTree && !opts.rebuild) return this._menuTree;
 		var managers = this._pageManagers || [];
-		var links = _(managers).chain().map(function (manager) {
+		var links = _$1(managers).chain().map(function (manager) {
 			return manager.getLinks();
 		}).flatten().value();
-		this._menuTree = new Bb.Collection(links);
+		this._menuTree = new Bb$1.Collection(links);
 		return this._menuTree;
 	},
 	getPage: function getPage(key) {
 		if (!this.hasPageManagers()) return;
-		return _(this._pageManagers).find(function (mngr) {
+		return _$1(this._pageManagers).find(function (mngr) {
 			return mngr.getPage(key);
 		});
 	}
@@ -2450,7 +2593,7 @@ var Router = Mn.AppRouter.extend({}, {
 		var appRoutes = {};
 		var controller = {};
 		var _this = this;
-		_(hash).each(function (handlerContext, key) {
+		_$1(hash).each(function (handlerContext, key) {
 			appRoutes[key] = key;
 			controller[key] = function () {
 				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
@@ -2475,7 +2618,7 @@ var Router = Mn.AppRouter.extend({}, {
 	}
 });
 
-var Model = Bb.Model.extend({});
+var Model = Bb$1.Model.extend({});
 
 var LinkModel = Model.extend({
 	defaults: {
@@ -2533,11 +2676,11 @@ var YatPage = Base$2.extend({
 	buildLayout: function buildLayout() {
 		var Layout = this.getProperty('Layout');
 		if (Layout == null) return;
-		var opts = _.extend({}, this.getProperty('layoutOptions'));
+		var opts = _$1.extend({}, this.getProperty('layoutOptions'));
 
-		if (this.model && !opts.model) _.extend(opts, { model: this.model });
+		if (this.model && !opts.model) _$1.extend(opts, { model: this.model });
 
-		if (this.collection && !opts.collection) _.extend(opts, { collection: this.collection });
+		if (this.collection && !opts.collection) _$1.extend(opts, { collection: this.collection });
 
 		var options = this.buildLayoutOptions(opts);
 		options.page = this;
@@ -2583,10 +2726,10 @@ var YatPage = Base$2.extend({
 		var hashes = [{}, this._routeHandler].concat(this.getChildren({ startable: false }).map(function (children) {
 			return children.getRouteHash();
 		}));
-		return _.extend.apply(_, _toConsumableArray(hashes));
+		return _$1.extend.apply(_$1, _toConsumableArray(hashes));
 	},
 	hasRouteHash: function hasRouteHash() {
-		return _.isObject(this.getRouteHash());
+		return _$1.isObject(this.getRouteHash());
 	},
 	getLinkModel: function getLinkModel() {
 		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
@@ -2627,13 +2770,13 @@ var YatPage = Base$2.extend({
 	_getSublinks: function _getSublinks(level) {
 		var children = this.getChildren();
 		if (!children || !children.length) return;
-		var sublinks = _(children).chain().filter(function (child) {
+		var sublinks = _$1(children).chain().filter(function (child) {
 			return child.getProperty("skipMenu") !== true;
 		}).map(function (child) {
 			return child.getLinkModel(level + 1);
 		}).value();
 		if (!sublinks.length) return;
-		var col = new Bb.Collection(sublinks);
+		var col = new Bb$1.Collection(sublinks);
 		return col;
 	},
 	_initializeModels: function _initializeModels() {
@@ -2684,7 +2827,7 @@ var YatPage = Base$2.extend({
 	},
 	_createAppRouter: function _createAppRouter() {
 		var hash = this.getRouteHash();
-		if (!_.size(hash)) return;
+		if (!_$1.size(hash)) return;
 		return new Router(hash);
 	},
 	_proxyEvents: function _proxyEvents() {
@@ -2708,9 +2851,9 @@ var YatPage = Base$2.extend({
 		var all = [];
 		var eventsHash = {};
 
-		_(contexts).each(function (context) {
+		_$1(contexts).each(function (context) {
 			if (!context.allowed) all.push(context.context);else {
-				_(context.allowed).each(function (allowed) {
+				_$1(context.allowed).each(function (allowed) {
 					eventsHash[allowed] || (eventsHash[allowed] = []);
 					eventsHash[allowed].push(context.context);
 				});
@@ -2724,7 +2867,7 @@ var YatPage = Base$2.extend({
 
 			var contexts = eventName in eventsHash ? eventsHash[eventName] : all;
 			var triggerArguments = [page].concat(args);
-			_(contexts).each(function (context) {
+			_$1(contexts).each(function (context) {
 				return context.triggerMethod.apply(context, ['page:' + eventName].concat(_toConsumableArray(triggerArguments)));
 			});
 		});
@@ -2735,7 +2878,7 @@ var YatPage = Base$2.extend({
 		var add = {};
 		var manager = this.getProperty('manager');
 		if (manager) add.manager = manager;
-		return _.extend(def, this.getProperty('childOptions'), add);
+		return _$1.extend(def, this.getProperty('childOptions'), add);
 	},
 
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
@@ -2768,9 +2911,9 @@ var YatPageManager = Base$3.extend({
 	createRouter: function createRouter() {
 		var children = this.getChildren({ startable: false });
 		var hash = {};
-		_(children).each(function (page) {
-			if (_.isFunction(page.getRouteHash)) {
-				_.extend(hash, page.getRouteHash());
+		_$1(children).each(function (page) {
+			if (_$1.isFunction(page.getRouteHash)) {
+				_$1.extend(hash, page.getRouteHash());
 			}
 		});
 		this._routesHash = hash;
@@ -2785,7 +2928,7 @@ var YatPageManager = Base$3.extend({
 	getLinks: function getLinks() {
 		var children = this.getChildren();
 		if (!children) return;
-		return _(children).chain().map(function (child) {
+		return _$1(children).chain().map(function (child) {
 			return child.getLinkModel();
 		}).filter(function (child) {
 			return !!child;
@@ -2804,7 +2947,7 @@ var YatPageManager = Base$3.extend({
 	},
 	getPage: function getPage(key) {
 
-		var found = _(this._routesHash).find(function (pageContext, route) {
+		var found = _$1(this._routesHash).find(function (pageContext, route) {
 			if (route === key) return true;
 			if (pageContext.context.getName() === key) return true;
 		});
@@ -2835,7 +2978,7 @@ var YatPageManager = Base$3.extend({
 
 
 	_buildChildOptions: function _buildChildOptions(def) {
-		return _.extend(def, this.getProperty('childOptions'), {
+		return _$1.extend(def, this.getProperty('childOptions'), {
 			manager: this
 		});
 	},
@@ -2879,7 +3022,7 @@ var YatPageManager = Base$3.extend({
 
 var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
 
-var Collection = Bb.Collection.extend({});
+var Collection = Bb$1.Collection.extend({});
 
 var CollectionGroups = YatObject.extend({
 
@@ -2907,7 +3050,7 @@ var CollectionGroups = YatObject.extend({
 
 		if (!group) return;
 
-		if (_.isFunction(group.destroy)) group.destroy();else if (_.isFunction(group.stopListening)) group.stopListening();
+		if (_$1.isFunction(group.destroy)) group.destroy();else if (_$1.isFunction(group.stopListening)) group.stopListening();
 
 		delete this.groups[name];
 	},
@@ -2915,13 +3058,13 @@ var CollectionGroups = YatObject.extend({
 		var result = {};
 		var colGroups = this.collection.groupBy(this.groupBy);
 		var optionGroups = this.getOption('groups');
-		_(optionGroups).each(function (name) {
+		_$1(optionGroups).each(function (name) {
 			if (name in colGroups) {
 				result[name] = colGroups[name];
 				delete colGroups[name];
 			} else result[name] = [];
 		});
-		_(colGroups).each(function (models, name) {
+		_$1(colGroups).each(function (models, name) {
 			return result[name] = models;
 		});
 		return result;
@@ -2959,7 +3102,7 @@ var CollectionGroups = YatObject.extend({
 
 		this.groups = {};
 		var groups = this.group();
-		_(groups).each(function (models, name) {
+		_$1(groups).each(function (models, name) {
 			return _this.addGroup(name, models);
 		});
 	},
@@ -2984,15 +3127,15 @@ var CollectionGroups = YatObject.extend({
 
 		var data = (opts.changes.added || []).concat(opts.changes.merged || []);
 
-		var toAdd = _(data).groupBy(this.groupBy);
-		var toRemove = _(opts.changes.removed).groupBy(this.groupBy);
+		var toAdd = _$1(data).groupBy(this.groupBy);
+		var toRemove = _$1(opts.changes.removed).groupBy(this.groupBy);
 
 		var groups = this.groups;
-		_(toAdd).each(function (models, groupName) {
+		_$1(toAdd).each(function (models, groupName) {
 			if (groupName in groups) groups[groupName].add(models);else if (_this2.getOption('autoCreateNewGroups')) _this2.addGroup(groupName, models);
 		});
 
-		_(toRemove).each(function (models, groupName) {
+		_$1(toRemove).each(function (models, groupName) {
 			if (groupName in groups) groups[groupName].remove(models);
 		});
 	},
@@ -3004,15 +3147,15 @@ var CollectionGroups = YatObject.extend({
 	},
 	destroy: function destroy() {
 
-		_(this.groups).each(function (group) {
+		_$1(this.groups).each(function (group) {
 			group.stopListening();
-			if (_.isFunction(group.destroy)) group.destroy();
+			if (_$1.isFunction(group.destroy)) group.destroy();
 		});
 		delete this.groups;
 
-		if (_.isFunction(YatObject.prototype.destroy)) YatObject.prototype.destroy.apply(this, arguments);
+		if (_$1.isFunction(YatObject.prototype.destroy)) YatObject.prototype.destroy.apply(this, arguments);
 
-		if (_.isFunction(this.collection.destroy)) this.collection.destroy();
+		if (_$1.isFunction(this.collection.destroy)) this.collection.destroy();
 
 		delete this.collection;
 	}

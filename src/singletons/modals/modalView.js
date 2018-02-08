@@ -81,6 +81,9 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 		'click @ui.bg':{ event: 'click:bg', stopPropagation: true },
 		'click': { event: 'click:wrapper', stopPropagation: true },
 	},
+	regions:{
+		'content':'[data-role="modal-content"]'
+	},
 	onBeforeDestroy(){ 
 		this.trigger('reject', this.getProperty('reject'), true);
 	},
