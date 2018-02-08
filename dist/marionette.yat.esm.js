@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.28
+* v0.0.29
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -15,7 +15,7 @@ import Mn from 'backbone.marionette';
 import _$1 from 'underscore';
 import $$1 from 'jquery';
 
-var version = "0.0.28";
+var version = "0.0.29";
 
 var getCompareABModel = function getCompareABModel(arg) {
 	if (arg instanceof Bb$1.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
@@ -1922,6 +1922,9 @@ var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
 var IDENTITY_CHANNEL = 'identity';
 
 var Base = mix(YatObject).with(Stateable);
+
+var nativeAjax = $ && $.ajax;
+
 var Identity = Base.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
