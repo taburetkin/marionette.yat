@@ -3,7 +3,7 @@
 * Marionette.Yat extension for Backbone.Marionette
 * Yet Another Toolkit
 * ----------------------------------
-* v0.0.31
+* v0.0.32
 *
 * Distributed under MIT license
 * author: dimtabu
@@ -15,7 +15,7 @@ import Mn from 'backbone.marionette';
 import _ from 'underscore';
 import $$1 from 'jquery';
 
-var version = "0.0.31";
+var version = "0.0.32";
 
 var getCompareABModel = function getCompareABModel(arg) {
 	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
@@ -2027,12 +2027,12 @@ var Identity = Base.extend({
 		return this._token;
 	},
 	_replaceBackboneAjax: function _replaceBackboneAjax() {
+		var _this2 = this;
+
 		var token = this.getTokenValue();
 		if (!token) Bb.ajax = $.ajax; //$.ajax = nativeAjax;
 		else Bb.ajax = function () {
-				var _Yat$identity;
-
-				return (_Yat$identity = Yat.identity).ajax.apply(_Yat$identity, arguments);
+				return _this2.ajax.apply(_this2, arguments);
 			}; //$.ajax = (...args) => Yat.identity.ajax(...args);
 	},
 	getTokenValue: function getTokenValue() {
@@ -2068,7 +2068,7 @@ var Identity = Base.extend({
 		return !this.getTokenSeconds();
 	},
 	refreshBearerToken: function refreshBearerToken() {
-		var _this2 = this;
+		var _this3 = this;
 
 		var bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
 		var doRefresh = this.isTokenRefreshNeeded();
@@ -2084,18 +2084,18 @@ var Identity = Base.extend({
 			}
 			var data = {
 				'grant_type': 'refresh_token',
-				'refresh_token': _this2.getRefreshToken()
+				'refresh_token': _this3.getRefreshToken()
 			};
 			nativeAjax({
 				url: bearerTokenRenewUrl,
 				data: data,
 				method: 'POST'
 			}).then(function (token) {
-				_this2.setTokenObject(token);
+				_this3.setTokenObject(token);
 				resolve();
 			}, function () {
-				_this2.triggerMethod('refresh:token:expired');
-				reject(Yat.Error.Http401());
+				_this3.triggerMethod('refresh:token:expired');
+				reject(YatError.Http401());
 			});
 		});
 	}
