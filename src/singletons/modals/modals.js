@@ -34,8 +34,9 @@ let ModalEngine = mixin(YatObject).with(Stateable).extend({
 		modal && modal.destroy();
 	},
 
-	_listenForEsc(){
-
+	_listenForEsc(e){
+		if(e.keyCode !== 27) return;
+		
 		if(this.modals.length)
 			this.remove();
 	},
