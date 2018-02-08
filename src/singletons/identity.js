@@ -1,6 +1,9 @@
+
 import mix from '../helpers/mix';
 import Stateable from '../mixins/stateable';
 import YatObject from '../YatObject';
+import Bb from 'backbone';
+import _ from 'underscore';
 
 const IDENTITY_CHANNEL = 'identity';
 
