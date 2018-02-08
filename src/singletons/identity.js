@@ -5,6 +5,9 @@ import YatObject from '../YatObject';
 const IDENTITY_CHANNEL = 'identity';
 
 let Base = mix(YatObject).with(Stateable);
+
+let nativeAjax = $ && $.ajax;
+
 let Identity = Base.extend({	
 	constructor(...args){
 		Base.apply(this, args);
