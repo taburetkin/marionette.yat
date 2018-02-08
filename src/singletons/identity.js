@@ -4,6 +4,7 @@ import Stateable from '../mixins/stateable';
 import YatObject from '../YatObject';
 import Bb from 'backbone';
 import _ from 'underscore';
+import YatError from '../YatError';
 
 const IDENTITY_CHANNEL = 'identity';
 
@@ -110,7 +111,7 @@ let Identity = Base.extend({
 		if(!token)
 			Bb.ajax = $.ajax;//$.ajax = nativeAjax;
 		else
-			Bb.ajax = (...args) => Yat.identity.ajax(...args); //$.ajax = (...args) => Yat.identity.ajax(...args);
+			Bb.ajax = (...args) => this.ajax(...args); //$.ajax = (...args) => Yat.identity.ajax(...args);
 	},
 	getTokenValue(){
 		let token = this.getTokenObject();
@@ -171,7 +172,7 @@ let Identity = Base.extend({
 					resolve();
 				}, () => {
 					this.triggerMethod('refresh:token:expired');
-					reject(Yat.Error.Http401());
+					reject(YatError.Http401());
 				});
 	
 		});
