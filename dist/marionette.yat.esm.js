@@ -1987,6 +1987,7 @@ var Identity = Base.extend({
 
 		var model = new Bb.Model();
 		model.url = this.getProperty('identityUrl');
+
 		var promise = new Promise(function (resolve, reject) {
 			model.fetch().then(function () {
 				var hash = model.toJSON();

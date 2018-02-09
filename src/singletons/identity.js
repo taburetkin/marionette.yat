@@ -68,6 +68,7 @@ let Identity = Base.extend({
 
 		let model = new Bb.Model();
 		model.url = this.getProperty('identityUrl');
+		
 		let promise = new Promise((resolve, reject) => {
 			model.fetch().then(() => {
 				let hash = model.toJSON();
