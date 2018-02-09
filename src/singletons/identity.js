@@ -55,7 +55,7 @@ let Identity = Base.extend({
 					(token) => { 
 						this.setTokenObject(token);
 						resolve(token);
-						this.triggerMethod('token', token);
+						//this.triggerMethod('token', token);
 					},
 					(error) => reject(error)
 				);
@@ -68,7 +68,7 @@ let Identity = Base.extend({
 
 		let model = new Bb.Model();
 		model.url = this.getProperty('identityUrl');
-		
+
 		let promise = new Promise((resolve, reject) => {
 			model.fetch().then(() => {
 				let hash = model.toJSON();
@@ -121,7 +121,9 @@ let Identity = Base.extend({
 		this._updateHeaders();
 		this._replaceBackboneAjax();
 
-		this.triggerMethod('tocken:change');
+		this.getIdentity();
+
+		this.triggerMethod('token:change');
 	},
 	getTokenObject(){
 		return this._token;

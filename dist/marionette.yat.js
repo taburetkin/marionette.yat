@@ -1979,7 +1979,7 @@ var Identity = Base.extend({
 			nativeAjax({ url: url, data: data, method: 'POST' }).then(function (token) {
 				_this.setTokenObject(token);
 				resolve(token);
-				_this.triggerMethod('token', token);
+				//this.triggerMethod('token', token);
 			}, function (error) {
 				return reject(error);
 			});
@@ -2050,7 +2050,9 @@ var Identity = Base.extend({
 		this._updateHeaders();
 		this._replaceBackboneAjax();
 
-		this.triggerMethod('tocken:change');
+		this.getIdentity();
+
+		this.triggerMethod('token:change');
 	},
 	getTokenObject: function getTokenObject() {
 		return this._token;
