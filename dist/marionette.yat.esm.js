@@ -1936,6 +1936,9 @@ var Identity = Base.extend({
 	},
 	_initializeYatUser: function _initializeYatUser() {},
 
+	bearerTokenUrl: undefined,
+	bearerTokenRenewUrl: undefined, //if empty `bearerTokenUrl` will be used
+	identityUrl: undefined, //if set then there will be a request to obtain identity data	
 	channelName: IDENTITY_CHANNEL,
 	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
 	isAnonym: function isAnonym() {
@@ -1953,6 +1956,7 @@ var Identity = Base.extend({
 	},
 	logIn: function logIn(hash) {
 		if (!hash.id) return;
+		this.clearState();
 		this.update(hash);
 		this.trigger('log:in');
 	},
@@ -1972,6 +1976,24 @@ var Identity = Base.extend({
 				_this.triggerMethod('token', token);
 			}, function (error) {
 				return reject(error);
+			});
+		});
+		return promise;
+	},
+	getIdentity: function getIdentity() {
+		var _this2 = this;
+
+		if (this.getProperty('identityUrl') == null) return;
+
+		var model = new Bb.Model();
+		model.url = this.getProperty('identityUrl');
+		var promise = new Promise(function (resolve, reject) {
+			model.fetch().then(function () {
+				var hash = model.toJSON();
+				_this2.logIn(hash);
+				resolve(hash);
+			}, function (error) {
+				reject(error);
 			});
 		});
 		return promise;
@@ -2027,12 +2049,12 @@ var Identity = Base.extend({
 		return this._token;
 	},
 	_replaceBackboneAjax: function _replaceBackboneAjax() {
-		var _this2 = this;
+		var _this3 = this;
 
 		var token = this.getTokenValue();
 		if (!token) Bb.ajax = $.ajax; //$.ajax = nativeAjax;
 		else Bb.ajax = function () {
-				return _this2.ajax.apply(_this2, arguments);
+				return _this3.ajax.apply(_this3, arguments);
 			}; //$.ajax = (...args) => Yat.identity.ajax(...args);
 	},
 	getTokenValue: function getTokenValue() {
@@ -2068,7 +2090,7 @@ var Identity = Base.extend({
 		return !this.getTokenSeconds();
 	},
 	refreshBearerToken: function refreshBearerToken() {
-		var _this3 = this;
+		var _this4 = this;
 
 		var bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
 		var doRefresh = this.isTokenRefreshNeeded();
@@ -2084,17 +2106,17 @@ var Identity = Base.extend({
 			}
 			var data = {
 				'grant_type': 'refresh_token',
-				'refresh_token': _this3.getRefreshToken()
+				'refresh_token': _this4.getRefreshToken()
 			};
 			nativeAjax({
 				url: bearerTokenRenewUrl,
 				data: data,
 				method: 'POST'
 			}).then(function (token) {
-				_this3.setTokenObject(token);
+				_this4.setTokenObject(token);
 				resolve();
 			}, function () {
-				_this3.triggerMethod('refresh:token:expired');
+				_this4.triggerMethod('refresh:token:expired');
 				reject(YatError.Http401());
 			});
 		});

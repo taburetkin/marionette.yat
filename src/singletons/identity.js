@@ -18,6 +18,9 @@ let Identity = Base.extend({
 		this._initializeYatUser();
 	},
 	_initializeYatUser(){},	
+	bearerTokenUrl: undefined,
+	bearerTokenRenewUrl: undefined, //if empty `bearerTokenUrl` will be used
+	identityUrl: undefined, //if set then there will be a request to obtain identity data	
 	channelName: IDENTITY_CHANNEL,
 	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
 	isAnonym(){
@@ -35,6 +38,7 @@ let Identity = Base.extend({
 	},
 	logIn(hash){
 		if(!hash.id) return;
+		this.clearState();
 		this.update(hash);
 		this.trigger('log:in');
 	},
@@ -59,7 +63,22 @@ let Identity = Base.extend({
 		});
 		return promise;
 	},
+	getIdentity(){
+		if(this.getProperty('identityUrl') == null) return;
 
+		let model = new Bb.Model();
+		model.url = this.getProperty('identityUrl');
+		let promise = new Promise((resolve, reject) => {
+			model.fetch().then(() => {
+				let hash = model.toJSON();
+				this.logIn(hash)
+				resolve(hash);
+			},(error) => {
+				reject(error);
+			});
+		});
+		return promise;
+	},
 	ajax(...args){
 		let options = args[0];
 		options.headers = _.extend({}, options.headers, this.getAjaxHeaders());
