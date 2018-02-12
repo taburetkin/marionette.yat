@@ -128,7 +128,7 @@ let YatPageManager = Base.extend({
 		this.listenTo(identity, 'change', (...args) => {
 			this.triggerMethod('identity:change', ...args);
 			if(!this._moveToRootIfCurrentPageNotAllowed())
-				this._restartCurrentPage();
+				this.restartCurrentPage();
 		});
 	},
 	
@@ -142,10 +142,9 @@ let YatPageManager = Base.extend({
 		return true;
 	},
 
-	_restartCurrentPage(){
+	restartCurrentPage(){
 		let current = this.getCurrentPage();
-		if(!current) return;
-		current.restart();
+		current && current.restart();
 	}
 
 });
