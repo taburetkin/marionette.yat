@@ -127,8 +127,8 @@ let YatPageManager = Base.extend({
 	_registerIdentityHandlers(){
 		this.listenTo(identity, 'change', (...args) => {
 			this.triggerMethod('identity:change', ...args);
-			this._moveToRootIfCurrentPageNotAllowed();
-			this._restartCurrentPage();
+			if(!this._moveToRootIfCurrentPageNotAllowed())
+				this._restartCurrentPage();
 		});
 	},
 	
@@ -138,6 +138,8 @@ let YatPageManager = Base.extend({
 		if(!current || !current.isStartNotAllowed()) return;
 		
 		this.navigateToRoot();
+
+		return true;
 	},
 
 	_restartCurrentPage(){
