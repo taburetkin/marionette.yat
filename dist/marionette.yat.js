@@ -2048,7 +2048,7 @@ var Identity = Base.extend({
 	},
 	getTokenValue: function getTokenValue() {
 		var token = this.getTokenObject();
-		return token.access_token;
+		return token && token.access_token;
 	},
 	getRefreshToken: function getRefreshToken() {
 		var token = this.getTokenObject();

@@ -139,7 +139,7 @@ let Identity = Base.extend({
 	},
 	getTokenValue(){
 		let token = this.getTokenObject();
-		return token.access_token;
+		return token && token.access_token;
 	},
 	getRefreshToken(){
 		let token = this.getTokenObject();
