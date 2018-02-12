@@ -75,7 +75,7 @@ let Identity = Base.extend({
 				let hash = model.toJSON();
 				this.logIn(hash)
 				resolve(hash);
-			},(error) => {
+			},(error) => {				
 				reject(error);
 			});
 		});
@@ -119,14 +119,16 @@ let Identity = Base.extend({
 			token.expires = new Date(Date.now() + (token.expires_in * 1000));
 
 		this._token = token;
+		if(opts.silent !== true)
+			this.triggerMethod('token:change', token);
+
 		this._updateHeaders();
 		this._replaceBackboneAjax();
 
 		if(token != null && opts.identity !== false)
-			this.getIdentity();
-
-		if(opts.silent !== true)
-			this.triggerMethod('token:change', token);
+			this.getIdentity().catch().then(() => this.triggerMethod('token:identity:change'));
+		else
+			this.triggerMethod('token:identity:change');
 	},
 	getTokenObject(){
 		return this._token;

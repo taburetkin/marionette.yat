@@ -2023,29 +2023,33 @@ var Identity = Base.extend({
 		}
 	},
 	setTokenObject: function setTokenObject(token) {
+		var _this3 = this;
+
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
 
 		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
 
 		this._token = token;
+		if (opts.silent !== true) this.triggerMethod('token:change', token);
+
 		this._updateHeaders();
 		this._replaceBackboneAjax();
 
-		if (token != null && opts.identity !== false) this.getIdentity();
-
-		if (opts.silent !== true) this.triggerMethod('token:change', token);
+		if (token != null && opts.identity !== false) this.getIdentity().catch().then(function () {
+			return _this3.triggerMethod('token:identity:change');
+		});else this.triggerMethod('token:identity:change');
 	},
 	getTokenObject: function getTokenObject() {
 		return this._token;
 	},
 	_replaceBackboneAjax: function _replaceBackboneAjax() {
-		var _this3 = this;
+		var _this4 = this;
 
 		var token = this.getTokenValue();
 		if (!token) Bb.ajax = $.ajax; //$.ajax = nativeAjax;
 		else Bb.ajax = function () {
-				return _this3.ajax.apply(_this3, arguments);
+				return _this4.ajax.apply(_this4, arguments);
 			}; //$.ajax = (...args) => Yat.identity.ajax(...args);
 	},
 	getTokenValue: function getTokenValue() {
@@ -2081,7 +2085,7 @@ var Identity = Base.extend({
 		return !this.getTokenSeconds();
 	},
 	refreshBearerToken: function refreshBearerToken() {
-		var _this4 = this;
+		var _this5 = this;
 
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -2099,17 +2103,17 @@ var Identity = Base.extend({
 			}
 			var data = {
 				'grant_type': 'refresh_token',
-				'refresh_token': _this4.getRefreshToken()
+				'refresh_token': _this5.getRefreshToken()
 			};
 			nativeAjax({
 				url: bearerTokenRenewUrl,
 				data: data,
 				method: 'POST'
 			}).then(function (token) {
-				_this4.setTokenObject(token);
+				_this5.setTokenObject(token);
 				resolve();
 			}, function () {
-				_this4.triggerMethod('refresh:token:expired');
+				_this5.triggerMethod('refresh:token:expired');
 				reject(YatError.Http401());
 			});
 		});
