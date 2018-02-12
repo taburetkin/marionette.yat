@@ -51,6 +51,8 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 			}			
 		});
 
+		this.on('all', (name) => this.applyModifiers(name));
+
 	},
 
 	canBeClosed(){
@@ -113,12 +115,16 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 		cfg.css.wrapper && this.$el.addClass(cfg.css.wrapper);
 		
 		this.$el.appendTo($('body'));
+
+
+
 	},
 	onRender(){
 		if(this.content instanceof Bb.View){
 			this.showChildView('content', this.content);
 			this.content.inModal = this;
 		}
+		this.applyModifiers('after:render');
 	},
 	
 	_getModalOptions(){
@@ -147,7 +153,7 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 		type.show = _.extend({}, config.get('dafaultShow'), type.show, this.getOption('show'));
 		type.labels = _.extend({}, config.get('defaultLabels'), type.labels, this.getOption('labels'));
 		type.css= _.extend({}, config.get('defaultCss'), type.css, this.getOption('css'));
-		
+		type.modifiers = _.extend({}, config.get('defaultModifiers'), type.modifiers, this.getOption('modifiers'));
 		type.options = _.extend({}, config.get('defaultOptions'), type.options, this._getModalOptions());
 
 		if(type.show.header == null && this.getOption('header'))
@@ -163,7 +169,10 @@ const ModalView = mix(YatView).with(OptionProperty).extend({
 
 		return this.config = type;
 	},
-
+	applyModifiers(name){
+		let modifiers = this.getConfigValue('modifiers',name);
+		_(modifiers).each((mod) => _.isFunction(mod) && mod.call(this));
+	},
 	templateContext(){
 		let cfg = this.getConfig();
 		return {

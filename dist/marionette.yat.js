@@ -2305,6 +2305,10 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 				_this2.destroy();
 			}
 		});
+
+		this.on('all', function (name) {
+			return _this2.applyModifiers(name);
+		});
 	},
 	canBeClosed: function canBeClosed() {
 		return this.getConfigValue('options', 'preventClose') !== true;
@@ -2372,6 +2376,7 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 			this.showChildView('content', this.content);
 			this.content.inModal = this;
 		}
+		this.applyModifiers('after:render');
 	},
 	_getModalOptions: function _getModalOptions() {
 		var h = {};
@@ -2395,7 +2400,7 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		type.show = _.extend({}, config.get('dafaultShow'), type.show, this.getOption('show'));
 		type.labels = _.extend({}, config.get('defaultLabels'), type.labels, this.getOption('labels'));
 		type.css = _.extend({}, config.get('defaultCss'), type.css, this.getOption('css'));
-
+		type.modifiers = _.extend({}, config.get('defaultModifiers'), type.modifiers, this.getOption('modifiers'));
 		type.options = _.extend({}, config.get('defaultOptions'), type.options, this._getModalOptions());
 
 		if (type.show.header == null && this.getOption('header')) type.show.header = true;
@@ -2406,6 +2411,14 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		if (type.show.actions == null && (type.show.resolve || type.show.reject)) type.show.actions = true;
 
 		return this.config = type;
+	},
+	applyModifiers: function applyModifiers(name) {
+		var _this3 = this;
+
+		var modifiers = this.getConfigValue('modifiers', name);
+		_(modifiers).each(function (mod) {
+			return _.isFunction(mod) && mod.call(_this3);
+		});
 	},
 	templateContext: function templateContext() {
 		var cfg = this.getConfig();
