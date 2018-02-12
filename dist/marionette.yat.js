@@ -2763,6 +2763,32 @@ var YatPage = Base$2.extend({
 		}
 		return this._layoutView;
 	},
+	triggerBeforeStart: function triggerBeforeStart() {
+		this.prepareQueryString();
+
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
+		}
+
+		this.triggerMethod.apply(this, ['before:start'].concat(args));
+	},
+	prepareQueryString: function prepareQueryString() {
+		var query = (document.location.search || '?').split('?')[1];
+		var pairs = query.split('&');
+		var hash = {};
+		_(pairs).each(function (pair) {
+			var kv = (pair || '').split('=');
+			if (kv.length < 2 || !kv[0]) return;
+			var key = kv[0];
+			var val = kv[1];
+			if (!(key in hash)) {
+				hash[key] = val;
+			} else {
+				if (hash[key] instanceof Array) hash[key].push(val);else hash[key] = [hash[key], val];
+			}
+		});
+		this.queryString = hash;
+	},
 	buildLayout: function buildLayout() {
 		var Layout = this.getProperty('Layout');
 		if (Layout == null) return;
@@ -2951,8 +2977,8 @@ var YatPage = Base$2.extend({
 		});
 		var page = this;
 		page.on('all', function (eventName) {
-			for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-				args[_key2 - 1] = arguments[_key2];
+			for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+				args[_key3 - 1] = arguments[_key3];
 			}
 
 			var contexts = eventName in eventsHash ? eventsHash[eventName] : all;
@@ -2975,8 +3001,8 @@ var YatPage = Base$2.extend({
 		var _this = this;
 
 		this.listenTo(identity, 'change', function () {
-			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-				args[_key3] = arguments[_key3];
+			for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+				args[_key4] = arguments[_key4];
 			}
 
 			_this._destroyLinkModel();

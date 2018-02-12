@@ -39,7 +39,30 @@ export default Base.extend({
 		}
 		return this._layoutView;
 	},
-
+	triggerBeforeStart(...args){
+		this.prepareQueryString();
+		this.triggerMethod('before:start', ...args);
+	},
+	prepareQueryString(){
+		var query = (document.location.search || '?').split('?')[1];
+		var pairs = query.split('&');
+		var hash = {};
+		_(pairs).each(function (pair) {
+			var kv = (pair || '').split('=');
+			if (kv.length < 2 || !kv[0]) return;
+			var key = kv[0];
+			var val = kv[1];
+			if (!(key in hash)) {
+				hash[key] = val;
+			} else {
+				if (hash[key] instanceof Array)
+					hash[key].push(val);
+				else
+					hash[key] = [hash[key], val];
+			}
+		});
+		this.queryString = hash;
+	},
 	buildLayout(){
 		let Layout = this.getProperty('Layout');
 		if(Layout == null) return;
