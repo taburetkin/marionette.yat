@@ -13,6 +13,13 @@ let YatPageManager = Base.extend({
 		Base.apply(this, args);
 		this._initializeYatPageManager(...args);
 	},
+	_initializeYatPageManager(opts = {}){
+		this.mergeOptions(opts, ['id','name','label']);
+		this._registerPageHandlers(opts);
+		this._registerIdentityHandlers();
+		this.createRouter();
+	},
+
 	throwChildErrors:true,
 	createRouter(){
 		let children = this.getChildren({startable:false});
@@ -85,12 +92,7 @@ let YatPageManager = Base.extend({
 			console.warn('root page not found');
 	},
 
-	_initializeYatPageManager(opts = {}){
-		this.mergeOptions(opts, ['id','name','label']);
-		this._registerPageHandlers(opts);
-		this._registerIdentityHandlers();
-		this.createRouter();
-	},
+
 
 	_buildChildOptions: function(def){
 		return _.extend(def, this.getProperty('childOptions'), {
