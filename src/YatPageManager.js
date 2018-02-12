@@ -75,6 +75,9 @@ let YatPageManager = Base.extend({
 
 	},
 
+	getCurrentPage(){
+		return this.getState('currentPage');
+	},
 
 	navigateToRoot(){
 		let current = this.getState('currentPage');
@@ -125,14 +128,22 @@ let YatPageManager = Base.extend({
 		this.listenTo(identity, 'change', (...args) => {
 			this.triggerMethod('identity:change', ...args);
 			this._moveToRootIfCurrentPageNotAllowed();
+			this._restartCurrentPage();
 		});
 	},
 	
 	_moveToRootIfCurrentPageNotAllowed(){
-		let current = this.getState('currentPage');
+		let current = this.getCurrentPage();
+		
 		if(!current || !current.isStartNotAllowed()) return;
 		
 		this.navigateToRoot();
+	},
+
+	_restartCurrentPage(){
+		let current = this.getCurrentPage();
+		if(!current) return;
+		current.restart();
 	}
 
 });

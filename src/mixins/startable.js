@@ -58,6 +58,14 @@ export default (Base) => {
 		isStartNotAllowed(){ },
 		isStopNotAllowed(){ },
 
+		isStarted(){
+			return this._isLifeState(STATES.RUNNING);
+		},
+
+		isStoped(){
+			return this._isLifeStateIn(STATES.WAITING, STATES.INITIALIZED);
+		},
+
 		addStartPromise(promise){
 			addPropertyPromise(this,'_startRuntimePromises', promise);
 		},
@@ -79,41 +87,7 @@ export default (Base) => {
 
 		start(...args){
 			let options = args[0];
-			/*
-			let canNotBeStarted = this._ensureStartableCanBeStarted();
-			let resultPromise = null;
-			let catchMethod = null;
 
-			if(canNotBeStarted){
-				catchMethod = () => this.triggerMethod('start:decline',canNotBeStarted);
-				//resultPromise = Promise.reject(canNotBeStarted);				
-			}
-
-			if(resultPromise == null){
-				let declineReason = this.isStartNotAllowed(options);
-				if(declineReason) {
-					catchMethod = () => this.triggerMethod('start:decline',declineReason);
-					resultPromise = Promise.reject(declineReason);
-				}
-			}
-
-			if(resultPromise == null){
-				var currentState = this._getLifeState();
-				this._tryMergeStartOptions(options);		
-				this.triggerMethod('before:start', ...args);
-
-				resultPromise = this._getStartPromise();
-			}
-			*/	
-			
-			
-			// return resultPromise.then(() => {
-			// 	this.triggerStart(options)
-			// }, (error) => {				
-			// 	this._setLifeState(currentState);
-			// 	if(catchMethod) catchMethod();
-			// 	return Promise.reject(error);
-			// });	
 			let _this = this;
 			let promise = new Promise(function(resolve, reject){
 				let canNotBeStarted = _this._ensureStartableCanBeStarted();
@@ -150,34 +124,24 @@ export default (Base) => {
 			this.triggerMethod('start', options);
 		},
 
+		restart(options){
+			let canBeStarted = this._ensureStartableCanBeStarted();
+			let promise = new Promise((resolve, reject) => {
+				if(this.isStarted())
+					this.stop().then((arg) => this.start().then((arg) => resolve(arg), (arg) => reject(arg)), (arg) => reject(arg));
+				else if(this.isStoped())
+					this.start().then((arg) => resolve(arg), (arg) => reject(arg));
+				else
+					reject(new YatError({
+						name: 'StartableLifecycleError',
+						message: 'Restart not allowed when startable not in idle',
+					}));
+			});
+			return promise;
+		},
+
 		stop(...args){
 			let options = args[0];
-			/*
-			let canNotBeStopped = this._ensureStartableCanBeStopped();
-			if(canNotBeStopped){
-				this.triggerMethod('stop:decline',canNotBeStopped);
-				return Promise.reject(canNotBeStopped);				
-			}
-			let declineReason = this.isStopNotAllowed(options);
-			if(declineReason){
-				this.triggerMethod('stop:decline', declineReason);
-				return Promise.reject(declineReason);
-			}
-			
-
-			var currentState = this._getLifeState();
-
-			this._tryMergeStopOptions(options);
-			this.triggerMethod('before:stop', this, options);
-
-			let promise = this._getStopPromise();
-
-			return promise.then(() => {
-				this.triggerStop(options)
-			}, () => {
-				this._setLifeState(currentState);
-			});	
-			*/
 
 			let _this = this;
 			let promise = new Promise(function(resolve, reject){
@@ -274,7 +238,7 @@ export default (Base) => {
 			this.mergeOptions(options, mergeoptions);
 		},
 
-		_ensureStartableIsIntact(opts = {throwError: false}) {
+		_ensureStartableIsIntact(opts = { throwError: false }) {
 			let message = 'Startable has already been destroyed and cannot be used.';
 			let error = new YatError({
 				name: 'StartableLifecycleError',
