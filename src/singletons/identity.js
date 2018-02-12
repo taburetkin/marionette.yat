@@ -170,9 +170,9 @@ let Identity = Base.extend({
 		if(!token) return false;	
 		return !this.getTokenSeconds();
 	},
-	refreshBearerToken(){
+	refreshBearerToken(opts = {}){
 		let bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
-		let doRefresh = this.isTokenRefreshNeeded();
+		let doRefresh = opts.force === true || this.isTokenRefreshNeeded();
 		return new Promise((resolve, reject) => {
 			if(!doRefresh){
 				resolve();

@@ -2077,8 +2077,10 @@ var Identity = Base.extend({
 	refreshBearerToken: function refreshBearerToken() {
 		var _this4 = this;
 
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
 		var bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
-		var doRefresh = this.isTokenRefreshNeeded();
+		var doRefresh = opts.force === true || this.isTokenRefreshNeeded();
 		return new Promise(function (resolve, reject) {
 			if (!doRefresh) {
 				resolve();
