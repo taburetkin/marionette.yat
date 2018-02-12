@@ -46,14 +46,12 @@ let YatPageManager = Base.extend({
 			.filter((child) => !!child)
 			.value();
 	},
-	execute(route){
+	execute(route, opts = {}){
 		let page = this.getPage(route);
-		if(!!page) 
-			page.start({text: error.message});
-		else if(route === '*NotFound')
-			throw new YatError.NotFound('*NotFound handler is missing');
+		if(page)
+			page.start(opts);
 		else
-			this.execute('*NotFound');
+			throw new YatError.NotFound('Route not found'); 
 	},
 	navigate(url, opts = {trigger:true}){
 

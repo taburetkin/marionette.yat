@@ -3055,8 +3055,10 @@ var YatPageManager = Base$3.extend({
 		}).value();
 	},
 	execute: function execute(route) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
 		var page = this.getPage(route);
-		if (!!page) page.start({ text: error.message });else if (route === '*NotFound') throw new YatError.NotFound('*NotFound handler is missing');else this.execute('*NotFound');
+		if (page) page.start(opts);else throw new YatError.NotFound('Route not found');
 	},
 	navigate: function navigate(url) {
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
