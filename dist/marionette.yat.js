@@ -2726,7 +2726,7 @@ var YatPage = Base$2.extend({
 
 	initializeYatPage: function initializeYatPage(opts) {
 		this.mergeOptions(opts, ["manager"]);
-		this._initializeModels(opts);
+		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
 		this._tryCreateRouter();
@@ -2846,7 +2846,7 @@ var YatPage = Base$2.extend({
 		var col = new Bb.Collection(sublinks);
 		return col;
 	},
-	_initializeModels: function _initializeModels() {
+	_initializeLayoutModels: function _initializeLayoutModels() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 		this.addModel(opts.model, opts);

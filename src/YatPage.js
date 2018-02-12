@@ -26,7 +26,7 @@ export default Base.extend({
 
 	initializeYatPage(opts){
 		this.mergeOptions(opts, ["manager"]);
-		this._initializeModels(opts);
+		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
 		this._tryCreateRouter();
@@ -150,7 +150,7 @@ export default Base.extend({
 		return col;
 	},
 
-	_initializeModels(opts = {}){
+	_initializeLayoutModels(opts = {}){
 		this.addModel(opts.model, opts);
 		this.addCollection(opts.collection, opts);
 	},
@@ -195,7 +195,6 @@ export default Base.extend({
 			this.router = this._createAppRouter();
 		}
 	},
-
 	_createAppRouter(){
 		let hash = this.getRouteHash();
 		if(!_.size(hash)) return;

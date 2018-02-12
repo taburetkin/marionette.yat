@@ -56,7 +56,7 @@ export default Base.extend({
 	},
 	getCurrentPages(){
 		let pages = _(this._pageManagers).map((mngr) => mngr.getCurrentPage());
-		return _(pages).filter((p) => p!=null);
+		return _(pages).filter((p) => p != null);
 	},
 	isCurrentPage(page){
 		let current = this.getCurrentPages();
