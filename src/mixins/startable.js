@@ -128,7 +128,7 @@ export default (Base) => {
 			return promise;
 		},
 		triggerBeforeStart(...args){
-			_this.triggerMethod('before:start', ...args);
+			this.triggerMethod('before:start', ...args);
 		},
 		triggerStart(options) {
 			this.triggerMethod('start', options);

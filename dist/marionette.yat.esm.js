@@ -710,31 +710,29 @@ var Startable = (function (Base) {
 			return promise;
 		},
 		triggerBeforeStart: function triggerBeforeStart() {
-			var _this3;
-
 			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
 				args[_key3] = arguments[_key3];
 			}
 
-			(_this3 = _this).triggerMethod.apply(_this3, ['before:start'].concat(args));
+			this.triggerMethod.apply(this, ['before:start'].concat(args));
 		},
 		triggerStart: function triggerStart(options) {
 			this.triggerMethod('start', options);
 		},
 		restart: function restart(options) {
-			var _this4 = this;
+			var _this3 = this;
 
 			var canBeStarted = this._ensureStartableCanBeStarted();
 			var promise = new Promise(function (resolve, reject) {
-				if (_this4.isStarted()) _this4.stop().then(function (arg) {
-					return _this4.start().then(function (arg) {
+				if (_this3.isStarted()) _this3.stop().then(function (arg) {
+					return _this3.start().then(function (arg) {
 						return resolve(arg);
 					}, function (arg) {
 						return reject(arg);
 					});
 				}, function (arg) {
 					return reject(arg);
-				});else if (_this4.isStoped()) _this4.start().then(function (arg) {
+				});else if (_this3.isStoped()) _this3.start().then(function (arg) {
 					return resolve(arg);
 				}, function (arg) {
 					return reject(arg);
@@ -801,44 +799,44 @@ var Startable = (function (Base) {
 			return this._getLifeState() === state;
 		},
 		_isLifeStateIn: function _isLifeStateIn() {
-			var _this5 = this;
+			var _this4 = this;
 
 			for (var _len5 = arguments.length, states = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
 				states[_key5] = arguments[_key5];
 			}
 
 			return _(states).some(function (state) {
-				return _this5._isLifeState(state);
+				return _this4._isLifeState(state);
 			});
 		},
 		_isInProcess: function _isInProcess() {
 			return this._isLifeStateIn(STATES.STARTING, STATES.STOPPING);
 		},
 		_registerStartableLifecycleListeners: function _registerStartableLifecycleListeners() {
-			var _this6 = this;
+			var _this5 = this;
 
 			var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
 			if (freezeWhileStarting && _.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
-				_this6.freezeUI();
+				_this5.freezeUI();
 			});
 			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start', function () {
-				_this6.unFreezeUI();
+				_this5.unFreezeUI();
 			});
 
 			this.on('before:start', function () {
-				return _this6._setLifeState(STATES.STARTING);
+				return _this5._setLifeState(STATES.STARTING);
 			});
 			this.on('start', function () {
-				return _this6._setLifeState(STATES.RUNNING);
+				return _this5._setLifeState(STATES.RUNNING);
 			});
 			this.on('before:stop', function () {
-				return _this6._setLifeState(STATES.STOPPING);
+				return _this5._setLifeState(STATES.STOPPING);
 			});
 			this.on('stop', function () {
-				return _this6._setLifeState(STATES.WAITING);
+				return _this5._setLifeState(STATES.WAITING);
 			});
 			this.on('destroy', function () {
-				return _this6._setLifeState(STATES.DESTROYED);
+				return _this5._setLifeState(STATES.DESTROYED);
 			});
 		},
 		_tryMergeStartOptions: function _tryMergeStartOptions(options) {
