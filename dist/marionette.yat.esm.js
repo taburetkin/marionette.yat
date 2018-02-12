@@ -632,6 +632,10 @@ var Startable = (function (Base) {
 	var Middle = mix(Base).with(Stateable);
 	var Mixin = Middle.extend({
 		constructor: function constructor() {
+			this._startRuntimePromises = [];
+			this._startPromises = [];
+			this._stopPromises = [];
+
 			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 				args[_key] = arguments[_key];
 			}
@@ -664,9 +668,6 @@ var Startable = (function (Base) {
 
 			this._registerStartableLifecycleListeners();
 			this._setLifeState(STATES.INITIALIZED);
-			this._startRuntimePromises = [];
-			this._startPromises = [];
-			this._stopPromises = [];
 		},
 		start: function start() {
 			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {

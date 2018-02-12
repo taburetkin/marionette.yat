@@ -55,6 +55,10 @@ export default (Base) => {
 	let Middle = mix(Base).with(State);
 	let Mixin = Middle.extend({
 		constructor(...args){
+			this._startRuntimePromises = [];
+			this._startPromises = [];
+			this._stopPromises = [];
+			
 			Middle.apply(this,args);
 			this.initializeStartable();
 		},
@@ -87,9 +91,6 @@ export default (Base) => {
 
 			this._registerStartableLifecycleListeners();
 			this._setLifeState(STATES.INITIALIZED);
-			this._startRuntimePromises = [];
-			this._startPromises = [];
-			this._stopPromises = [];
 		},	
 
 		start(...args){
