@@ -92,11 +92,11 @@ export default (Base) => {
 			this._registerStartableLifecycleListeners();
 			this._setLifeState(STATES.INITIALIZED);
 		},	
-
+		prepareForStart(){},
 		start(...args){
 			let options = args[0];
-
 			let _this = this;
+			this.prepareForStart();
 			let promise = new Promise(function(resolve, reject){
 				let canNotBeStarted = _this._ensureStartableCanBeStarted();
 

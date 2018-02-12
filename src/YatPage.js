@@ -39,9 +39,8 @@ export default Base.extend({
 		}
 		return this._layoutView;
 	},
-	triggerBeforeStart(...args){
+	prepareForStart(){
 		this.prepareQueryString();
-		this.triggerMethod('before:start', ...args);
 	},
 	prepareQueryString(){
 		var query = (document.location.search || '?').split('?')[1];
