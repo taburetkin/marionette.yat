@@ -2417,8 +2417,8 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 	},
 	onRender: function onRender() {
 		if (this.content instanceof Bb.View) {
-			this.showChildView('content', this.content);
 			this.content.inModal = this;
+			this.showChildView('content', this.content);
 		}
 		this.applyModifiers('after:render');
 	},
