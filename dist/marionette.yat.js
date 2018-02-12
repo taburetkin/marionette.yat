@@ -2023,6 +2023,8 @@ var Identity = Base.extend({
 		}
 	},
 	setTokenObject: function setTokenObject(token) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
 
 		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
 
@@ -2030,9 +2032,9 @@ var Identity = Base.extend({
 		this._updateHeaders();
 		this._replaceBackboneAjax();
 
-		if (token != null) this.getIdentity();
+		if (token != null && opts.identity !== false) this.getIdentity();
 
-		this.triggerMethod('token:change', token);
+		if (opts.silent !== true) this.triggerMethod('token:change', token);
 	},
 	getTokenObject: function getTokenObject() {
 		return this._token;

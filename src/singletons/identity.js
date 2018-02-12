@@ -113,7 +113,7 @@ let Identity = Base.extend({
 			delete headers.Authorization;
 		}
 	},	
-	setTokenObject(token){
+	setTokenObject(token, opts = {}){
 
 		if(token != null && _.isObject(token))
 			token.expires = new Date(Date.now() + (token.expires_in * 1000));
@@ -122,10 +122,11 @@ let Identity = Base.extend({
 		this._updateHeaders();
 		this._replaceBackboneAjax();
 
-		if(token != null)
+		if(token != null && opts.identity !== false)
 			this.getIdentity();
 
-		this.triggerMethod('token:change', token);
+		if(opts.silent !== true)
+			this.triggerMethod('token:change', token);
 	},
 	getTokenObject(){
 		return this._token;
