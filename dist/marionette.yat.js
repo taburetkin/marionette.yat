@@ -644,6 +644,12 @@ var Startable = (function (Base) {
 		unFreezeUI: function unFreezeUI() {},
 		isStartNotAllowed: function isStartNotAllowed() {},
 		isStopNotAllowed: function isStopNotAllowed() {},
+		isStarted: function isStarted() {
+			return this._isLifeState(STATES.RUNNING);
+		},
+		isStoped: function isStoped() {
+			return this._isLifeStateIn(STATES.WAITING, STATES.INITIALIZED);
+		},
 		addStartPromise: function addStartPromise(promise) {
 			addPropertyPromise(this, '_startRuntimePromises', promise);
 		},
@@ -666,36 +672,7 @@ var Startable = (function (Base) {
 			}
 
 			var options = args[0];
-			/*
-   let canNotBeStarted = this._ensureStartableCanBeStarted();
-   let resultPromise = null;
-   let catchMethod = null;
-   		if(canNotBeStarted){
-   	catchMethod = () => this.triggerMethod('start:decline',canNotBeStarted);
-   	//resultPromise = Promise.reject(canNotBeStarted);				
-   }
-   		if(resultPromise == null){
-   	let declineReason = this.isStartNotAllowed(options);
-   	if(declineReason) {
-   		catchMethod = () => this.triggerMethod('start:decline',declineReason);
-   		resultPromise = Promise.reject(declineReason);
-   	}
-   }
-   		if(resultPromise == null){
-   	var currentState = this._getLifeState();
-   	this._tryMergeStartOptions(options);		
-   	this.triggerMethod('before:start', ...args);
-   			resultPromise = this._getStartPromise();
-   }
-   */
 
-			// return resultPromise.then(() => {
-			// 	this.triggerStart(options)
-			// }, (error) => {				
-			// 	this._setLifeState(currentState);
-			// 	if(catchMethod) catchMethod();
-			// 	return Promise.reject(error);
-			// });	
 			var _this = this;
 			var promise = new Promise(function (resolve, reject) {
 				var canNotBeStarted = _this._ensureStartableCanBeStarted();
@@ -732,34 +709,36 @@ var Startable = (function (Base) {
 		triggerStart: function triggerStart(options) {
 			this.triggerMethod('start', options);
 		},
+		restart: function restart(options) {
+			var _this3 = this;
+
+			var canBeStarted = this._ensureStartableCanBeStarted();
+			var promise = new Promise(function (resolve, reject) {
+				if (_this3.isStarted()) _this3.stop().then(function (arg) {
+					return _this3.start().then(function (arg) {
+						return resolve(arg);
+					}, function (arg) {
+						return reject(arg);
+					});
+				}, function (arg) {
+					return reject(arg);
+				});else if (_this3.isStoped()) _this3.start().then(function (arg) {
+					return resolve(arg);
+				}, function (arg) {
+					return reject(arg);
+				});else reject(new YatError({
+					name: 'StartableLifecycleError',
+					message: 'Restart not allowed when startable not in idle'
+				}));
+			});
+			return promise;
+		},
 		stop: function stop() {
 			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
 				args[_key3] = arguments[_key3];
 			}
 
 			var options = args[0];
-			/*
-   let canNotBeStopped = this._ensureStartableCanBeStopped();
-   if(canNotBeStopped){
-   	this.triggerMethod('stop:decline',canNotBeStopped);
-   	return Promise.reject(canNotBeStopped);				
-   }
-   let declineReason = this.isStopNotAllowed(options);
-   if(declineReason){
-   	this.triggerMethod('stop:decline', declineReason);
-   	return Promise.reject(declineReason);
-   }
-   
-   		var currentState = this._getLifeState();
-   		this._tryMergeStopOptions(options);
-   this.triggerMethod('before:stop', this, options);
-   		let promise = this._getStopPromise();
-   		return promise.then(() => {
-   	this.triggerStop(options)
-   }, () => {
-   	this._setLifeState(currentState);
-   });	
-   */
 
 			var _this = this;
 			var promise = new Promise(function (resolve, reject) {
@@ -810,44 +789,44 @@ var Startable = (function (Base) {
 			return this._getLifeState() === state;
 		},
 		_isLifeStateIn: function _isLifeStateIn() {
-			var _this3 = this;
+			var _this4 = this;
 
 			for (var _len4 = arguments.length, states = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
 				states[_key4] = arguments[_key4];
 			}
 
 			return _(states).some(function (state) {
-				return _this3._isLifeState(state);
+				return _this4._isLifeState(state);
 			});
 		},
 		_isInProcess: function _isInProcess() {
 			return this._isLifeStateIn(STATES.STARTING, STATES.STOPPING);
 		},
 		_registerStartableLifecycleListeners: function _registerStartableLifecycleListeners() {
-			var _this4 = this;
+			var _this5 = this;
 
 			var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
 			if (freezeWhileStarting && _.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
-				_this4.freezeUI();
+				_this5.freezeUI();
 			});
 			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start', function () {
-				_this4.unFreezeUI();
+				_this5.unFreezeUI();
 			});
 
 			this.on('before:start', function () {
-				return _this4._setLifeState(STATES.STARTING);
+				return _this5._setLifeState(STATES.STARTING);
 			});
 			this.on('start', function () {
-				return _this4._setLifeState(STATES.RUNNING);
+				return _this5._setLifeState(STATES.RUNNING);
 			});
 			this.on('before:stop', function () {
-				return _this4._setLifeState(STATES.STOPPING);
+				return _this5._setLifeState(STATES.STOPPING);
 			});
 			this.on('stop', function () {
-				return _this4._setLifeState(STATES.WAITING);
+				return _this5._setLifeState(STATES.WAITING);
 			});
 			this.on('destroy', function () {
-				return _this4._setLifeState(STATES.DESTROYED);
+				return _this5._setLifeState(STATES.DESTROYED);
 			});
 		},
 		_tryMergeStartOptions: function _tryMergeStartOptions(options) {
@@ -2941,6 +2920,15 @@ var YatPageManager = Base$3.extend({
 		Base$3.apply(this, args);
 		this._initializeYatPageManager.apply(this, args);
 	},
+	_initializeYatPageManager: function _initializeYatPageManager() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		this.mergeOptions(opts, ['id', 'name', 'label']);
+		this._registerPageHandlers(opts);
+		this._registerIdentityHandlers();
+		this.createRouter();
+	},
+
 
 	throwChildErrors: true,
 	createRouter: function createRouter() {
@@ -2988,6 +2976,9 @@ var YatPageManager = Base$3.extend({
 		});
 		return found && found.context;
 	},
+	getCurrentPage: function getCurrentPage() {
+		return this.getState('currentPage');
+	},
 	navigateToRoot: function navigateToRoot() {
 		var current = this.getState('currentPage');
 		var rootUrl = this.getProperty('rootUrl');
@@ -3001,14 +2992,6 @@ var YatPageManager = Base$3.extend({
 			}
 		}
 		if (rootUrl != null) this.navigate(rootUrl);else console.warn('root page not found');
-	},
-	_initializeYatPageManager: function _initializeYatPageManager() {
-		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-		this.mergeOptions(opts, ['id', 'name', 'label']);
-		this._registerPageHandlers(opts);
-		this._registerIdentityHandlers();
-		this.createRouter();
 	},
 
 
@@ -3044,14 +3027,21 @@ var YatPageManager = Base$3.extend({
 			}
 
 			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
-			_this._moveToRootIfCurrentPageNotAllowed();
+			if (!_this._moveToRootIfCurrentPageNotAllowed()) _this.restartCurrentPage();
 		});
 	},
 	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
-		var current = this.getState('currentPage');
+		var current = this.getCurrentPage();
+
 		if (!current || !current.isStartNotAllowed()) return;
 
 		this.navigateToRoot();
+
+		return true;
+	},
+	restartCurrentPage: function restartCurrentPage() {
+		var current = this.getCurrentPage();
+		current && current.restart();
 	}
 });
 
