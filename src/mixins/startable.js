@@ -112,8 +112,8 @@ export default (Base) => {
 					reject(declineReason);
 					return;
 				}				
-
-				_this.triggerMethod('before:start', ...args);
+				_this.triggerBeforeStart(...args);
+				
 				let currentState = _this._getLifeState();
 				let dependedOn = _this._getStartPromise();
 				dependedOn.then(() => {
@@ -127,7 +127,9 @@ export default (Base) => {
 			});
 			return promise;
 		},
-
+		triggerBeforeStart(...args){
+			_this.triggerMethod('before:start', ...args);
+		},
 		triggerStart(options) {
 			this.triggerMethod('start', options);
 		},
