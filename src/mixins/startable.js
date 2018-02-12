@@ -18,7 +18,7 @@ const STATE_KEY = 'life';
 function getPropertyPromise(context, propertyName){
 
 	if(context == null || propertyName == null)
-		return Promise.resolve();
+		return;
 
 	let _promises1 = context['_'+propertyName] || [];
 	let _promises2 = _.result(context, propertyName) || [];
@@ -28,18 +28,25 @@ function getPropertyPromise(context, propertyName){
 
 	let promises = [];
 	_(rawPromises).each((promiseArg) => {
-		if(_.isFunction(promiseArg))
-			promises.push(promiseArg.call(this));
+		if(_.isFunction(promiseArg)){
+			let invoked = promiseArg.call(this);
+			if(invoked)
+				promises.push(invoked);
+		}
 		else if(promiseArg != null)
 			promises.push(promiseArg);
 	});
-	return Promise.all(promises);
+	return Promise.all(promises.filter((f) => f!=null));
 }
 
 function addPropertyPromise(context, propertyName, promise){
+
+	if(context == null || propertyName == null || promise == null) return;
+	
 	context[propertyName] || (context[propertyName] = []);
-	let promises = context[propertyName];
-	promises.push(promise);
+
+	context[propertyName].push(promise);
+
 }
 
 
@@ -67,7 +74,7 @@ export default (Base) => {
 		},
 
 		addStartPromise(promise){
-			addPropertyPromise(this,'_startRuntimePromises', promise);
+			addPropertyPromise(this, '_startRuntimePromises', promise);
 		},
 
 		addStopPromise(promise){
@@ -325,18 +332,24 @@ export default (Base) => {
 
 		_getStartPromises(options = {}){
 			let promises = [];
-			promises.push(this._getStartParentPromise());
-			promises.push(this._getStartPagePromise());
-			if(options.noruntime !== true)
-				promises.push(this._getStartRuntimePromise());
+			let parent = this._getStartParentPromise();
+			parent && promises.push(parent);
+			let instance = this._getStartInstancePromise();
+			instance && promises.push(instance);
+
+			if(options.noruntime !== true){
+				let runtime = this._getStartRuntimePromise();
+				runtime && promises.push(runtime)
+			}
 			return promises;
 		},
 
 		_getStartRuntimePromise(){
 			return getPropertyPromise(this,'startRuntimePromises');
 		},
-		_getStartPagePromise(){
-			return getPropertyPromise(this,'startPromises');
+		_getStartInstancePromise(){
+			let promises = getPropertyPromise(this,'startPromises');
+			return promises;
 		},
 		_getStartParentPromise(){
 			var parent = _.result(this, 'getParent');

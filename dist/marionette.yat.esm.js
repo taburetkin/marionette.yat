@@ -599,7 +599,7 @@ var STATE_KEY = 'life';
 function getPropertyPromise(context, propertyName) {
 	var _this2 = this;
 
-	if (context == null || propertyName == null) return Promise.resolve();
+	if (context == null || propertyName == null) return;
 
 	var _promises1 = context['_' + propertyName] || [];
 	var _promises2 = _.result(context, propertyName) || [];
@@ -609,15 +609,23 @@ function getPropertyPromise(context, propertyName) {
 
 	var promises = [];
 	_(rawPromises).each(function (promiseArg) {
-		if (_.isFunction(promiseArg)) promises.push(promiseArg.call(_this2));else if (promiseArg != null) promises.push(promiseArg);
+		if (_.isFunction(promiseArg)) {
+			var invoked = promiseArg.call(_this2);
+			if (invoked) promises.push(invoked);
+		} else if (promiseArg != null) promises.push(promiseArg);
 	});
-	return Promise.all(promises);
+	return Promise.all(promises.filter(function (f) {
+		return f != null;
+	}));
 }
 
 function addPropertyPromise(context, propertyName, promise) {
+
+	if (context == null || propertyName == null || promise == null) return;
+
 	context[propertyName] || (context[propertyName] = []);
-	var promises = context[propertyName];
-	promises.push(promise);
+
+	context[propertyName].push(promise);
 }
 
 var Startable = (function (Base) {
@@ -922,16 +930,23 @@ var Startable = (function (Base) {
 			var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 			var promises = [];
-			promises.push(this._getStartParentPromise());
-			promises.push(this._getStartPagePromise());
-			if (options.noruntime !== true) promises.push(this._getStartRuntimePromise());
+			var parent = this._getStartParentPromise();
+			parent && promises.push(parent);
+			var instance = this._getStartInstancePromise();
+			instance && promises.push(instance);
+
+			if (options.noruntime !== true) {
+				var runtime = this._getStartRuntimePromise();
+				runtime && promises.push(runtime);
+			}
 			return promises;
 		},
 		_getStartRuntimePromise: function _getStartRuntimePromise() {
 			return getPropertyPromise(this, 'startRuntimePromises');
 		},
-		_getStartPagePromise: function _getStartPagePromise() {
-			return getPropertyPromise(this, 'startPromises');
+		_getStartInstancePromise: function _getStartInstancePromise() {
+			var promises = getPropertyPromise(this, 'startPromises');
+			return promises;
 		},
 		_getStartParentPromise: function _getStartParentPromise() {
 			var parent = _.result(this, 'getParent');
