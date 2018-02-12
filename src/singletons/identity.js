@@ -45,6 +45,7 @@ let Identity = Base.extend({
 	logOut(){
 		this.clearState();
 		this.trigger('change');
+		this.setTokenObject(null);
 		this.trigger('log:out');
 	},
 	getBearerToken(data){
@@ -121,9 +122,10 @@ let Identity = Base.extend({
 		this._updateHeaders();
 		this._replaceBackboneAjax();
 
-		this.getIdentity();
+		if(token != null)
+			this.getIdentity();
 
-		this.triggerMethod('token:change');
+		this.triggerMethod('token:change', token);
 	},
 	getTokenObject(){
 		return this._token;
