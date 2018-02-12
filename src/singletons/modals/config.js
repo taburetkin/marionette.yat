@@ -37,18 +37,37 @@ let modalsLabelsDefaults = {
 	reject: 'cancel'
 }
 
+let modalsDefaultModifiers = {
+	'after:render':{
+		'centering'(){
+			let box = this.$('[data-role=modal-content-wrapper]');
+			if(!box.length) return;
+			let ch = box.outerHeight();
+			let wh = $(window).height();
+			let dif = (wh - ch) / 3;
+			if(dif > 0 && box.length)
+				box.css({
+					'margin-top':dif + 'px'
+				});
+		}
+	}
+}
+
+
 let modalsTypes = {
 	full: {
 		css: modalsCssDefaults,
 		show: modalsShowFull,
 		labels: modalsLabelsDefaults,
 		options: modalOptionsDefault,
+		modifiers: modalsDefaultModifiers,
 	},
 	simple: {
 		css: modalsCssDefaults,
 		show: modalsShowSimple,
 		labels: modalsLabelsDefaults,
 		options: modalOptionsDefault,
+		modifiers: modalsDefaultModifiers,
 	},
 	confirm: {
 		css: modalsCssDefaults,
@@ -59,7 +78,8 @@ let modalsTypes = {
 			closeOnPromise: true,
 			preventClose: false,
 			asPromise: true,
-		}
+		},
+		modifiers: modalsDefaultModifiers,
 	}
 }
 
@@ -73,5 +93,6 @@ config.set('types.confirm', modalsTypes.confirm);
 config.set('defaultShow', modalsShowFull);
 config.set('defaultCss', modalsCssDefaults);
 config.set('defaultLabels', modalsLabelsDefaults);
+config.set('defaultModifiers', modalsDefaultModifiers);
 
 export default config;

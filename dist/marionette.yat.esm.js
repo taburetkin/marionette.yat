@@ -2230,18 +2230,35 @@ var modalsLabelsDefaults = {
 	reject: 'cancel'
 };
 
+var modalsDefaultModifiers = {
+	'after:render': {
+		'centering': function centering() {
+			var box = this.$('[data-role=modal-content-wrapper]');
+			if (!box.length) return;
+			var ch = box.outerHeight();
+			var wh = $(window).height();
+			var dif = (wh - ch) / 3;
+			if (dif > 0 && box.length) box.css({
+				'margin-top': dif + 'px'
+			});
+		}
+	}
+};
+
 var modalsTypes = {
 	full: {
 		css: modalsCssDefaults,
 		show: modalsShowFull,
 		labels: modalsLabelsDefaults,
-		options: modalOptionsDefault
+		options: modalOptionsDefault,
+		modifiers: modalsDefaultModifiers
 	},
 	simple: {
 		css: modalsCssDefaults,
 		show: modalsShowSimple,
 		labels: modalsLabelsDefaults,
-		options: modalOptionsDefault
+		options: modalOptionsDefault,
+		modifiers: modalsDefaultModifiers
 	},
 	confirm: {
 		css: modalsCssDefaults,
@@ -2252,7 +2269,8 @@ var modalsTypes = {
 			closeOnPromise: true,
 			preventClose: false,
 			asPromise: true
-		}
+		},
+		modifiers: modalsDefaultModifiers
 	}
 };
 
@@ -2263,6 +2281,7 @@ config.set('types.confirm', modalsTypes.confirm);
 config.set('defaultShow', modalsShowFull);
 config.set('defaultCss', modalsCssDefaults);
 config.set('defaultLabels', modalsLabelsDefaults);
+config.set('defaultModifiers', modalsDefaultModifiers);
 
 var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
 
