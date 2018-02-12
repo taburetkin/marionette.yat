@@ -54,7 +54,14 @@ export default Base.extend({
 		this._menuTree = new Bb.Collection(links);
 		return this._menuTree;
 	},
-
+	getCurrentPages(){
+		let pages = _(this._pageManagers).map((mngr) => mngr.getCurrentPage());
+		return _(pages).filter((p) => p!=null);
+	},
+	isCurrentPage(page){
+		let current = this.getCurrentPages();
+		return current.indexOf(page) > -1;
+	},
 	getPage(key){
 		if(!this.hasPageManagers()) return;
 		return _(this._pageManagers).find((mngr) => mngr.getPage(key));

@@ -2594,6 +2594,18 @@ var App = Base$1.extend({
 		this._menuTree = new Bb.Collection(links);
 		return this._menuTree;
 	},
+	getCurrentPages: function getCurrentPages() {
+		var pages = _(this._pageManagers).map(function (mngr) {
+			return mngr.getCurrentPage();
+		});
+		return _(pages).filter(function (p) {
+			return p != null;
+		});
+	},
+	isCurrentPage: function isCurrentPage(page) {
+		var current = this.getCurrentPages();
+		return current.indexOf(page) > -1;
+	},
 	getPage: function getPage(key) {
 		if (!this.hasPageManagers()) return;
 		return _(this._pageManagers).find(function (mngr) {
@@ -2978,6 +2990,10 @@ var YatPageManager = Base$3.extend({
 	},
 	getCurrentPage: function getCurrentPage() {
 		return this.getState('currentPage');
+	},
+	isCurrentPage: function isCurrentPage(page) {
+		var current = this.getCurrentPage();
+		return page === current;
 	},
 	navigateToRoot: function navigateToRoot() {
 		var current = this.getState('currentPage');

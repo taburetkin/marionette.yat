@@ -74,11 +74,13 @@ let YatPageManager = Base.extend({
 		return found && found.context;
 
 	},
-
 	getCurrentPage(){
 		return this.getState('currentPage');
 	},
-
+	isCurrentPage(page){
+		let current = this.getCurrentPage();
+		return page === current;
+	},
 	navigateToRoot(){
 		let current = this.getState('currentPage');
 		let rootUrl = this.getProperty('rootUrl');
