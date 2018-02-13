@@ -2336,7 +2336,7 @@ var User = {
 		this.applyUser(user);
 	},
 	isUser: function isUser() {
-		return this.user && !!this.user.id;
+		return this.isAuth() && this.user && !!this.user.id;
 	}
 };
 
