@@ -348,7 +348,7 @@ const Auth = {
 	isAuth(){
 		return this.authorized === true;
 	},
-	isAnon(){ return !this.isAuth();},
+	isAnonym(){ return !this.isAuth();},
 	isMe(value){
 		return value && this.isAuth() && this.me == value;
 	},

@@ -2285,7 +2285,7 @@ var Auth = {
 	isAuth: function isAuth() {
 		return this.authorized === true;
 	},
-	isAnon: function isAnon() {
+	isAnonym: function isAnonym() {
 		return !this.isAuth();
 	},
 	isMe: function isMe(value) {
