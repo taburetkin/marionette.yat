@@ -395,7 +395,7 @@ const User = {
 }
 
 const Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
-	triggerReady(){
+	triggerChange(){
 		this.triggerMethod('change');
 	},
 	reset(){
