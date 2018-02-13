@@ -40,28 +40,29 @@ let YatPageManager = Base.extend({
 	_prepareRouterOptions(hash){
 		let appRoutes = {};
 		let controller = {};
-		let _this = this;
 		_(hash).each((handlerContext, key) => {
 			appRoutes[key] = key;
 			controller[key] = (...args) => {
-				delete _this.failedPage;
-				_this.routedPage = handlerContext.context;
-				handlerContext
-					.action(...args)
-					.catch((error) => {
-						if(_this.getProperty('throwChildErrors') === true){
-							throw error;
-						}
-						let postfix = error.status ? ":" + error.status.toString() : '';
-						let commonEvent = 'error';
-						let event = commonEvent + postfix;
-						_this.failedPage = handlerContext.context
-						_this.triggerMethod(commonEvent, error, handlerContext.context);
-						event != commonEvent && _this.triggerMethod(event, error, handlerContext.context);
-					});
-			}
+				this.startPage(handlerContext.context, ...args);
+			};
 		});
 		return { appRoutes, controller };
+	},
+	restartRoutedPage(){
+		this.routedPage && this.startPage(this.routedPage);
+	},
+	startPage(page, ...args){
+		this.routedPage = page;
+		page.start(...args).catch((error) => {
+			if(this.getProperty('throwChildErrors') === true){
+				throw error;
+			}
+			let postfix = error.status ? ':' + error.status.toString() : '';
+			let commonEvent = 'error';
+			let event = commonEvent + postfix;
+			this.triggerMethod(commonEvent, error, page);
+			event != commonEvent && this.triggerMethod(event, error, page);
+		});
 	},
 
 
@@ -162,8 +163,11 @@ let YatPageManager = Base.extend({
 			if(!this._moveToRootIfCurrentPageNotAllowed())
 				this.restartRoutedPage();
 		});
+		this.listenTo(identity, 'token:expired', this.tokenExpired);
 	},
-	
+	tokenExpired(){
+		this.restartRoutedPage();
+	},	
 	_moveToRootIfCurrentPageNotAllowed(){
 		let current = this.routedPage; // && routedPage.restart();
 		//let current = this.getCurrentPage();

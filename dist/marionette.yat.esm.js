@@ -3206,9 +3206,11 @@ var YatPage = Base$2.extend({
 	}
 });
 
+function _defineProperty$3(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 var Base$3 = mix(App).with(GetNameLabel);
 
-var YatPageManager = Base$3.extend({
+var YatPageManager = Base$3.extend(_defineProperty$3({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
@@ -3245,28 +3247,44 @@ var YatPageManager = Base$3.extend({
 		return hash;
 	},
 	_prepareRouterOptions: function _prepareRouterOptions(hash) {
+		var _this = this;
+
 		var appRoutes = {};
 		var controller = {};
-		var _this = this;
 		_(hash).each(function (handlerContext, key) {
 			appRoutes[key] = key;
 			controller[key] = function () {
-				delete _this.failedPage;
-				_this.routedPage = handlerContext.context;
-				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
-					if (_this.getProperty('throwChildErrors') === true) {
-						throw error;
-					}
-					var postfix = error.status ? ":" + error.status.toString() : '';
-					var commonEvent = 'error';
-					var event = commonEvent + postfix;
-					_this.failedPage = handlerContext.context;
-					_this.triggerMethod(commonEvent, error, handlerContext.context);
-					event != commonEvent && _this.triggerMethod(event, error, handlerContext.context);
-				});
+				for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+					args[_key2] = arguments[_key2];
+				}
+
+				_this.startPage.apply(_this, [handlerContext.context].concat(args));
 			};
 		});
 		return { appRoutes: appRoutes, controller: controller };
+	},
+	restartRoutedPage: function restartRoutedPage() {
+		this.routedPage && this.startPage(this.routedPage);
+	},
+	startPage: function startPage(page) {
+		var _this2 = this;
+
+		this.routedPage = page;
+
+		for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+			args[_key3 - 1] = arguments[_key3];
+		}
+
+		page.start.apply(page, args).catch(function (error) {
+			if (_this2.getProperty('throwChildErrors') === true) {
+				throw error;
+			}
+			var postfix = error.status ? ':' + error.status.toString() : '';
+			var commonEvent = 'error';
+			var event = commonEvent + postfix;
+			_this2.triggerMethod(commonEvent, error, page);
+			event != commonEvent && _this2.triggerMethod(event, error, page);
+		});
 	},
 	setRouter: function setRouter(router) {
 		this.router = router;
@@ -3351,11 +3369,15 @@ var YatPageManager = Base$3.extend({
 		//console.log("decline", args)
 	},
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
-		var _this2 = this;
+		var _this3 = this;
 
 		this.listenTo(identity, 'change', function () {
-			if (!_this2._moveToRootIfCurrentPageNotAllowed()) _this2.restartRoutedPage();
+			if (!_this3._moveToRootIfCurrentPageNotAllowed()) _this3.restartRoutedPage();
 		});
+		this.listenTo(identity, 'token:expired', this.tokenExpired);
+	},
+	tokenExpired: function tokenExpired() {
+		this.restartRoutedPage();
 	},
 	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
 		var current = this.routedPage; // && routedPage.restart();
@@ -3366,11 +3388,10 @@ var YatPageManager = Base$3.extend({
 		this.navigateToRoot();
 
 		return true;
-	},
-	restartRoutedPage: function restartRoutedPage() {
-		this.routedPage && this.routedPage.restart();
 	}
-});
+}, 'restartRoutedPage', function restartRoutedPage() {
+	this.routedPage && this.routedPage.restart();
+}));
 
 var YatCollectionView = mix(Mn$1.NextCollectionView).with(GlobalTemplateContext);
 
