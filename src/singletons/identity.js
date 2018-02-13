@@ -234,9 +234,9 @@ const Ajax = {
 
 		let url = this.getOption('refreshTokenUrl');
 		let data = this.getRefreshTokenData();
-		return this.requestToken(data, url);
+		return this.requestToken(data, url, {refresh:true});
 	},
-	requestToken(data, url){
+	requestToken(data, url, options = {}){
 		url || (url = this.getOption('tokenUrl'));
 		if(!url) return Promise.reject('token url not specified');
 		let promise = new Promise((resolve, reject) => {
@@ -246,7 +246,14 @@ const Ajax = {
 						this.setToken(token);
 						resolve(token);
 					},
-					(error) => reject(error)
+					(error) => {
+						if(options.refresh == true){
+							this.triggerMethod('refresh:token:expired');
+							reject(YatError.Http401());							
+						}
+						else
+							reject(error);
+					}
 				);
 		});
 		return promise;
@@ -335,8 +342,11 @@ const Token = {
 
 	},
 	parseToken(token){
+		if(token == null) return token;
+
 		if(token != null && _.isObject(token))
 			token.expires = new Date(Date.now() + (token.expires_in * 1000));
+
 		return token;
 	},
 	beforeTokenChange(opts){
@@ -402,6 +412,7 @@ const Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 		this.authorized = false;
 		let user = this.getUser();
 		user.clear();
+		this.setToken(null,{identity: false});
 		this.applyUser(user);		
 		this.triggerMethod('reset');
 	}

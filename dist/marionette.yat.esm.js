@@ -2173,10 +2173,12 @@ var Ajax = {
 
 		var url = this.getOption('refreshTokenUrl');
 		var data = this.getRefreshTokenData();
-		return this.requestToken(data, url);
+		return this.requestToken(data, url, { refresh: true });
 	},
 	requestToken: function requestToken(data, url) {
 		var _this7 = this;
+
+		var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
 		url || (url = this.getOption('tokenUrl'));
 		if (!url) return Promise.reject('token url not specified');
@@ -2185,7 +2187,10 @@ var Ajax = {
 				_this7.setToken(token);
 				resolve(token);
 			}, function (error) {
-				return reject(error);
+				if (options.refresh == true) {
+					_this7.triggerMethod('refresh:token:expired');
+					reject(YatError.Http401());
+				} else reject(error);
 			});
 		});
 		return promise;
@@ -2273,7 +2278,10 @@ var Token = {
 		if (opts.identity !== false) this.syncUser(opts);
 	},
 	parseToken: function parseToken(token) {
+		if (token == null) return token;
+
 		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
+
 		return token;
 	},
 	beforeTokenChange: function beforeTokenChange(opts) {
@@ -2343,6 +2351,7 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 		this.authorized = false;
 		var user = this.getUser();
 		user.clear();
+		this.setToken(null, { identity: false });
 		this.applyUser(user);
 		this.triggerMethod('reset');
 	}
