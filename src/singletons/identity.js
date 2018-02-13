@@ -347,9 +347,9 @@ const Token = {
 }
 
 const Auth = {
-	authorized: false,	
+	authenticated: false,	
 	isAuth(){
-		return this.authorized === true;
+		return this.authenticated === true;
 	},
 	isAnonym(){ return !this.isAuth();},
 	isMe(value){
@@ -379,6 +379,7 @@ const User = {
 	applyUser(user){
 		let id = user == null ? null : user.id;
 		this.setMe(id);
+		this.authenticated = id != null;
 		this.triggerChange();
 	},
 	getUser(){

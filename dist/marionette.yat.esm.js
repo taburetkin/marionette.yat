@@ -2283,9 +2283,9 @@ var Token = {
 };
 
 var Auth = {
-	authorized: false,
+	authenticated: false,
 	isAuth: function isAuth() {
-		return this.authorized === true;
+		return this.authenticated === true;
 	},
 	isAnonym: function isAnonym() {
 		return !this.isAuth();
@@ -2319,6 +2319,7 @@ var User = {
 	applyUser: function applyUser(user) {
 		var id = user == null ? null : user.id;
 		this.setMe(id);
+		this.authenticated = id != null;
 		this.triggerChange();
 	},
 	getUser: function getUser() {
