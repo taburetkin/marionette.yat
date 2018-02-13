@@ -11,10 +11,10 @@ export default Mn.AppRouter.extend({},{
 				handlerContext
 				.action(...args)
 				.then(() => { 
-					conext.routedPage = handlerContext.context;
+					context.routedPage = handlerContext.context;
 				})
 				.catch((error) => {
-					conext.routedPage = handlerContext.context;
+					context.routedPage = handlerContext.context;
 					_this._catchError(error, context, handlerContext.context);
 				});
 			}

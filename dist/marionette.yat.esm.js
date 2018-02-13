@@ -2901,9 +2901,9 @@ var Router = Mn.AppRouter.extend({}, {
 			appRoutes[key] = key;
 			controller[key] = function () {
 				handlerContext.action.apply(handlerContext, arguments).then(function () {
-					conext.routedPage = handlerContext.context;
+					context.routedPage = handlerContext.context;
 				}).catch(function (error) {
-					conext.routedPage = handlerContext.context;
+					context.routedPage = handlerContext.context;
 					_this._catchError(error, context, handlerContext.context);
 				});
 			};
