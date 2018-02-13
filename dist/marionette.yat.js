@@ -2184,8 +2184,6 @@ var Ajax = {
 	requestToken: function requestToken(data, url) {
 		var _this7 = this;
 
-		var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
 		url || (url = this.getOption('tokenUrl'));
 		if (!url) return Promise.reject('token url not specified');
 		var promise = new Promise(function (resolve, reject) {
@@ -2193,10 +2191,8 @@ var Ajax = {
 				_this7.setToken(token);
 				resolve(token);
 			}, function (error) {
-				if (error.status == 401) {
-					if (options.refresh == true) {
-						_this7.triggerMethod('refresh:token:expired');
-					}
+				if ([400, 401, 403].indexOf(error.status) > -1) {
+					_this7.triggerMethod('token:expired');
 					reject(YatError.Http401());
 				} else {
 					reject(error);

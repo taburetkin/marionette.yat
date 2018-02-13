@@ -247,10 +247,8 @@ const Ajax = {
 						resolve(token);
 					},
 					(error) => {
-						if(error.status == 401){
-							if(options.refresh == true){
-								this.triggerMethod('refresh:token:expired');
-							}
+						if([400,401,403].indexOf(error.status)>-1){
+							this.triggerMethod('token:expired');
 							reject(YatError.Http401());
 						}else{
 							reject(error);
