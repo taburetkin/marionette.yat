@@ -2187,10 +2187,14 @@ var Ajax = {
 				_this7.setToken(token);
 				resolve(token);
 			}, function (error) {
-				if (options.refresh == true) {
-					_this7.triggerMethod('refresh:token:expired');
+				if (error.status == 401) {
+					if (options.refresh == true) {
+						_this7.triggerMethod('refresh:token:expired');
+					}
 					reject(YatError.Http401());
-				} else reject(error);
+				} else {
+					reject(error);
+				}
 			});
 		});
 		return promise;

@@ -247,12 +247,14 @@ const Ajax = {
 						resolve(token);
 					},
 					(error) => {
-						if(options.refresh == true){
-							this.triggerMethod('refresh:token:expired');
-							reject(YatError.Http401());							
-						}
-						else
+						if(error.status == 401){
+							if(options.refresh == true){
+								this.triggerMethod('refresh:token:expired');
+							}
+							reject(YatError.Http401());
+						}else{
 							reject(error);
+						}
 					}
 				);
 		});
