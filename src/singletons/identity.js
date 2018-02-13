@@ -263,6 +263,7 @@ const Ajax = {
 			Bb.ajax = (...args) => this.ajax(...args);
 	},
 	updateAjaxHeaders(){
+		this._ajaxHeaders || (this._ajaxHeaders = {});
 		let token = this.getTokenValue();
 		let headers = this._ajaxHeaders;
 		if(token){

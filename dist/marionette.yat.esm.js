@@ -2203,6 +2203,7 @@ var Ajax = {
 		};
 	},
 	updateAjaxHeaders: function updateAjaxHeaders() {
+		this._ajaxHeaders || (this._ajaxHeaders = {});
 		var token = this.getTokenValue();
 		var headers = this._ajaxHeaders;
 		if (token) {
