@@ -3212,11 +3212,9 @@ var YatPage = Base$2.extend({
 	}
 });
 
-function _defineProperty$3(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 var Base$3 = mix(App).with(GetNameLabel);
 
-var YatPageManager = Base$3.extend(_defineProperty$3({
+var YatPageManager = Base$3.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
@@ -3393,9 +3391,7 @@ var YatPageManager = Base$3.extend(_defineProperty$3({
 
 		return true;
 	}
-}, 'restartRoutedPage', function restartRoutedPage() {
-	this.routedPage && this.routedPage.restart();
-}));
+});
 
 var YatCollectionView = mix(Mn$1.NextCollectionView).with(GlobalTemplateContext);
 

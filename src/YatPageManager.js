@@ -176,9 +176,7 @@ let YatPageManager = Base.extend({
 
 		return true;
 	},
-	restartRoutedPage(){
-		this.routedPage && this.routedPage.restart();
-	}
+
 
 });
 
