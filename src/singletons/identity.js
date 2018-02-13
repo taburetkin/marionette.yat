@@ -369,10 +369,8 @@ const User = {
 		}
 		user.fetch().then(() => { 
 			this.applyUser(user);
-			this.triggerChange();
 		}, () => {
 			this.syncUserEror();
-			this.triggerChange();
 		});
 	},
 	syncUserEror(){
@@ -381,6 +379,7 @@ const User = {
 	applyUser(user){
 		let id = user == null ? null : user.id;
 		this.setMe(id);
+		this.triggerChange();
 	},
 	getUser(){
 		return this.user;
@@ -398,12 +397,13 @@ const Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 	triggerChange(){
 		this.triggerMethod('change');
 	},
-	reset(){
+	reset({option}){
 		let user = this.getUser();
 		user.clear();
 		this.applyUser(user);
 		this.authorized = false;
 		this.triggerMethod('reset');
+		this.triggerChange();
 	}
 });
 

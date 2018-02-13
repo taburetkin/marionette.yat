@@ -2310,10 +2310,8 @@ var User = {
 		}
 		user.fetch().then(function () {
 			_this9.applyUser(user);
-			_this9.triggerChange();
 		}, function () {
 			_this9.syncUserEror();
-			_this9.triggerChange();
 		});
 	},
 	syncUserEror: function syncUserEror() {
@@ -2322,6 +2320,7 @@ var User = {
 	applyUser: function applyUser(user) {
 		var id = user == null ? null : user.id;
 		this.setMe(id);
+		this.triggerChange();
 	},
 	getUser: function getUser() {
 		return this.user;
@@ -2339,12 +2338,15 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 	triggerChange: function triggerChange() {
 		this.triggerMethod('change');
 	},
-	reset: function reset() {
+	reset: function reset(_ref) {
+		var option = _ref.option;
+
 		var user = this.getUser();
 		user.clear();
 		this.applyUser(user);
 		this.authorized = false;
 		this.triggerMethod('reset');
+		this.triggerChange();
 	}
 });
 
