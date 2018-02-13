@@ -11,14 +11,14 @@
 
 
 import Bb from 'backbone';
-import Mn from 'backbone.marionette';
+import Mn$1 from 'backbone.marionette';
 import _ from 'underscore';
 import $$1 from 'jquery';
 
 var version = "0.0.32";
 
 var getCompareABModel = function getCompareABModel(arg) {
-	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
+	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn$1.View) return arg.model;else return;
 };
 var getCompareABView = function getCompareABView(arg) {
 	if (arg instanceof Bb.View) return arg;else return;
@@ -313,7 +313,7 @@ var __ = {
 
 var Functions = { view: view, common: __ };
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _.isFunction(arg);
@@ -323,7 +323,7 @@ function isKnownCtor(arg) {
 	return isFn && result;
 }
 
-var YatError = Mn.Error.extend({}, {
+var YatError = Mn$1.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -372,14 +372,14 @@ function mix(BaseClass) {
 		Mixed = BaseClass;
 	} else if (_.isObject(BaseClass) && BaseClass !== null) {
 		var tmp = function tmp() {};
-		tmp.extend = Mn.extend;
+		tmp.extend = Mn$1.extend;
 		Mixed = tmp.extend(BaseClass);
 	} else {
 		throw new Error('argument should be an object or class definition');
 	}
 	if (!Mixed.extend) {
-		Mixed = Mn.extend.call(BaseClass, {});
-		Mixed.extend = Mn.extend;
+		Mixed = Mn$1.extend.call(BaseClass, {});
+		Mixed.extend = Mn$1.extend;
 	}
 	var fake = {
 		with: function _with() {
@@ -500,7 +500,7 @@ var RadioMixin = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn.Object.prototype._initRadio.call(this);
+			Mn$1.Object.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -1193,7 +1193,7 @@ var Mixins = {
 	GlobalTemplateContext: GlobalTemplateContext
 };
 
-var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
+var BaseBehavior = mix(Mn$1.Behavior).with(GetOptionProperty);
 var Behavior = BaseBehavior.extend({
 
 	listenViewInitialize: true,
@@ -1920,7 +1920,7 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 
 var Behaviors = { Behavior: Behavior, Draggable: DraggableBehavior, Droppable: DroppableBehavior, DynamicClass: DynamicClass, FormToHash: FormToHash };
 
-var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
+var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
 
 var IDENTITY_CHANNEL = 'identity';
 
@@ -2359,7 +2359,7 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 
 var identity = new Identity();
 
-var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend({
+var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty).extend({
 
 	instantRender: false,
 	renderOnReady: false,
@@ -2372,7 +2372,7 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 			args[_key] = arguments[_key];
 		}
 
-		Mn.View.apply(this, args);
+		Mn$1.View.apply(this, args);
 
 		var options = args[0];
 		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
@@ -2813,7 +2813,7 @@ var modals = {
 
 var Singletons = { TemplateContext: GlobalTemplateContext$1, identity: identity, modals: modals };
 
-var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
+var Base$1 = mix(Mn$1.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -2892,7 +2892,7 @@ var App = Base$1.extend({
 	}
 });
 
-var Router = Mn.AppRouter.extend({}, {
+var YatRouter = Mn$1.AppRouter.extend({}, {
 	create: function create(hash, context) {
 		var appRoutes = {};
 		var controller = {};
@@ -2969,7 +2969,7 @@ var YatPage = Base$2.extend({
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
-		this._tryCreateRouter();
+		//this._tryCreateRouter();
 		this._registerIdentityHandlers();
 	},
 	getLayout: function getLayout() {
@@ -3039,6 +3039,43 @@ var YatPage = Base$2.extend({
 	hasRouteHash: function hasRouteHash() {
 		return _.isObject(this.getRouteHash());
 	},
+	_initializeRoute: function _initializeRoute() {
+		var route = this.getRoute({ asPattern: true });
+		if (route == null) return;
+		var page = this;
+		this._routeHandler = _defineProperty$2({}, route, {
+			context: page,
+			action: function action() {
+				return page.start.apply(page, arguments);
+			}
+		});
+	},
+	getRoute: function getRoute() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { asPattern: false };
+
+		var relative = this.getProperty('relativeRoute');
+		var route = this.getProperty('route');
+		var parent = this.getParent();
+		if (route == null) return;
+
+		var result = route;
+
+		if (relative && parent && parent.getRoute) {
+			var parentRoute = parent.getRoute();
+			result = parentRoute + '/' + route;
+		}
+
+		return this._normalizeRoute(result, opts);
+	},
+	_normalizeRoute: function _normalizeRoute(route, opts) {
+		route = route.replace(/\/+/gmi, '/').replace(/^\//, '');
+		if (opts.asPattern) {
+			return route;
+		} else {
+			var res = route.replace(/\(\/\)/gmi, '/').replace(/\/+/gmi, '/');
+			return res;
+		}
+	},
 	getLinkModel: function getLinkModel() {
 		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
 
@@ -3093,51 +3130,20 @@ var YatPage = Base$2.extend({
 		this.addModel(opts.model, opts);
 		this.addCollection(opts.collection, opts);
 	},
-	_initializeRoute: function _initializeRoute() {
-		var route = this.getRoute({ asPattern: true });
-		if (route == null) return;
-		var page = this;
-		this._routeHandler = _defineProperty$2({}, route, { context: page, action: function action() {
-				return page.start.apply(page, arguments);
-			} });
-	},
-	getRoute: function getRoute() {
-		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { asPattern: false };
 
-		var relative = this.getProperty('relativeRoute');
-		var route = this.getProperty('route');
-		var parent = this.getParent();
-		if (route == null) return;
 
-		var result = route;
+	// _tryCreateRouter(){
+	// 	let create = this.getProperty('createRouter') === true;
+	// 	if(create){
+	// 		this.router = this._createAppRouter();
+	// 	}
+	// },
+	// _createAppRouter(){
+	// 	let hash = this.getRouteHash();
+	// 	if(!_.size(hash)) return;
+	// 	return new Router(hash);
+	// },
 
-		if (relative && parent && parent.getRoute) {
-			var parentRoute = parent.getRoute();
-			result = parentRoute + '/' + route;
-		}
-
-		return this._normalizeRoute(result, opts);
-	},
-	_normalizeRoute: function _normalizeRoute(route, opts) {
-		route = route.replace(/\/+/gmi, '/').replace(/^\//, '');
-		if (opts.asPattern) {
-			return route;
-		} else {
-			var res = route.replace(/\(\/\)/gmi, '/').replace(/\/+/gmi, '/');
-			return res;
-		}
-	},
-	_tryCreateRouter: function _tryCreateRouter() {
-		var create = this.getProperty('createRouter') === true;
-		if (create) {
-			this.router = this._createAppRouter();
-		}
-	},
-	_createAppRouter: function _createAppRouter() {
-		var hash = this.getRouteHash();
-		if (!_.size(hash)) return;
-		return new Router(hash);
-	},
 	_proxyEvents: function _proxyEvents() {
 		var proxyContexts = this._getProxyContexts();
 		this._proxyEventsTo(proxyContexts);
@@ -3222,6 +3228,12 @@ var YatPageManager = Base$3.extend({
 
 	throwChildErrors: true,
 	createRouter: function createRouter() {
+		this._routesHash = this._prepareRouterHash();
+		var options = this._prepareRouterOptions(this._routesHash);
+		var router = new Mn.AppRouter(options);
+		this.setRouter(router);
+	},
+	_prepareRouterHash: function _prepareRouterHash() {
 		var children = this.getChildren({ startable: false });
 		var hash = {};
 		_(children).each(function (page) {
@@ -3229,8 +3241,31 @@ var YatPageManager = Base$3.extend({
 				_.extend(hash, page.getRouteHash());
 			}
 		});
-		this._routesHash = hash;
-		this.setRouter(Router.create(hash, this));
+		return hash;
+	},
+	_prepareRouterOptions: function _prepareRouterOptions(hash) {
+		var appRoutes = {};
+		var controller = {};
+		var _this = this;
+		_(hash).each(function (handlerContext, key) {
+			appRoutes[key] = key;
+			controller[key] = function () {
+				delete _this.failedPage;
+				_this.routedPage = handlerContext.context;
+				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
+					if (_this.getProperty('throwChildErrors') === true) {
+						throw error;
+					}
+					var postfix = error.status ? ":" + error.status.toString() : '';
+					var commonEvent = 'error';
+					var event = commonEvent + postfix;
+					_this.failedPage = handlerContext.context;
+					_this.triggerMethod(commonEvent, error, handlerContext.context);
+					event != commonEvent && _this.triggerMethod(event, error, handlerContext.context);
+				});
+			};
+		});
+		return { appRoutes: appRoutes, controller: controller };
 	},
 	setRouter: function setRouter(router) {
 		this.router = router;
@@ -3315,10 +3350,10 @@ var YatPageManager = Base$3.extend({
 		//console.log("decline", args)
 	},
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
-		var _this = this;
+		var _this2 = this;
 
 		this.listenTo(identity, 'change', function () {
-			if (!_this._moveToRootIfCurrentPageNotAllowed()) _this.restartRoutedPage();
+			if (!_this2._moveToRootIfCurrentPageNotAllowed()) _this2.restartRoutedPage();
 		});
 	},
 	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
@@ -3336,7 +3371,7 @@ var YatPageManager = Base$3.extend({
 	}
 });
 
-var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
+var YatCollectionView = mix(Mn$1.NextCollectionView).with(GlobalTemplateContext);
 
 var Collection = Bb.Collection.extend({});
 
@@ -3492,7 +3527,7 @@ var marionetteYat = {
 	Error: YatError,
 	App: App,
 	Page: YatPage,
-	Router: Router,
+	Router: YatRouter,
 	PageManager: YatPageManager,
 	View: YatView,
 	CollectionView: YatCollectionView,

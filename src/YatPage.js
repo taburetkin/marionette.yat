@@ -29,7 +29,7 @@ export default Base.extend({
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
-		this._tryCreateRouter();
+		//this._tryCreateRouter();
 		this._registerIdentityHandlers();		
 	},
 
@@ -40,6 +40,7 @@ export default Base.extend({
 		return this._layoutView;
 	},
 	prepareForStart(){},
+
 	buildLayout(){
 		let Layout = this.getProperty('Layout');
 		if(Layout == null) return;
@@ -56,7 +57,6 @@ export default Base.extend({
 		this._layoutView = new Layout(options);
 		return this._layoutView;
 	},
-
 	buildLayoutOptions(rawOptions){
 		return rawOptions;
 	},
@@ -72,7 +72,6 @@ export default Base.extend({
 			this.addStartPromise(model.fetch(opts));
 		}
 	},
-
 	addCollection(collection, opts = {}){
 		if(!collection) return;
 		this.collection = collection;
@@ -89,6 +88,14 @@ export default Base.extend({
 	freezeUI(){ },
 	unFreezeUI(){ },
 
+
+
+
+
+
+
+
+	
 	getRouteHash(){
 
 		let hashes = [{},this._routeHandler].concat(this.getChildren({startable:false}).map((children) => children.getRouteHash()))
@@ -99,6 +106,53 @@ export default Base.extend({
 	hasRouteHash(){
 		return _.isObject(this.getRouteHash())
 	},
+
+	_initializeRoute(){
+		let route = this.getRoute({asPattern:true});
+		if(route == null) return;
+		let page = this;
+		this._routeHandler = {
+			[route]:{
+				context: page, 
+				action: (...args) => page.start(...args) 
+			}
+		};
+	},
+
+	getRoute(opts = {asPattern:false}){
+		let relative = this.getProperty('relativeRoute');
+		let route = this.getProperty('route');
+		let parent = this.getParent();
+		if(route == null) return;
+		
+		let result = route;
+
+		if(relative && parent && parent.getRoute){
+			let parentRoute = parent.getRoute();
+			result = parentRoute + '/' + route;			
+		}
+
+		return this._normalizeRoute(result, opts);
+	},
+	_normalizeRoute(route, opts){		
+		route = route.replace(/\/+/gmi,'/').replace(/^\//,'');
+		if(opts.asPattern){
+			return route;
+		}
+		else{
+			let res = route.replace(/\(\/\)/gmi,'/').replace(/\/+/gmi,'/');
+			return res;
+		}
+	},
+
+
+
+
+
+
+
+
+
 
 	getLinkModel(level = 0){
 		if(!this._canHaveLinkModel()) return;		
@@ -155,51 +209,18 @@ export default Base.extend({
 		this.addCollection(opts.collection, opts);
 	},
 
-	_initializeRoute(){
-		let route = this.getRoute({asPattern:true});
-		if(route == null) return;
-		let page = this;
-		this._routeHandler = {
-			[route]:{context: page, action: (...args) => page.start(...args) }
-		};
-	},
 
-	getRoute(opts = {asPattern:false}){
-		let relative = this.getProperty('relativeRoute');
-		let route = this.getProperty('route');
-		let parent = this.getParent();
-		if(route == null) return;
-		
-		let result = route;
-
-		if(relative && parent && parent.getRoute){
-			let parentRoute = parent.getRoute();
-			result = parentRoute + '/' + route;			
-		}
-
-		return this._normalizeRoute(result, opts);
-	},
-	_normalizeRoute(route, opts){		
-		route = route.replace(/\/+/gmi,'/').replace(/^\//,'');
-		if(opts.asPattern){
-			return route;
-		}
-		else{
-			let res = route.replace(/\(\/\)/gmi,'/').replace(/\/+/gmi,'/');
-			return res;
-		}
-	},
-	_tryCreateRouter(){
-		let create = this.getProperty('createRouter') === true;
-		if(create){
-			this.router = this._createAppRouter();
-		}
-	},
-	_createAppRouter(){
-		let hash = this.getRouteHash();
-		if(!_.size(hash)) return;
-		return new Router(hash);
-	},
+	// _tryCreateRouter(){
+	// 	let create = this.getProperty('createRouter') === true;
+	// 	if(create){
+	// 		this.router = this._createAppRouter();
+	// 	}
+	// },
+	// _createAppRouter(){
+	// 	let hash = this.getRouteHash();
+	// 	if(!_.size(hash)) return;
+	// 	return new Router(hash);
+	// },
 
 	_proxyEvents(){
 		let proxyContexts = this._getProxyContexts();

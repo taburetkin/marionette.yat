@@ -22,16 +22,49 @@ let YatPageManager = Base.extend({
 
 	throwChildErrors:true,
 	createRouter(){
+		this._routesHash = this._prepareRouterHash();
+		let options = this._prepareRouterOptions(this._routesHash);
+		let router = new Mn.AppRouter(options);
+		this.setRouter(router);
+	},
+	_prepareRouterHash(){
 		let children = this.getChildren({startable:false});
 		let hash = {};
-		_(children).each(function(page){
+		_(children).each((page) => {
 			if(_.isFunction(page.getRouteHash)){
 				_.extend(hash, page.getRouteHash());
 			}
 		});
-		this._routesHash = hash;		
-		this.setRouter(Router.create(hash, this));
+		return hash;
 	},
+	_prepareRouterOptions(hash){
+		let appRoutes = {};
+		let controller = {};
+		let _this = this;
+		_(hash).each((handlerContext, key) => {
+			appRoutes[key] = key;
+			controller[key] = (...args) => {
+				delete _this.failedPage;
+				_this.routedPage = handlerContext.context;
+				handlerContext
+					.action(...args)
+					.catch((error) => {
+						if(_this.getProperty('throwChildErrors') === true){
+							throw error;
+						}
+						let postfix = error.status ? ":" + error.status.toString() : '';
+						let commonEvent = 'error';
+						let event = commonEvent + postfix;
+						_this.failedPage = handlerContext.context
+						_this.triggerMethod(commonEvent, error, handlerContext.context);
+						event != commonEvent && _this.triggerMethod(event, error, handlerContext.context);
+					});
+			}
+		});
+		return { appRoutes, controller };
+	},
+
+
 	setRouter(router){
 		this.router = router;
 	},
