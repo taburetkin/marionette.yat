@@ -733,23 +733,25 @@ var Startable = (function (Base) {
 		restart: function restart(options) {
 			var _this4 = this;
 
-			var canBeStarted = this._ensureStartableCanBeStarted();
+			var canNotBeStarted = this._ensureStartableCanBeStarted();
+			if (canNotBeStarted) return Promise.reject(canNotBeStarted);
+
 			var promise = new Promise(function (resolve, reject) {
-				if (_this4.isStarted()) _this4.stop().then(function (arg) {
-					return _this4.start().then(function (arg) {
-						return resolve(arg);
-					}, function (arg) {
-						return reject(arg);
+				if (_this4.isStarted()) _this4.stop().then(function (stopArg) {
+					return _this4.start(options).then(function (startArg) {
+						return resolve(startArg);
+					}, function (startArg) {
+						return reject(startArg);
 					});
-				}, function (arg) {
-					return reject(arg);
-				});else if (_this4.isStoped()) _this4.start().then(function (arg) {
+				}, function (stopArg) {
+					return reject(stopArg);
+				});else if (_this4.isStoped()) _this4.start(options).then(function (arg) {
 					return resolve(arg);
 				}, function (arg) {
 					return reject(arg);
 				});else reject(new YatError({
 					name: 'StartableLifecycleError',
-					message: 'Restart not allowed when startable not in idle'
+					message: 'Restart not allowed when startable not in idle. Current state' + _this4._getLifeState()
 				}));
 			});
 			return promise;
@@ -762,7 +764,6 @@ var Startable = (function (Base) {
 			}
 
 			var options = args[0];
-
 			var promise = new Promise(function (resolve, reject) {
 				var canNotBeStopped = _this5._ensureStartableCanBeStopped();
 
@@ -2345,12 +2346,11 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 		this.triggerMethod('change');
 	},
 	reset: function reset() {
+		this.authorized = false;
 		var user = this.getUser();
 		user.clear();
 		this.applyUser(user);
-		this.authorized = false;
 		this.triggerMethod('reset');
-		this.triggerChange();
 	}
 });
 
@@ -3312,7 +3312,6 @@ var YatPageManager = Base$3.extend({
 		var _this = this;
 
 		this.listenTo(identity, 'change', function () {
-			//this.triggerMethod('identity:change', ...args);
 			if (!_this._moveToRootIfCurrentPageNotAllowed()) _this.restartCurrentPage();
 		});
 	},

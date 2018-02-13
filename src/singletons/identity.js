@@ -399,12 +399,11 @@ const Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 		this.triggerMethod('change');
 	},
 	reset(){
+		this.authorized = false;
 		let user = this.getUser();
 		user.clear();
-		this.applyUser(user);
-		this.authorized = false;
+		this.applyUser(user);		
 		this.triggerMethod('reset');
-		this.triggerChange();
 	}
 });
 

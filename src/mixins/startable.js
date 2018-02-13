@@ -138,16 +138,31 @@ export default (Base) => {
 		},
 
 		restart(options){
-			let canBeStarted = this._ensureStartableCanBeStarted();
+			
+			let canNotBeStarted = this._ensureStartableCanBeStarted();
+			if(canNotBeStarted) return Promise.reject(canNotBeStarted);
+
 			let promise = new Promise((resolve, reject) => {
 				if(this.isStarted())
-					this.stop().then((arg) => this.start().then((arg) => resolve(arg), (arg) => reject(arg)), (arg) => reject(arg));
+					this.stop()
+						.then((stopArg) => {
+							return this.start(options).then(
+								(startArg) => resolve(startArg), 
+								(startArg) => reject(startArg)
+							);
+						}, 
+						(stopArg) => {
+							return reject(stopArg);
+						});
 				else if(this.isStoped())
-					this.start().then((arg) => resolve(arg), (arg) => reject(arg));
+					this.start(options).then(
+						(arg) => resolve(arg), 
+						(arg) => reject(arg)
+					);
 				else
 					reject(new YatError({
 						name: 'StartableLifecycleError',
-						message: 'Restart not allowed when startable not in idle',
+						message: 'Restart not allowed when startable not in idle. Current state' + this._getLifeState(),
 					}));
 			});
 			return promise;
@@ -155,8 +170,6 @@ export default (Base) => {
 
 		stop(...args){
 			let options = args[0];
-
-			let _this = this;
 			let promise = new Promise((resolve, reject) => {
 				let canNotBeStopped = this._ensureStartableCanBeStopped();
 
