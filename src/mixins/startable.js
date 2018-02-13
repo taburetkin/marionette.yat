@@ -97,34 +97,34 @@ export default (Base) => {
 			let options = args[0];
 			let _this = this;
 			this.prepareForStart();
-			let promise = new Promise(function(resolve, reject){
-				let canNotBeStarted = _this._ensureStartableCanBeStarted();
+			let promise = new Promise((resolve, reject) => {
+				let canNotBeStarted = this._ensureStartableCanBeStarted();
 
 				if(canNotBeStarted){
-					_this.triggerMethod('start:decline',canNotBeStarted);
+					this.triggerMethod('start:decline',canNotBeStarted);
 					reject(canNotBeStarted)
 					return;
 				}
 
-				let declineReason = _this.isStartNotAllowed(options);
+				let declineReason = this.isStartNotAllowed(options);
 				if(declineReason) {
-					_this.triggerMethod('start:decline',declineReason);
+					this.triggerMethod('start:decline',declineReason);
 					reject(declineReason);
 					return;
 				}
 
-				_this.triggerBeforeStart(...args);				
-				let currentState = _this._getLifeState();
+				this.triggerBeforeStart(...args);				
+				let currentState = this._getLifeState();
 				this._setLifeState(STATES.STARTING);
 
-				let dependedOn = _this._getStartPromise();
+				let dependedOn = this._getStartPromise();
 				dependedOn.then(() => {
-					_this._tryMergeStartOptions(options);		
-					_this.once('start', (...args) => resolve(...args));
+					this._tryMergeStartOptions(options);		
+					this.once('start', (...args) => resolve(...args));
 					this._setLifeState(STATES.RUNNING);
-					_this.triggerStart(options);
+					this.triggerStart(options);
 				},(...args) => {
-					_this._setLifeState(currentState);
+					this._setLifeState(currentState);
 					reject(...args);
 				});
 			});
@@ -157,33 +157,33 @@ export default (Base) => {
 			let options = args[0];
 
 			let _this = this;
-			let promise = new Promise(function(resolve, reject){
-				let canNotBeStopped = _this._ensureStartableCanBeStopped();
+			let promise = new Promise((resolve, reject) => {
+				let canNotBeStopped = this._ensureStartableCanBeStopped();
 
 				if(canNotBeStopped){
-					_this.triggerMethod('stop:decline',canNotBeStopped);
+					this.triggerMethod('stop:decline',canNotBeStopped);
 					reject(canNotBeStopped)
 					return;
 				}
 
-				let declineReason = _this.isStopNotAllowed(options);
+				let declineReason = this.isStopNotAllowed(options);
 				if(declineReason) {
-					_this.triggerMethod('stop:decline',declineReason);
+					this.triggerMethod('stop:decline',declineReason);
 					reject(declineReason);
 					return;
 				}				
 
-				let currentState = _this._getLifeState();
-				_this.triggerMethod('before:stop', ...args);
+				let currentState = this._getLifeState();
+				this.triggerMethod('before:stop', ...args);
 				this._setLifeState(STATES.STOPPING);
-				let dependedOn = _this._getStopPromise();
+				let dependedOn = this._getStopPromise();
 				dependedOn.then(() => {
-					_this._tryMergeStopOptions(options);		
-					_this.once('stop', (...args) => resolve(...args));
+					this._tryMergeStopOptions(options);		
+					this.once('stop', (...args) => resolve(...args));
 					this._setLifeState(STATES.WAITING);
-					_this.triggerStop(options);
+					this.triggerStop(options);
 				},(...args) => {
-					_this._setLifeState(currentState);
+					this._setLifeState(currentState);
 					reject(...args);
 				});
 			});

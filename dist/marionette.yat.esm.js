@@ -671,45 +671,44 @@ var Startable = (function (Base) {
 		},
 		prepareForStart: function prepareForStart() {},
 		start: function start() {
+			var _this3 = this;
+
 			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
 				args[_key2] = arguments[_key2];
 			}
 
 			var options = args[0];
-			var _this = this;
 			this.prepareForStart();
 			var promise = new Promise(function (resolve, reject) {
-				var _this3 = this;
-
-				var canNotBeStarted = _this._ensureStartableCanBeStarted();
+				var canNotBeStarted = _this3._ensureStartableCanBeStarted();
 
 				if (canNotBeStarted) {
-					_this.triggerMethod('start:decline', canNotBeStarted);
+					_this3.triggerMethod('start:decline', canNotBeStarted);
 					reject(canNotBeStarted);
 					return;
 				}
 
-				var declineReason = _this.isStartNotAllowed(options);
+				var declineReason = _this3.isStartNotAllowed(options);
 				if (declineReason) {
-					_this.triggerMethod('start:decline', declineReason);
+					_this3.triggerMethod('start:decline', declineReason);
 					reject(declineReason);
 					return;
 				}
 
-				_this.triggerBeforeStart.apply(_this, args);
-				var currentState = _this._getLifeState();
-				this._setLifeState(STATES.STARTING);
+				_this3.triggerBeforeStart.apply(_this3, args);
+				var currentState = _this3._getLifeState();
+				_this3._setLifeState(STATES.STARTING);
 
-				var dependedOn = _this._getStartPromise();
+				var dependedOn = _this3._getStartPromise();
 				dependedOn.then(function () {
-					_this._tryMergeStartOptions(options);
-					_this.once('start', function () {
+					_this3._tryMergeStartOptions(options);
+					_this3.once('start', function () {
 						return resolve.apply(undefined, arguments);
 					});
 					_this3._setLifeState(STATES.RUNNING);
-					_this.triggerStart(options);
+					_this3.triggerStart(options);
 				}, function () {
-					_this._setLifeState(currentState);
+					_this3._setLifeState(currentState);
 					reject.apply(undefined, arguments);
 				});
 			});
@@ -750,44 +749,43 @@ var Startable = (function (Base) {
 			return promise;
 		},
 		stop: function stop() {
+			var _this5 = this;
+
 			for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
 				args[_key4] = arguments[_key4];
 			}
 
 			var options = args[0];
 
-			var _this = this;
 			var promise = new Promise(function (resolve, reject) {
-				var _this5 = this;
-
-				var canNotBeStopped = _this._ensureStartableCanBeStopped();
+				var canNotBeStopped = _this5._ensureStartableCanBeStopped();
 
 				if (canNotBeStopped) {
-					_this.triggerMethod('stop:decline', canNotBeStopped);
+					_this5.triggerMethod('stop:decline', canNotBeStopped);
 					reject(canNotBeStopped);
 					return;
 				}
 
-				var declineReason = _this.isStopNotAllowed(options);
+				var declineReason = _this5.isStopNotAllowed(options);
 				if (declineReason) {
-					_this.triggerMethod('stop:decline', declineReason);
+					_this5.triggerMethod('stop:decline', declineReason);
 					reject(declineReason);
 					return;
 				}
 
-				var currentState = _this._getLifeState();
-				_this.triggerMethod.apply(_this, ['before:stop'].concat(args));
-				this._setLifeState(STATES.STOPPING);
-				var dependedOn = _this._getStopPromise();
+				var currentState = _this5._getLifeState();
+				_this5.triggerMethod.apply(_this5, ['before:stop'].concat(args));
+				_this5._setLifeState(STATES.STOPPING);
+				var dependedOn = _this5._getStopPromise();
 				dependedOn.then(function () {
-					_this._tryMergeStopOptions(options);
-					_this.once('stop', function () {
+					_this5._tryMergeStopOptions(options);
+					_this5.once('stop', function () {
 						return resolve.apply(undefined, arguments);
 					});
 					_this5._setLifeState(STATES.WAITING);
-					_this.triggerStop(options);
+					_this5.triggerStop(options);
 				}, function () {
-					_this._setLifeState(currentState);
+					_this5._setLifeState(currentState);
 					reject.apply(undefined, arguments);
 				});
 			});
