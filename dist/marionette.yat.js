@@ -2906,7 +2906,10 @@ var Router = Mn.AppRouter.extend({}, {
 		_(hash).each(function (handlerContext, key) {
 			appRoutes[key] = key;
 			controller[key] = function () {
-				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
+				handlerContext.action.apply(handlerContext, arguments).then(function () {
+					conext.routedPage = handlerContext.context;
+				}).catch(function (error) {
+					conext.routedPage = handlerContext.context;
 					_this._catchError(error, context, handlerContext.context);
 				});
 			};
@@ -3251,7 +3254,7 @@ var YatPageManager = Base$3.extend({
 		}).value();
 	},
 	execute: function execute(route) {
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { silent: true };
 
 		var page = this.getPage(route);
 		if (page) page.start(opts);else throw new YatError.NotFound('Route not found');
@@ -3321,11 +3324,12 @@ var YatPageManager = Base$3.extend({
 		var _this = this;
 
 		this.listenTo(identity, 'change', function () {
-			if (!_this._moveToRootIfCurrentPageNotAllowed()) _this.restartCurrentPage();
+			if (!_this._moveToRootIfCurrentPageNotAllowed()) _this.restartRoutedPage();
 		});
 	},
 	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
-		var current = this.getCurrentPage();
+		var current = this.routedPage; // && routedPage.restart();
+		//let current = this.getCurrentPage();
 
 		if (!current || !current.isStartNotAllowed()) return;
 
@@ -3333,9 +3337,8 @@ var YatPageManager = Base$3.extend({
 
 		return true;
 	},
-	restartCurrentPage: function restartCurrentPage() {
-		var current = this.getCurrentPage();
-		current && current.restart();
+	restartRoutedPage: function restartRoutedPage() {
+		this.routedPage && routedPage.restart();
 	}
 });
 

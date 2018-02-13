@@ -10,7 +10,11 @@ export default Mn.AppRouter.extend({},{
 			controller[key] = (...args) => {
 				handlerContext
 				.action(...args)
+				.then(() => { 
+					conext.routedPage = handlerContext.context;
+				})
 				.catch((error) => {
+					conext.routedPage = handlerContext.context;
 					_this._catchError(error, context, handlerContext.context);
 				});
 			}
@@ -24,6 +28,7 @@ export default Mn.AppRouter.extend({},{
 			let postfix = error.status ? ":" + error.status.toString() : '';
 			let commonEvent = 'error';
 			let event = commonEvent + postfix;
+
 
 			context.triggerMethod(commonEvent, error, page);
 
