@@ -3184,12 +3184,8 @@ var YatPage = Base$2.extend({
 		var _this = this;
 
 		this.listenTo(identity, 'change', function () {
-			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-				args[_key3] = arguments[_key3];
-			}
-
 			_this._destroyLinkModel();
-			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
+			//this.triggerMethod('identity:change', ...args);
 		});
 	}
 });
@@ -3313,11 +3309,7 @@ var YatPageManager = Base$3.extend({
 		var _this = this;
 
 		this.listenTo(identity, 'change', function () {
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
-			}
-
-			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
+			//this.triggerMethod('identity:change', ...args);
 			if (!_this._moveToRootIfCurrentPageNotAllowed()) _this.restartCurrentPage();
 		});
 	},
