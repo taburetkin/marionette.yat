@@ -276,6 +276,7 @@ const Ajax = {
 }
 
 const Token = {
+	tokenExpireOffset: undefined,
 	getToken(){
 		return this.token;
 	},
@@ -289,7 +290,32 @@ const Token = {
 			'grant_type':'refresh_token',
 			'refresh_token': token.refresh_token
 		};
+	},
+	getTokenExpires(){
+		let token = this.getToken();
+		return (token || {}).expires;
+	},
+	getTokenSeconds(){
+		let expires = this.getTokenExpires();
+	
+		if(expires == null || isNaN(expires.valueOf())) {
+			console.warn('expires is null or wrong');
+			return 0;
+		}
+	
+		let offset = this.getProperty('tokenExpireOffset');
+		if(offset == null) offset = 30000; //30 sec
+	
+		var deadline = expires.valueOf() - offset;
+		var deadlineMs = deadline - Date.now();
+		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
 	},	
+	isRefreshNecessary(){
+		let token = this.getTokenValue();
+		if(!token) return false;	
+		return !this.getTokenSeconds();
+	},
+
 	setToken(token, opts = {}){
 		
 		this.token = this.parseToken(token, opts);

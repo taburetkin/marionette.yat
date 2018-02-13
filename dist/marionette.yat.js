@@ -2222,6 +2222,7 @@ var Ajax = {
 };
 
 var Token = {
+	tokenExpireOffset: undefined,
 	getToken: function getToken() {
 		return this.token;
 	},
@@ -2235,6 +2236,30 @@ var Token = {
 			'grant_type': 'refresh_token',
 			'refresh_token': token.refresh_token
 		};
+	},
+	getTokenExpires: function getTokenExpires() {
+		var token = this.getToken();
+		return (token || {}).expires;
+	},
+	getTokenSeconds: function getTokenSeconds() {
+		var expires = this.getTokenExpires();
+
+		if (expires == null || isNaN(expires.valueOf())) {
+			console.warn('expires is null or wrong');
+			return 0;
+		}
+
+		var offset = this.getProperty('tokenExpireOffset');
+		if (offset == null) offset = 30000; //30 sec
+
+		var deadline = expires.valueOf() - offset;
+		var deadlineMs = deadline - Date.now();
+		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
+	},
+	isRefreshNecessary: function isRefreshNecessary() {
+		var token = this.getTokenValue();
+		if (!token) return false;
+		return !this.getTokenSeconds();
 	},
 	setToken: function setToken(token) {
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
