@@ -2185,9 +2185,10 @@ var Ajax = {
 				_this7.setToken(token);
 				resolve(token);
 			}, function (error) {
-				if ([400, 401, 403].indexOf(error.status) > -1) {
+				if ([400, 401].indexOf(error.status) > -1) {
+					_this7.authenticated = false;
 					_this7.triggerMethod('token:expired');
-					reject(YatError.Http401());
+					reject(YatError.Http(error.status));
 				} else {
 					reject(error);
 				}
@@ -3367,7 +3368,7 @@ var YatPageManager = Base$3.extend({
 		return true;
 	},
 	restartRoutedPage: function restartRoutedPage() {
-		this.routedPage && routedPage.restart();
+		this.routedPage && this.routedPage.restart();
 	}
 });
 
