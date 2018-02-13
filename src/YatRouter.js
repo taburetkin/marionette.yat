@@ -11,13 +11,13 @@ export default Mn.AppRouter.extend({},{
 				handlerContext
 				.action(...args)
 				.catch((error) => {
-					_this._catchError(error, context);
+					_this._catchError(error, context, handlerContext.context);
 				});
 			}
 		});
 		return new this({controller, appRoutes});
 	},
-	_catchError(error, context){
+	_catchError(error, context, page){
 		if(!context || context.getProperty('throwChildErrors') === true){
 			throw error;
 		}else{
@@ -25,10 +25,10 @@ export default Mn.AppRouter.extend({},{
 			let commonEvent = 'error';
 			let event = commonEvent + postfix;
 
-			context.triggerMethod(commonEvent, error, this);
+			context.triggerMethod(commonEvent, error, page);
 
 			if(event != commonEvent) 
-				context.triggerMethod(event, error, this);
+				context.triggerMethod(event, error, page);
 
 		}
 

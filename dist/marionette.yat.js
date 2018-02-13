@@ -2907,13 +2907,13 @@ var Router = Mn.AppRouter.extend({}, {
 			appRoutes[key] = key;
 			controller[key] = function () {
 				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
-					_this._catchError(error, context);
+					_this._catchError(error, context, handlerContext.context);
 				});
 			};
 		});
 		return new this({ controller: controller, appRoutes: appRoutes });
 	},
-	_catchError: function _catchError(error, context) {
+	_catchError: function _catchError(error, context, page) {
 		if (!context || context.getProperty('throwChildErrors') === true) {
 			throw error;
 		} else {
@@ -2921,9 +2921,9 @@ var Router = Mn.AppRouter.extend({}, {
 			var commonEvent = 'error';
 			var event = commonEvent + postfix;
 
-			context.triggerMethod(commonEvent, error, this);
+			context.triggerMethod(commonEvent, error, page);
 
-			if (event != commonEvent) context.triggerMethod(event, error, this);
+			if (event != commonEvent) context.triggerMethod(event, error, page);
 		}
 	}
 });
