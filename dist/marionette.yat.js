@@ -2246,9 +2246,8 @@ var Token = {
 
 		if (opts.silent !== true) this.triggerMethod('token:change', this.token);
 
-		this.afterTokenChange();
-
-		this.syncUser();
+		this.afterTokenChange(opts);
+		if (opts.identity !== false) this.syncUser(opts);
 	},
 	parseToken: function parseToken(token) {
 		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
@@ -2278,7 +2277,7 @@ var Auth = {
 };
 
 var User = {
-	syncUser: function syncUser() {
+	syncUser: function syncUser(opts) {
 		var _this9 = this;
 
 		var user = this.getUser();

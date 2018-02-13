@@ -299,9 +299,9 @@ const Token = {
 		if(opts.silent !== true)
 			this.triggerMethod('token:change', this.token);
 		
-		this.afterTokenChange();
-
-		this.syncUser();
+		this.afterTokenChange(opts);
+		if(opts.identity !== false)
+			this.syncUser(opts);
 
 	},
 	parseToken(token){
@@ -331,7 +331,7 @@ const Auth = {
 }
 
 const User = {
-	syncUser(){
+	syncUser(opts){
 		let user = this.getUser();
 		if(!user) {
 			this.triggerChange();
