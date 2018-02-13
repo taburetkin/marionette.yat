@@ -111,14 +111,17 @@ export default (Base) => {
 					_this.triggerMethod('start:decline',declineReason);
 					reject(declineReason);
 					return;
-				}				
-				_this.triggerBeforeStart(...args);
-				
+				}
+
+				_this.triggerBeforeStart(...args);				
 				let currentState = _this._getLifeState();
+				this._setLifeState(STATES.STARTING);
+
 				let dependedOn = _this._getStartPromise();
 				dependedOn.then(() => {
 					_this._tryMergeStartOptions(options);		
 					_this.once('start', (...args) => resolve(...args));
+					this._setLifeState(STATES.RUNNING);
 					_this.triggerStart(options);
 				},(...args) => {
 					_this._setLifeState(currentState);
@@ -171,11 +174,13 @@ export default (Base) => {
 				}				
 
 				let currentState = _this._getLifeState();
-				let dependedOn = _this._getStopPromise();
 				_this.triggerMethod('before:stop', ...args);
+				this._setLifeState(STATES.STOPPING);
+				let dependedOn = _this._getStopPromise();
 				dependedOn.then(() => {
 					_this._tryMergeStopOptions(options);		
 					_this.once('stop', (...args) => resolve(...args));
+					this._setLifeState(STATES.WAITING);
 					_this.triggerStop(options);
 				},(...args) => {
 					_this._setLifeState(currentState);
@@ -228,10 +233,10 @@ export default (Base) => {
 				});
 
 
-			this.on('before:start', () => this._setLifeState(STATES.STARTING));
-			this.on('start', () => this._setLifeState(STATES.RUNNING));
-			this.on('before:stop',() => this._setLifeState(STATES.STOPPING));
-			this.on('stop',() => this._setLifeState(STATES.WAITING));
+			// this.on('before:start', () => this._setLifeState(STATES.STARTING));
+			// this.on('start', () => this._setLifeState(STATES.RUNNING));
+			// this.on('before:stop',() => this._setLifeState(STATES.STOPPING));
+			// this.on('stop',() => this._setLifeState(STATES.WAITING));
 			this.on('destroy',() => this._setLifeState(STATES.DESTROYED));
 
 		},	
