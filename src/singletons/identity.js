@@ -310,7 +310,10 @@ const Token = {
 		var deadlineMs = deadline - Date.now();
 		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
 	},	
-	isRefreshNecessary(){
+	isRefreshNecessary(opts){
+		
+		if(opts.force === true) return true;
+
 		let token = this.getTokenValue();
 		if(!token) return false;	
 		return !this.getTokenSeconds();

@@ -2256,7 +2256,10 @@ var Token = {
 		var deadlineMs = deadline - Date.now();
 		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
 	},
-	isRefreshNecessary: function isRefreshNecessary() {
+	isRefreshNecessary: function isRefreshNecessary(opts) {
+
+		if (opts.force === true) return true;
+
 		var token = this.getTokenValue();
 		if (!token) return false;
 		return !this.getTokenSeconds();
