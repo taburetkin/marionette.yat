@@ -3263,9 +3263,6 @@ var YatPageManager = Base$3.extend(_defineProperty$3({
 		});
 		return { appRoutes: appRoutes, controller: controller };
 	},
-	restartRoutedPage: function restartRoutedPage() {
-		this.routedPage && this.startPage(this.routedPage);
-	},
 	startPage: function startPage(page) {
 		var _this2 = this;
 
@@ -3285,6 +3282,9 @@ var YatPageManager = Base$3.extend(_defineProperty$3({
 			_this2.triggerMethod(commonEvent, error, page);
 			event != commonEvent && _this2.triggerMethod(event, error, page);
 		});
+	},
+	restartRoutedPage: function restartRoutedPage() {
+		this.routedPage && this.startPage(this.routedPage);
 	},
 	setRouter: function setRouter(router) {
 		this.router = router;
@@ -3365,9 +3365,7 @@ var YatPageManager = Base$3.extend(_defineProperty$3({
 	_pageStart: function _pageStart(page) {
 		this.setState('currentPage', page);
 	},
-	_pageDecline: function _pageDecline() {
-		//console.log("decline", args)
-	},
+	_pageDecline: function _pageDecline() {},
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
 		var _this3 = this;
 

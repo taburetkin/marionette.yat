@@ -48,9 +48,6 @@ let YatPageManager = Base.extend({
 		});
 		return { appRoutes, controller };
 	},
-	restartRoutedPage(){
-		this.routedPage && this.startPage(this.routedPage);
-	},
 	startPage(page, ...args){
 		this.routedPage = page;
 		page.start(...args).catch((error) => {
@@ -64,6 +61,10 @@ let YatPageManager = Base.extend({
 			event != commonEvent && this.triggerMethod(event, error, page);
 		});
 	},
+	restartRoutedPage(){
+		this.routedPage && this.startPage(this.routedPage);
+	},	
+
 
 
 	setRouter(router){
@@ -153,10 +154,7 @@ let YatPageManager = Base.extend({
 	_pageStart(page){
 		this.setState('currentPage', page);
 	},
-
-	_pageDecline(...args){
-		//console.log("decline", args)
-	},
+	_pageDecline(...args){},
 
 	_registerIdentityHandlers(){
 		this.listenTo(identity, 'change', (...args) => {
