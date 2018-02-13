@@ -12,7 +12,8 @@ let Base = mix(YatObject).with(Stateable);
 
 let nativeAjax = $ && $.ajax;
 
-let Identity = Base.extend({	
+let Identity2 = Base.extend({	
+	channelName: IDENTITY_CHANNEL,
 	constructor(...args){
 		Base.apply(this, args);
 		this._initializeYatUser();
@@ -21,7 +22,6 @@ let Identity = Base.extend({
 	bearerTokenUrl: undefined,
 	bearerTokenRenewUrl: undefined, //if empty `bearerTokenUrl` will be used
 	identityUrl: undefined, //if set then there will be a request to obtain identity data	
-	channelName: IDENTITY_CHANNEL,
 	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
 	isAnonym(){
 		return !this.getState('id');
@@ -203,6 +203,177 @@ let Identity = Base.extend({
 				});
 	
 		});
+	}
+});
+
+
+const Ajax = {
+	
+	tokenUrl:'',
+	nativeAjax: $.ajax,
+
+	ajax(...args){
+		return this.ensureToken()
+			.then(() => { 
+				let options = args[0];
+				options.headers = _.extend({}, options.headers, this.getAjaxHeaders());
+				return this.nativeAjax.apply($, args)
+			})
+			.catch((error) =>{ 
+				let promise = $.Deferred();
+				promise.reject(error);
+				return promise;
+			});
+	},
+	tokenXhr(url, data, method = 'POST'){
+		return this.nativeAjax({ url, data, method });
+	},
+	ensureToken(opts = {}){
+		let refresh = this.isRefreshNecessary(opts);
+		if(!refresh) return Promise.resolve();
+
+		let url = this.getOption('refreshTokenUrl');
+		let data = this.getRefreshTokenData();
+		return this.requestToken(data, url);
+	},
+	requestToken(data, url){
+		url || (url = this.getOption('tokenUrl'));
+		if(!url) return Promise.reject('token url not specified');
+		let promise = new Promise((resolve, reject) => {
+			this.tokenXhr(url, data)
+				.then(
+					(token) => { 
+						this.setToken(token);
+						resolve(token);
+					},
+					(error) => reject(error)
+				);
+		});
+		return promise;
+	},
+	getAjaxHeaders(){
+		this._ajaxHeaders || (this._ajaxHeaders = {});
+		return _.extend({}, this._ajaxHeaders, this.getOption('ajaxHeader'));
+	},
+	replaceBackboneAjax(){
+		let token = this.getTokenValue();
+		if(!token)
+			Bb.ajax = $.ajax;
+		else
+			Bb.ajax = (...args) => this.ajax(...args);
+	},
+	updateAjaxHeaders(){
+		let token = this.getTokenValue();
+		let headers = this._ajaxHeaders;
+		if(token){
+			headers.Authorization = 'Bearer ' + token;
+			headers.Accept = 'application/json';
+		}else{
+			delete headers.Authorization;
+		}
+	},
+}
+
+const Token = {
+	getToken(){
+		return this.token;
+	},
+	getTokenValue(){
+		let token = this.getToken();
+		return token && token.access_token;
+	},
+	getRefreshTokenData(){
+		let token = this.getToken() || {};
+		return {
+			'grant_type':'refresh_token',
+			'refresh_token': token.refresh_token
+		};
+	},	
+	setToken(token, opts = {}){
+		
+		this.token = this.parseToken(token, opts);
+
+		this.beforeTokenChange(opts);
+		this.triggerMethod('before:token:change', this.token, opts);
+
+		if(opts.silent !== true)
+			this.triggerMethod('token:change', this.token);
+		
+		this.afterTokenChange();
+
+		this.syncUser();
+
+	},
+	parseToken(token){
+		if(token != null && _.isObject(token))
+			token.expires = new Date(Date.now() + (token.expires_in * 1000));
+		return token;
+	},
+	beforeTokenChange(opts){
+		this.updateAjaxHeaders();
+		this.replaceBackboneAjax();		
+	},	
+	afterTokenChange(){},
+}
+
+const Auth = {
+	authorized: false,	
+	isAuth(){
+		return this.authorized === true;
+	},
+	isAnon(){ return !this.isAuth();},
+	isMe(value){
+		return value && this.isAuth() && this.me == value;
+	},
+	setMe(value){
+		this.me = value;
+	},
+}
+
+const User = {
+	syncUser(){
+		let user = this.getUser();
+		if(!user) {
+			this.triggerChange();
+			return;
+		}
+		user.fetch().then(() => { 
+			this.applyUser(user);
+			this.triggerChange();
+		}, () => {
+			this.syncUserEror();
+			this.triggerChange();
+		});
+	},
+	syncUserEror(){
+		this.reset();
+	},
+	applyUser(user){
+		let id = user == null ? null : user.id;
+		this.setMe(id);
+	},
+	getUser(){
+		return this.user;
+	},
+	setUser(user){
+		this.user = user;
+		this.applyUser(user);
+	},
+	isUser(){
+		return this.user && !!this.user.id;
+	},
+}
+
+const Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
+	triggerReady(){
+		this.triggerMethod('change');
+	},
+	reset(){
+		let user = this.getUser();
+		user.clear();
+		this.applyUser(user);
+		this.authorized = false;
+		this.triggerMethod('reset');
 	}
 });
 

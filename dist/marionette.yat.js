@@ -1934,7 +1934,8 @@ var Base = mix(YatObject).with(Stateable);
 
 var nativeAjax = $ && $.ajax;
 
-var Identity = Base.extend({
+var Identity2 = Base.extend({
+	channelName: IDENTITY_CHANNEL,
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
@@ -1948,7 +1949,6 @@ var Identity = Base.extend({
 	bearerTokenUrl: undefined,
 	bearerTokenRenewUrl: undefined, //if empty `bearerTokenUrl` will be used
 	identityUrl: undefined, //if set then there will be a request to obtain identity data	
-	channelName: IDENTITY_CHANNEL,
 	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
 	isAnonym: function isAnonym() {
 		return !this.getState('id');
@@ -2141,6 +2141,188 @@ var Identity = Base.extend({
 				reject(YatError.Http401());
 			});
 		});
+	}
+});
+
+var Ajax = {
+
+	tokenUrl: '',
+	nativeAjax: $.ajax,
+
+	ajax: function ajax() {
+		var _this6 = this;
+
+		for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+			args[_key3] = arguments[_key3];
+		}
+
+		return this.ensureToken().then(function () {
+			var options = args[0];
+			options.headers = _.extend({}, options.headers, _this6.getAjaxHeaders());
+			return _this6.nativeAjax.apply($, args);
+		}).catch(function (error) {
+			var promise = $.Deferred();
+			promise.reject(error);
+			return promise;
+		});
+	},
+	tokenXhr: function tokenXhr(url, data) {
+		var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'POST';
+
+		return this.nativeAjax({ url: url, data: data, method: method });
+	},
+	ensureToken: function ensureToken() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		var refresh = this.isRefreshNecessary(opts);
+		if (!refresh) return Promise.resolve();
+
+		var url = this.getOption('refreshTokenUrl');
+		var data = this.getRefreshTokenData();
+		return this.requestToken(data, url);
+	},
+	requestToken: function requestToken(data, url) {
+		var _this7 = this;
+
+		url || (url = this.getOption('tokenUrl'));
+		if (!url) return Promise.reject('token url not specified');
+		var promise = new Promise(function (resolve, reject) {
+			_this7.tokenXhr(url, data).then(function (token) {
+				_this7.setToken(token);
+				resolve(token);
+			}, function (error) {
+				return reject(error);
+			});
+		});
+		return promise;
+	},
+	getAjaxHeaders: function getAjaxHeaders() {
+		this._ajaxHeaders || (this._ajaxHeaders = {});
+		return _.extend({}, this._ajaxHeaders, this.getOption('ajaxHeader'));
+	},
+	replaceBackboneAjax: function replaceBackboneAjax() {
+		var _this8 = this;
+
+		var token = this.getTokenValue();
+		if (!token) Bb.ajax = $.ajax;else Bb.ajax = function () {
+			return _this8.ajax.apply(_this8, arguments);
+		};
+	},
+	updateAjaxHeaders: function updateAjaxHeaders() {
+		var token = this.getTokenValue();
+		var headers = this._ajaxHeaders;
+		if (token) {
+			headers.Authorization = 'Bearer ' + token;
+			headers.Accept = 'application/json';
+		} else {
+			delete headers.Authorization;
+		}
+	}
+};
+
+var Token = {
+	getToken: function getToken() {
+		return this.token;
+	},
+	getTokenValue: function getTokenValue() {
+		var token = this.getToken();
+		return token && token.access_token;
+	},
+	getRefreshTokenData: function getRefreshTokenData() {
+		var token = this.getToken() || {};
+		return {
+			'grant_type': 'refresh_token',
+			'refresh_token': token.refresh_token
+		};
+	},
+	setToken: function setToken(token) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+
+		this.token = this.parseToken(token, opts);
+
+		this.beforeTokenChange(opts);
+		this.triggerMethod('before:token:change', this.token, opts);
+
+		if (opts.silent !== true) this.triggerMethod('token:change', this.token);
+
+		this.afterTokenChange();
+
+		this.syncUser();
+	},
+	parseToken: function parseToken(token) {
+		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
+		return token;
+	},
+	beforeTokenChange: function beforeTokenChange(opts) {
+		this.updateAjaxHeaders();
+		this.replaceBackboneAjax();
+	},
+	afterTokenChange: function afterTokenChange() {}
+};
+
+var Auth = {
+	authorized: false,
+	isAuth: function isAuth() {
+		return this.authorized === true;
+	},
+	isAnon: function isAnon() {
+		return !this.isAuth();
+	},
+	isMe: function isMe(value) {
+		return value && this.isAuth() && this.me == value;
+	},
+	setMe: function setMe(value) {
+		this.me = value;
+	}
+};
+
+var User = {
+	syncUser: function syncUser() {
+		var _this9 = this;
+
+		var user = this.getUser();
+		if (!user) {
+			this.triggerChange();
+			return;
+		}
+		user.fetch().then(function () {
+			_this9.applyUser(user);
+			_this9.triggerChange();
+		}, function () {
+			_this9.syncUserEror();
+			_this9.triggerChange();
+		});
+	},
+	syncUserEror: function syncUserEror() {
+		this.reset();
+	},
+	applyUser: function applyUser(user) {
+		var id = user == null ? null : user.id;
+		this.setMe(id);
+	},
+	getUser: function getUser() {
+		return this.user;
+	},
+	setUser: function setUser(user) {
+		this.user = user;
+		this.applyUser(user);
+	},
+	isUser: function isUser() {
+		return this.user && !!this.user.id;
+	}
+};
+
+var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
+	triggerReady: function triggerReady() {
+		this.triggerMethod('change');
+	},
+	reset: function reset() {
+		var user = this.getUser();
+		user.clear();
+		this.applyUser(user);
+		this.authorized = false;
+		this.triggerMethod('reset');
 	}
 });
 
