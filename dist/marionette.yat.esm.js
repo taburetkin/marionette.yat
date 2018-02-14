@@ -2251,7 +2251,7 @@ var identity = new Identity();
 var Region = Mn.Region.extend({
 	constructor: function constructor(options) {
 		Mn.Region.apply(this, arguments);
-		this.mergeOptions(optsion, ['stateApi']);
+		this.mergeOptions(options, ['stateApi']);
 		this.stateApi && this._initStateApi();
 	},
 	_initStateApi: function _initStateApi() {
