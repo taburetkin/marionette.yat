@@ -496,7 +496,7 @@ var stateEntries = {
 		get: function get(view) {
 			var result = {};
 			view.$('[data-scrollable]').each(function (i, el) {
-				var $el = _(el);
+				var $el = $(el);
 				var name = $el.data('scrollable');
 				result[name] = $el.scrollTop();
 			});
@@ -505,7 +505,7 @@ var stateEntries = {
 		set: function set(view) {
 			var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 			view.$('[data-scrollable]').each(function (i, el) {
-				var $el = _(el);
+				var $el = $(el);
 				var name = $el.data('scrollable');
 				if (!isNaN(state[name])) $el.scrollTop(state[name]);
 			});

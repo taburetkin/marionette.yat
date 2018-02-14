@@ -1,5 +1,5 @@
 import _ from 'underscore';
-import $ from 'underscore';
+import $ from 'jquery';
 import Mn from 'backbone.marionette';
 import Bb from 'backbone';
 import YatObject from '../YatObject';
