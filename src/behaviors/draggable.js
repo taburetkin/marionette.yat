@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import $ from 'jquery';
 import BaseDraggable from './_base-draggable';
 
 const DraggableBehavior = BaseDraggable.extend({

@@ -3,7 +3,6 @@ import App from './YatApp.js';
 import mixin from './helpers/mix';
 import Startable from './mixins/startable';
 import GetNameLabel from './mixins/get-name-label';
-import Router from './YatRouter.js';
 import LinkModel from './models/link';
 import Bb from 'backbone';
 import identity from './singletons/identity';
@@ -29,7 +28,6 @@ export default Base.extend({
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
-		//this._tryCreateRouter();
 		this._registerIdentityHandlers();		
 	},
 
@@ -95,7 +93,7 @@ export default Base.extend({
 
 
 
-	
+
 	getRouteHash(){
 
 		let hashes = [{},this._routeHandler].concat(this.getChildren({startable:false}).map((children) => children.getRouteHash()))
@@ -208,19 +206,6 @@ export default Base.extend({
 		this.addModel(opts.model, opts);
 		this.addCollection(opts.collection, opts);
 	},
-
-
-	// _tryCreateRouter(){
-	// 	let create = this.getProperty('createRouter') === true;
-	// 	if(create){
-	// 		this.router = this._createAppRouter();
-	// 	}
-	// },
-	// _createAppRouter(){
-	// 	let hash = this.getRouteHash();
-	// 	if(!_.size(hash)) return;
-	// 	return new Router(hash);
-	// },
 
 	_proxyEvents(){
 		let proxyContexts = this._getProxyContexts();

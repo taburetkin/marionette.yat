@@ -11,11 +11,11 @@ import yatConfig from './YatConfig';
 import YatObject from './YatObject';
 import YatError from './YatError';
 import YatApp from './YatApp';
-import YatRouter from './YatRouter';
 import YatPage from './YatPage';
 import YatPageManager from './YatPageManager';
 import YatView from './YatView';
 import YatCollectionView from './YatCollectionView';
+import YatRegion from './YatRegion';
 
 import YatModel from './models/model';
 import YatCollection from './models/collection';
@@ -37,11 +37,11 @@ const marionetteYat = {
 	Object: YatObject,
 	Error: YatError,
 	App: YatApp,
-	Page : YatPage,
-	Router: YatRouter,
+	Page : YatPage,	
 	PageManager: YatPageManager,
 	View: YatView,
 	CollectionView: YatCollectionView,
+	Region: YatRegion,
 	Model: YatModel,
 	Collection: YatCollection,
 	CollectionGroups, 

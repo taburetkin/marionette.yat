@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import $ from 'jquery';
 import Mn from 'backbone.marionette';
 import Behavior from './behavior';
 import mix from '../helpers/mix';

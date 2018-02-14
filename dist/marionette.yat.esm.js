@@ -11,14 +11,14 @@
 
 
 import Bb from 'backbone';
-import Mn$1 from 'backbone.marionette';
+import Mn from 'backbone.marionette';
 import _ from 'underscore';
-import $$1 from 'jquery';
+import $ from 'jquery';
 
 var version = "0.0.32";
 
 var getCompareABModel = function getCompareABModel(arg) {
-	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn$1.View) return arg.model;else return;
+	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
 };
 var getCompareABView = function getCompareABView(arg) {
 	if (arg instanceof Bb.View) return arg;else return;
@@ -313,7 +313,7 @@ var __ = {
 
 var Functions = { view: view, common: __ };
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _.isFunction(arg);
@@ -323,7 +323,7 @@ function isKnownCtor(arg) {
 	return isFn && result;
 }
 
-var YatError = Mn$1.Error.extend({}, {
+var YatError = Mn.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -372,14 +372,14 @@ function mix(BaseClass) {
 		Mixed = BaseClass;
 	} else if (_.isObject(BaseClass) && BaseClass !== null) {
 		var tmp = function tmp() {};
-		tmp.extend = Mn$1.extend;
+		tmp.extend = Mn.extend;
 		Mixed = tmp.extend(BaseClass);
 	} else {
 		throw new Error('argument should be an object or class definition');
 	}
 	if (!Mixed.extend) {
-		Mixed = Mn$1.extend.call(BaseClass, {});
-		Mixed.extend = Mn$1.extend;
+		Mixed = Mn.extend.call(BaseClass, {});
+		Mixed.extend = Mn.extend;
 	}
 	var fake = {
 		with: function _with() {
@@ -394,40 +394,6 @@ function mix(BaseClass) {
 		class: Mixed
 	};
 	return fake;
-}
-
-var Helpers = {
-	isKnownCtor: isKnownCtor,
-	mix: mix
-};
-
-function GetNameLabel (Base) {
-	return Base.extend({
-		getName: function getName() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			var options = _.extend({}, opts);
-			options.exclude = 'getName';
-			options.args = [options];
-			return __.getName(this, options);
-		},
-		getLabel: function getLabel() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			var options = _.extend({}, opts);
-			options.exclude = 'getLabel';
-			options.args = [options];
-			return __.getLabel(this, options);
-		},
-		getValue: function getValue() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			var options = _.extend({}, opts);
-			options.exclude = 'getValue';
-			options.args = [options];
-			return __.getValue(this, options);
-		}
-	});
 }
 
 var GetOptionProperty = (function (Base) {
@@ -500,7 +466,7 @@ var RadioMixin = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn$1.Object.prototype._initRadio.call(this);
+			Mn.Object.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -514,6 +480,143 @@ var RadioMixin = (function (Base) {
 
 	return Mixin;
 });
+
+var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
+
+/*
+	StateEntry = {
+		get: fn(index, domElement),
+		set: fn(index, domElement)
+	}
+
+*/
+
+var stateEntries = {
+	scrollable: {
+		get: function get(view) {
+			var result = {};
+			view.$('[data-scrollable]').each(function (i, el) {
+				var $el = _(el);
+				var name = $el.data('scrollable');
+				result[name] = $el.scrollTop();
+			});
+			return result;
+		},
+		set: function set(view) {
+			var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+			view.$('[data-scrollable]').each(function (i, el) {
+				var $el = _(el);
+				var name = $el.data('scrollable');
+				if (!isNaN(state[name])) $el.scrollTop(state[name]);
+			});
+		}
+	}
+};
+
+var stateStore = {};
+
+var Api = YatObject.extend({
+	initialize: function initialize(options) {
+		this._initStates();
+	},
+	_initStates: function _initStates() {
+		var _this = this;
+
+		this._states = {};
+		var states = this.getOption('states');
+		_(states).each(function (state, name) {
+			if (typeof state === 'string') {
+				name = state;
+				state = stateEntries[state];
+			}
+			if (!_this._isStateEntry(state)) return;
+			_this._states[name] = state;
+		});
+	},
+	_isStateEntry: function _isStateEntry(arg) {
+		return _.isObject(arg) && _.isFunction(arg.get) && _.isFunction(arg.set);
+	},
+	apply: function apply(view) {
+		var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		var store = this.getStore(view, options);
+		_(this._states).each(function (state, name) {
+			state.set(view, store[name], options);
+		});
+	},
+	collect: function collect(view) {
+		var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		var store = this.getStore(view, options);
+		_(this._states).each(function (state, name) {
+			store[name] = state.get(view, options);
+		});
+	},
+	getStore: function getStore(view) {
+		var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		var key = this.getStoreKey(view, options);
+		stateStore[key] || (stateStore[key] = {});
+		return stateStore[key];
+	},
+	getStoreKey: function getStoreKey(view) {
+		return view.id || view.cid;
+	}
+});
+
+Api.set = function (name, entry) {
+	stateEntries[name] = entry;
+};
+Api.remove = function (name) {
+	delete stateEntries[name];
+};
+Api.clear = function () {
+	var keys = _(stateEntries).keys();
+	_(keys).each(function (key) {
+		return delete stateEntries[key];
+	});
+};
+Api.states = function () {
+	return stateEntries;
+};
+Api.store = function () {
+	return stateStore;
+};
+
+var Helpers = {
+	isKnownCtor: isKnownCtor,
+	mix: mix,
+	ViewStateApi: Api
+};
+
+function GetNameLabel (Base) {
+	return Base.extend({
+		getName: function getName() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
+			options.exclude = 'getName';
+			options.args = [options];
+			return __.getName(this, options);
+		},
+		getLabel: function getLabel() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
+			options.exclude = 'getLabel';
+			options.args = [options];
+			return __.getLabel(this, options);
+		},
+		getValue: function getValue() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
+			options.exclude = 'getValue';
+			options.args = [options];
+			return __.getValue(this, options);
+		}
+	});
+}
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
@@ -1193,7 +1296,7 @@ var Mixins = {
 	GlobalTemplateContext: GlobalTemplateContext
 };
 
-var BaseBehavior = mix(Mn$1.Behavior).with(GetOptionProperty);
+var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
 var Behavior = BaseBehavior.extend({
 
 	listenViewInitialize: true,
@@ -1920,223 +2023,7 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 
 var Behaviors = { Behavior: Behavior, Draggable: DraggableBehavior, Droppable: DroppableBehavior, DynamicClass: DynamicClass, FormToHash: FormToHash };
 
-var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
-
-var IDENTITY_CHANNEL = 'identity';
-
 var Base = mix(YatObject).with(Stateable);
-
-var nativeAjax = $ && $.ajax;
-
-var Identity2 = Base.extend({
-	channelName: IDENTITY_CHANNEL,
-	constructor: function constructor() {
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
-		}
-
-		Base.apply(this, args);
-		this._initializeYatUser();
-	},
-	_initializeYatUser: function _initializeYatUser() {},
-
-	bearerTokenUrl: undefined,
-	bearerTokenRenewUrl: undefined, //if empty `bearerTokenUrl` will be used
-	identityUrl: undefined, //if set then there will be a request to obtain identity data	
-	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
-	isAnonym: function isAnonym() {
-		return !this.getState('id');
-	},
-	isUser: function isUser() {
-		return !this.isAnonym();
-	},
-	isMe: function isMe(id) {
-		return id && this.getState('id') === id;
-	},
-	update: function update(hash) {
-		this.setState(hash);
-		this.trigger('change');
-	},
-	logIn: function logIn(hash) {
-		if (!hash.id) return;
-		this.clearState();
-		this.update(hash);
-		this.trigger('log:in');
-	},
-	logOut: function logOut() {
-		this.clearState();
-		this.trigger('change');
-		this.setTokenObject(null);
-		this.trigger('log:out');
-	},
-	getBearerToken: function getBearerToken(data) {
-		var _this = this;
-
-		var url = this.getOption('bearerTokenUrl');
-		var promise = new Promise(function (resolve, reject) {
-			nativeAjax({ url: url, data: data, method: 'POST' }).then(function (token) {
-				_this.setTokenObject(token);
-				resolve(token);
-				//this.triggerMethod('token', token);
-			}, function (error) {
-				return reject(error);
-			});
-		});
-		return promise;
-	},
-	getIdentity: function getIdentity() {
-		var _this2 = this;
-
-		if (this.getProperty('identityUrl') == null) return;
-
-		var model = new Bb.Model();
-		model.url = this.getProperty('identityUrl');
-
-		var promise = new Promise(function (resolve, reject) {
-			model.fetch().then(function () {
-				var hash = model.toJSON();
-				_this2.logIn(hash);
-				resolve(hash);
-			}, function (error) {
-				reject(error);
-			});
-		});
-		return promise;
-	},
-	ajax: function ajax() {
-		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-			args[_key2] = arguments[_key2];
-		}
-
-		var options = args[0];
-		options.headers = _.extend({}, options.headers, this.getAjaxHeaders());
-		var needRefresh = this.isTokenRefreshNeeded();
-		if (!needRefresh) {
-			var _$;
-
-			return (_$ = $).ajax.apply(_$, args); //nativeAjax.apply($, args);
-		} else {
-			return this.refreshBearerToken().then(function () {
-				return nativeAjax.apply($, args);
-			}).catch(function (error) {
-				var promise = $.Deferred();
-				promise.reject(error);
-				return promise;
-			});
-		}
-	},
-	getAjaxHeaders: function getAjaxHeaders() {
-		this._ajaxHeaders || (this._ajaxHeaders = {});
-		return this._ajaxHeaders;
-	},
-	_updateHeaders: function _updateHeaders() {
-		var token = this.getTokenValue();
-		var headers = this.getAjaxHeaders();
-
-		if (token) {
-			headers.Authorization = 'Bearer ' + token;
-			headers.Accept = 'application/json';
-		} else {
-			delete headers.Authorization;
-		}
-	},
-	setTokenObject: function setTokenObject(token) {
-		var _this3 = this;
-
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-
-		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
-
-		this._token = token;
-		if (opts.silent !== true) this.triggerMethod('token:change', token);
-
-		this._updateHeaders();
-		this._replaceBackboneAjax();
-
-		if (token != null && opts.identity !== false) this.getIdentity().catch().then(function () {
-			return _this3.triggerMethod('token:identity:change');
-		});else this.triggerMethod('token:identity:change');
-	},
-	getTokenObject: function getTokenObject() {
-		return this._token;
-	},
-	_replaceBackboneAjax: function _replaceBackboneAjax() {
-		var _this4 = this;
-
-		var token = this.getTokenValue();
-		if (!token) Bb.ajax = $.ajax; //$.ajax = nativeAjax;
-		else Bb.ajax = function () {
-				return _this4.ajax.apply(_this4, arguments);
-			}; //$.ajax = (...args) => Yat.identity.ajax(...args);
-	},
-	getTokenValue: function getTokenValue() {
-		var token = this.getTokenObject();
-		return token && token.access_token;
-	},
-	getRefreshToken: function getRefreshToken() {
-		var token = this.getTokenObject();
-		return token.refresh_token;
-	},
-	getTokenExpires: function getTokenExpires() {
-		var token = this.getTokenObject();
-		return (token || {}).expires;
-	},
-	getTokenSeconds: function getTokenSeconds() {
-		var expires = this.getTokenExpires();
-
-		if (expires == null || isNaN(expires.valueOf())) {
-			console.warn('expires is null or wrong');
-			return 0;
-		}
-
-		var offset = this.getProperty('tokenExpireOffset');
-		if (offset == null) offset = 30000; //30 sec
-
-		var deadline = expires.valueOf() - offset;
-		var deadlineMs = deadline - Date.now();
-		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
-	},
-	isTokenRefreshNeeded: function isTokenRefreshNeeded() {
-		var token = this.getTokenValue();
-		if (!token) return false;
-		return !this.getTokenSeconds();
-	},
-	refreshBearerToken: function refreshBearerToken() {
-		var _this5 = this;
-
-		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-		var bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
-		var doRefresh = opts.force === true || this.isTokenRefreshNeeded();
-		return new Promise(function (resolve, reject) {
-			if (!doRefresh) {
-				resolve();
-				return;
-			}
-
-			if (bearerTokenRenewUrl == null) {
-				reject(new Error('Token expired and `bearerTokenRenewUrl` not set'));
-				return;
-			}
-			var data = {
-				'grant_type': 'refresh_token',
-				'refresh_token': _this5.getRefreshToken()
-			};
-			nativeAjax({
-				url: bearerTokenRenewUrl,
-				data: data,
-				method: 'POST'
-			}).then(function (token) {
-				_this5.setTokenObject(token);
-				resolve();
-			}, function () {
-				_this5.triggerMethod('refresh:token:expired');
-				reject(YatError.Http401());
-			});
-		});
-	}
-});
 
 var Ajax = {
 
@@ -2144,16 +2031,16 @@ var Ajax = {
 	nativeAjax: $.ajax,
 
 	ajax: function ajax() {
-		var _this6 = this;
+		var _this = this;
 
-		for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-			args[_key3] = arguments[_key3];
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
 		}
 
 		return this.ensureToken().then(function () {
 			var options = args[0];
-			options.headers = _.extend({}, options.headers, _this6.getAjaxHeaders());
-			return _this6.nativeAjax.apply($, args);
+			options.headers = _.extend({}, options.headers, _this.getAjaxHeaders());
+			return _this.nativeAjax.apply($, args);
 		}).catch(function (error) {
 			var promise = $.Deferred();
 			promise.reject(error);
@@ -2176,18 +2063,18 @@ var Ajax = {
 		return this.requestToken(data, url, { refresh: true });
 	},
 	requestToken: function requestToken(data, url) {
-		var _this7 = this;
+		var _this2 = this;
 
 		url || (url = this.getOption('tokenUrl'));
 		if (!url) return Promise.reject('token url not specified');
 		var promise = new Promise(function (resolve, reject) {
-			_this7.tokenXhr(url, data).then(function (token) {
-				_this7.setToken(token);
+			_this2.tokenXhr(url, data).then(function (token) {
+				_this2.setToken(token);
 				resolve(token);
 			}, function (error) {
 				if ([400, 401].indexOf(error.status) > -1) {
-					_this7.authenticated = false;
-					_this7.triggerMethod('token:expired');
+					_this2.authenticated = false;
+					_this2.triggerMethod('token:expired');
 					reject(YatError.Http(error.status));
 				} else {
 					reject(error);
@@ -2201,11 +2088,11 @@ var Ajax = {
 		return _.extend({}, this._ajaxHeaders, this.getOption('ajaxHeader'));
 	},
 	replaceBackboneAjax: function replaceBackboneAjax() {
-		var _this8 = this;
+		var _this3 = this;
 
 		var token = this.getTokenValue();
 		if (!token) Bb.ajax = $.ajax;else Bb.ajax = function () {
-			return _this8.ajax.apply(_this8, arguments);
+			return _this3.ajax.apply(_this3, arguments);
 		};
 	},
 	updateAjaxHeaders: function updateAjaxHeaders() {
@@ -2310,7 +2197,7 @@ var Auth = {
 
 var User = {
 	syncUser: function syncUser(opts) {
-		var _this9 = this;
+		var _this4 = this;
 
 		var user = this.getUser();
 		if (!user) {
@@ -2318,9 +2205,9 @@ var User = {
 			return;
 		}
 		user.fetch().then(function () {
-			_this9.applyUser(user);
+			_this4.applyUser(user);
 		}, function () {
-			_this9.syncUserEror();
+			_this4.syncUserEror();
 		});
 	},
 	syncUserEror: function syncUserEror() {
@@ -2360,33 +2247,77 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 
 var identity = new Identity();
 
-var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty).extend({
+var Region = Mn.Region.extend({
+	constructon: function constructon(options) {
+		Mn.Region.apply(this, arguments);
+		this.mergeOptions(optsion, ['stateApi']);
+		this.stateApi && this._initStateApi();
+	},
+	_initStateApi: function _initStateApi() {
+		this.off('show', this._onStatableShow);
+		this.off('before:empty', this._onStatableBeforeEmpty);
+		this.on('show', this._onStatableShow);
+		this.on('before:empty', this._onStatableBeforeEmpty);
+	},
+	_onStatableShow: function _onStatableShow(region, view) {
+		var api = this.stateApi && _.isFunction(this.stateApi.apply) ? this.stateApi : undefined;
+		api && api.apply(view, { region: region });
+	},
+	_onStatableBeforeEmpty: function _onStatableBeforeEmpty(region, view) {
+		var api = this.stateApi && _.isFunction(this.stateApi.collect) ? this.stateApi : undefined;
+		api && api.collect(view, { region: region });
+	},
+	setStateApi: function setStateApi(api) {
+		this.stateApi = api;
+		this._initStateApi();
+	},
+
+	removeView: function removeView(view) {
+		var removeBehavior = this.getOption('removeBehavior') || 'destroy';
+		if (removeBehavior === 'detach') this.detachView(view);else this.destroyView(view);
+	}
+});
+
+Region.Detachable = function () {
+	var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+	var detachable = _.extend({}, opts, { removeBehavior: 'detach' });
+	return this.extend(detachable);
+};
+
+var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend({
 
 	instantRender: false,
 	renderOnReady: false,
-	triggerReady: false,
 
-	manualAfterInitialize: true,
-
+	regionClass: function regionClass() {
+		var detachable = this.getOption('detachableRegion') === true;
+		var stateApi = this.getOption('stateApi');
+		var ViewRegion = stateApi ? Region.extend({ stateApi: stateApi }) : Region;
+		return detachable ? ViewRegion.Detachable() : ViewRegion;
+	},
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
 		}
 
-		Mn$1.View.apply(this, args);
+		Mn.View.apply(this, args);
 
 		var options = args[0];
 		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
 
-		if (this.manualAfterInitialize === true) this._afterInitialize();
-	},
-	_afterInitialize: function _afterInitialize() {
-
-		if (this.instantRender === true) this.render();
-
 		if (this.renderOnReady === true) this.once('ready', this.render);
-
-		if (this.renderOnReady === true || this.triggerReady === true) this.trigger('ready', this);
+		if (this.instantRender === true && !this.renderOnReady) this.render();else if (this.instantRender === true && this.renderOnReady === true) this.triggerReady();
+	},
+	triggerReady: function triggerReady() {
+		this.trigger('ready', this);
+	},
+	stateApi: function stateApi() {
+		var options = this.getOption('stateApiOptions');
+		return new Api(options);
+	},
+	stateApiOptions: function stateApiOptions() {
+		return { states: ['scrollable'] };
 	}
 });
 
@@ -2715,8 +2646,8 @@ var ModalEngine = mix(YatObject).with(Stateable).extend({
 
 		YatObject.apply(this, args);
 		this.listenForEsc = _.bind(this._listenForEsc, this);
-		$$1(function () {
-			_this2.doc = $$1(document);
+		$(function () {
+			_this2.doc = $(document);
 			_this2.doc.on('keyup', _this2.listenForEsc);
 		});
 	},
@@ -2814,7 +2745,7 @@ var modals = {
 
 var Singletons = { TemplateContext: GlobalTemplateContext$1, identity: identity, modals: modals };
 
-var Base$1 = mix(Mn$1.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
+var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -2893,39 +2824,6 @@ var App = Base$1.extend({
 	}
 });
 
-var YatRouter = Mn$1.AppRouter.extend({}, {
-	create: function create(hash, context) {
-		var appRoutes = {};
-		var controller = {};
-		var _this = this;
-		_(hash).each(function (handlerContext, key) {
-			appRoutes[key] = key;
-			controller[key] = function () {
-				handlerContext.action.apply(handlerContext, arguments).then(function () {
-					context.routedPage = handlerContext.context;
-				}).catch(function (error) {
-					context.routedPage = handlerContext.context;
-					_this._catchError(error, context, handlerContext.context);
-				});
-			};
-		});
-		return new this({ controller: controller, appRoutes: appRoutes });
-	},
-	_catchError: function _catchError(error, context, page) {
-		if (!context || context.getProperty('throwChildErrors') === true) {
-			throw error;
-		} else {
-			var postfix = error.status ? ":" + error.status.toString() : '';
-			var commonEvent = 'error';
-			var event = commonEvent + postfix;
-
-			context.triggerMethod(commonEvent, error, page);
-
-			if (event != commonEvent) context.triggerMethod(event, error, page);
-		}
-	}
-});
-
 var Model = Bb.Model.extend({});
 
 var LinkModel = Model.extend({
@@ -2970,7 +2868,6 @@ var YatPage = Base$2.extend({
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
-		//this._tryCreateRouter();
 		this._registerIdentityHandlers();
 	},
 	getLayout: function getLayout() {
@@ -3131,20 +3028,6 @@ var YatPage = Base$2.extend({
 		this.addModel(opts.model, opts);
 		this.addCollection(opts.collection, opts);
 	},
-
-
-	// _tryCreateRouter(){
-	// 	let create = this.getProperty('createRouter') === true;
-	// 	if(create){
-	// 		this.router = this._createAppRouter();
-	// 	}
-	// },
-	// _createAppRouter(){
-	// 	let hash = this.getRouteHash();
-	// 	if(!_.size(hash)) return;
-	// 	return new Router(hash);
-	// },
-
 	_proxyEvents: function _proxyEvents() {
 		var proxyContexts = this._getProxyContexts();
 		this._proxyEventsTo(proxyContexts);
@@ -3387,7 +3270,7 @@ var YatPageManager = Base$3.extend({
 	}
 });
 
-var YatCollectionView = mix(Mn$1.NextCollectionView).with(GlobalTemplateContext);
+var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
 
 var Collection = Bb.Collection.extend({});
 
@@ -3543,10 +3426,10 @@ var marionetteYat = {
 	Error: YatError,
 	App: App,
 	Page: YatPage,
-	Router: YatRouter,
 	PageManager: YatPageManager,
 	View: YatView,
 	CollectionView: YatCollectionView,
+	Region: Region,
 	Model: Model,
 	Collection: Collection,
 	CollectionGroups: CollectionGroups

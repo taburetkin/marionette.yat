@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import $ from 'jquery';
 import Behavior from './behavior';
 
 const DroppableBehavior = Behavior.extend({

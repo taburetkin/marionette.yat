@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import $ from 'jquery';
 import config from './config';
 import Bb from 'backbone';
 import Mn from 'backbone.marionette';

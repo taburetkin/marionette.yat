@@ -1,3 +1,5 @@
+import _ from 'underscore';
+import $ from 'jquery';
 import Config from './../../YatConfig';
 
 const config = new Config('yat:modals:singleton',{ noRadio: true });
