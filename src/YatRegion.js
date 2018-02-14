@@ -5,7 +5,7 @@ import Bb from 'backbone';
 
 
 const Region = Mn.Region.extend({
-	constructon:function(options){
+	constructor:function(options){
 		Mn.Region.apply(this, arguments);
 		this.mergeOptions(optsion, ['stateApi']);
 		this.stateApi && this._initStateApi();

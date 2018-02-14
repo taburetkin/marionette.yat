@@ -2254,7 +2254,7 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 var identity = new Identity();
 
 var Region = Mn.Region.extend({
-	constructon: function constructon(options) {
+	constructor: function constructor(options) {
 		Mn.Region.apply(this, arguments);
 		this.mergeOptions(optsion, ['stateApi']);
 		this.stateApi && this._initStateApi();
