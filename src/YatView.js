@@ -14,10 +14,11 @@ export default mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).exten
 	renderOnReady: false,
 
 	constructor(...args){
+		
+		this._fixRegionProperty();
+
 		Mn.View.apply(this, args);
 
-		this._fixRegionProperty();
-		
 		let options = args[0];
 		this.mergeOptions(options, ['instantRender','renderOnReady', 'triggerReady', 'manualAfterInitialize']);
 
@@ -30,8 +31,14 @@ export default mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).exten
 
 	},
 	_fixRegionProperty(options = {}){
-		let detachable = this.getOption('detachableRegion');
-		let stateApi = this.getOption('stateApi');
+		let detachable = this.getProperty('detachableRegion');
+		if(detachable == null)
+			detachable = options.detachableRegion === true;
+
+		let stateApi = this.getProperty('stateApi');
+		if(stateApi == null)
+			stateApi = options.stateApi;
+
 		let ViewRegion = stateApi ? Region.extend({ stateApi }) : Region;
 		this.regionClass = detachable ? ViewRegion.Detachable() : ViewRegion;
 	},

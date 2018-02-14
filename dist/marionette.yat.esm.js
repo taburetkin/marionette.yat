@@ -416,10 +416,10 @@ var GetOptionProperty = (function (Base) {
 			options.args || (options.args = []);
 
 			//key and valueContext should be passed
-			if (key == null || valueContext == null) return;
+			if (key == null) return;
 
 			//getting raw value
-			var value = valueContext[key];
+			var value = valueContext && valueContext[key];
 
 			//if there is no raw value and deep option is true then getting value from fallback
 			if (value === undefined && options.deep && _.isFunction(fallback)) {
@@ -2291,13 +2291,14 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 	renderOnReady: false,
 
 	constructor: function constructor() {
+
+		this._fixRegionProperty();
+
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
 		}
 
 		Mn.View.apply(this, args);
-
-		this._fixRegionProperty();
 
 		var options = args[0];
 		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
@@ -2306,8 +2307,14 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 		if (this.instantRender === true && !this.renderOnReady) this.render();else if (this.instantRender === true && this.renderOnReady === true) this.triggerReady();
 	},
 	_fixRegionProperty: function _fixRegionProperty() {
-		var detachable = this.getOption('detachableRegion');
-		var stateApi = this.getOption('stateApi');
+		var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		var detachable = this.getProperty('detachableRegion');
+		if (detachable == null) detachable = options.detachableRegion === true;
+
+		var stateApi = this.getProperty('stateApi');
+		if (stateApi == null) stateApi = options.stateApi;
+
 		var ViewRegion = stateApi ? Region.extend({ stateApi: stateApi }) : Region;
 		this.regionClass = detachable ? ViewRegion.Detachable() : ViewRegion;
 	},
