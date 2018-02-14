@@ -74,7 +74,8 @@ const Api = YatObject.extend({
 		return stateStore[key];
 	},
 	getStoreKey(view, options = {}){
-		return view.id || view.cid;
+		let prefix = this.getOption('storeIdPrefix');
+		return (prefix ? prefix + ":" : '') + String(view.id || view.cid);
 	},
 });
 

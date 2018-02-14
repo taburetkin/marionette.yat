@@ -17,7 +17,7 @@ const Region = Mn.Region.extend({
 		this.on('before:empty', this._onStatableBeforeEmpty);
 	},
 	_onStatableShow(region, view){
-		let api = this.stateApi && _.isFunction(this.stateApi.apply) ? this.stateApi : undefined;
+		let api = this.stateApi && _.isFunction(this.stateApi.apply) ? this.stateApi : undefined;				
 		api && api.apply(view, { region });
 	},
 	_onStatableBeforeEmpty(region, view){
@@ -35,6 +35,9 @@ const Region = Mn.Region.extend({
 		else
 			this.destroyView(view);
 	},
+	getParentView(){
+		return this._parentView;
+	}
 });
 
 Region.Detachable = function(opts = {}){

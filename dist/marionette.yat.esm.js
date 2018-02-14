@@ -560,7 +560,8 @@ var Api = YatObject.extend({
 		return stateStore[key];
 	},
 	getStoreKey: function getStoreKey(view) {
-		return view.id || view.cid;
+		var prefix = this.getOption('storeIdPrefix');
+		return (prefix ? prefix + ":" : '') + String(view.id || view.cid);
 	}
 });
 
@@ -2275,6 +2276,9 @@ var Region = Mn.Region.extend({
 	removeView: function removeView(view) {
 		var removeBehavior = this.getOption('removeBehavior') || 'destroy';
 		if (removeBehavior === 'detach') this.detachView(view);else this.destroyView(view);
+	},
+	getParentView: function getParentView() {
+		return this._parentView;
 	}
 });
 
@@ -2326,7 +2330,13 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 		return new Api(options);
 	},
 	stateApiOptions: function stateApiOptions() {
-		return { states: ['scrollable'] };
+		var _this = this;
+		return {
+			storeIdPrefix: function storeIdPrefix() {
+				return _this.getOption('id');
+			},
+			states: ['scrollable']
+		};
 	}
 });
 

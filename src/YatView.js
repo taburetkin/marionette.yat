@@ -50,6 +50,10 @@ export default mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).exten
 		return new ViewStateApi(options);
 	},
 	stateApiOptions(){
-		return { states:['scrollable'] };
+		let _this = this;
+		return { 
+			storeIdPrefix: function(){ return _this.getOption('id'); },
+			states:['scrollable'] 
+		};
 	}
 });
