@@ -13,16 +13,10 @@ export default mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).exten
 	instantRender: false,
 	renderOnReady: false,
 
-	regionClass() {
-		let detachable = this.getOption('detachableRegion') === true;
-		let stateApi = this.getOption('stateApi');
-		let ViewRegion = stateApi ? Region.extend({ stateApi }) : Region;
-		return detachable ? ViewRegion.Detachable() : ViewRegion;
-	},
-
 	constructor(...args){
-		
 		Mn.View.apply(this, args);
+
+		this._fixRegionProperty();
 		
 		let options = args[0];
 		this.mergeOptions(options, ['instantRender','renderOnReady', 'triggerReady', 'manualAfterInitialize']);
@@ -34,6 +28,12 @@ export default mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).exten
 		else if(this.instantRender === true && this.renderOnReady === true)
 			this.triggerReady();
 
+	},
+	_fixRegionProperty(options = {}){
+		let detachable = this.getOption('detachableRegion');
+		let stateApi = this.getOption('stateApi');
+		let ViewRegion = stateApi ? Region.extend({ stateApi }) : Region;
+		this.regionClass = detachable ? ViewRegion.Detachable() : ViewRegion;
 	},
 	triggerReady(){
 		this.trigger('ready', this);

@@ -2296,12 +2296,6 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 	instantRender: false,
 	renderOnReady: false,
 
-	regionClass: function regionClass() {
-		var detachable = this.getOption('detachableRegion') === true;
-		var stateApi = this.getOption('stateApi');
-		var ViewRegion = stateApi ? Region.extend({ stateApi: stateApi }) : Region;
-		return detachable ? ViewRegion.Detachable() : ViewRegion;
-	},
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
@@ -2309,11 +2303,19 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 
 		Mn.View.apply(this, args);
 
+		this._fixRegionProperty();
+
 		var options = args[0];
 		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
 
 		if (this.renderOnReady === true) this.once('ready', this.render);
 		if (this.instantRender === true && !this.renderOnReady) this.render();else if (this.instantRender === true && this.renderOnReady === true) this.triggerReady();
+	},
+	_fixRegionProperty: function _fixRegionProperty() {
+		var detachable = this.getOption('detachableRegion');
+		var stateApi = this.getOption('stateApi');
+		var ViewRegion = stateApi ? Region.extend({ stateApi: stateApi }) : Region;
+		this.regionClass = detachable ? ViewRegion.Detachable() : ViewRegion;
 	},
 	triggerReady: function triggerReady() {
 		this.trigger('ready', this);
