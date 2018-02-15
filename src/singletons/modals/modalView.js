@@ -25,6 +25,7 @@ let template = _.template(
 
 const ModalView = mix(YatView).with(OptionProperty).extend({
 
+	instantRender: true,
 	renderOnReady: true,
 	template: template,
 

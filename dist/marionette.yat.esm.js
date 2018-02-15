@@ -2495,6 +2495,7 @@ var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="
 
 var ModalView = mix(YatView).with(GetOptionProperty).extend({
 
+	instantRender: true,
 	renderOnReady: true,
 	template: template,
 
