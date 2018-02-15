@@ -23,11 +23,13 @@ export default Base.extend({
 	allowStopWithoutStart: true,
 	allowStartWithoutStop: true,
 
+	proxyEventsToManager:['before:start','start','start:decline','before:stop','stop','stop:decline'],
+
 	initializeYatPage(opts){
 		this.mergeOptions(opts, ["manager"]);
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
-		//this._proxyEvents();
+		this._proxyEvents();
 		this._registerIdentityHandlers();		
 	},
 
@@ -215,7 +217,8 @@ export default Base.extend({
 		let rdy = [];
 		let manager = this.getProperty('manager');
 		if(manager){
-			rdy.push({context:manager})
+			let allowed = this.getProperty('proxyEventsToManager');
+			rdy.push({ context:manager, allowed });
 		}
 		let radio = this.getChannel();
 		if(radio){

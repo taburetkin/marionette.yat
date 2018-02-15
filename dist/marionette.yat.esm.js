@@ -2886,11 +2886,13 @@ var YatPage = Base$2.extend({
 	allowStopWithoutStart: true,
 	allowStartWithoutStop: true,
 
+	proxyEventsToManager: ['before:start', 'start', 'start:decline', 'before:stop', 'stop', 'stop:decline'],
+
 	initializeYatPage: function initializeYatPage(opts) {
 		this.mergeOptions(opts, ["manager"]);
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
-		//this._proxyEvents();
+		this._proxyEvents();
 		this._registerIdentityHandlers();
 	},
 	getLayout: function getLayout() {
@@ -3059,12 +3061,13 @@ var YatPage = Base$2.extend({
 		var rdy = [];
 		var manager = this.getProperty('manager');
 		if (manager) {
-			rdy.push({ context: manager });
+			var allowed = this.getProperty('proxyEventsToManager');
+			rdy.push({ context: manager, allowed: allowed });
 		}
 		var radio = this.getChannel();
 		if (radio) {
-			var allowed = this.getProperty('proxyEventsToRadio');
-			rdy.push({ context: radio, allowed: allowed });
+			var _allowed = this.getProperty('proxyEventsToRadio');
+			rdy.push({ context: radio, allowed: _allowed });
 		}
 		return rdy;
 	},
@@ -3267,13 +3270,9 @@ var YatPageManager = Base$3.extend({
 		}
 	},
 	_pageStart: function _pageStart(page) {
+
 		this.setState('currentPage', page);
-
-		for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-			args[_key4 - 1] = arguments[_key4];
-		}
-
-		this.triggerMethod.apply(this, ['page:start', page].concat(args));
+		//this.triggerMethod('page:start', page, ...args)
 	},
 	_pageDecline: function _pageDecline() {},
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
