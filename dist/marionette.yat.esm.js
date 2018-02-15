@@ -2787,14 +2787,25 @@ var App = Base$1.extend({
 		return this._region;
 	},
 	addPageManager: function addPageManager(pageManager) {
+		var _this = this;
+
 		this._pageManagers || (this._pageManagers = []);
 		this._pageManagers.push(pageManager);
 
-		var prefix = pageManager.getName();
-		if (!prefix) {
-			console.warn('pageManager prefix not defined');
-			return;
-		}
+		this.triggerMethod('add:pageManager', pageManager);
+		this.listenTo(pageManager, 'page:start', function () {
+			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+				args[_key] = arguments[_key];
+			}
+
+			return _this.triggerMethod.apply(_this, ['page:start', pageManager].concat(args));
+		});
+
+		// let prefix = pageManager.getName();
+		// if(!prefix){
+		// 	console.warn('pageManager prefix not defined');
+		// 	return;
+		// }
 
 		// this.listenTo(pageManager, 'all', (eventName, ...args) => {
 		// 	let prefixedEventName = prefix + ':' + eventName;

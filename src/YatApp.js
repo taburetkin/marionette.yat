@@ -29,11 +29,14 @@ export default Base.extend({
 		this._pageManagers || (this._pageManagers = []);
 		this._pageManagers.push(pageManager);
 
-		let prefix = pageManager.getName();
-		if(!prefix){
-			console.warn('pageManager prefix not defined');
-			return;
-		}
+		this.triggerMethod('add:pageManager', pageManager);
+		this.listenTo(pageManager, 'page:start', (...args) => this.triggerMethod('page:start', pageManager, ...args));
+
+		// let prefix = pageManager.getName();
+		// if(!prefix){
+		// 	console.warn('pageManager prefix not defined');
+		// 	return;
+		// }
 
 		// this.listenTo(pageManager, 'all', (eventName, ...args) => {
 		// 	let prefixedEventName = prefix + ':' + eventName;
