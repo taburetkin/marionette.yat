@@ -6,8 +6,8 @@ import YatObject from '../YatObject';
 
 /*
 	StateEntry = {
-		get: fn(index, domElement),
-		set: fn(index, domElement)
+		get: fn(view, options),
+		set: fn(view, options)
 	}
 
 */
@@ -19,7 +19,10 @@ const stateEntries = {
 			view.$('[data-scrollable]').each((i, el) => {
 				let $el = $(el);
 				let name = $el.data('scrollable');
-				result[name] = $el.scrollTop();
+				result[name] = { 
+					top: $el.scrollTop(),
+					left: $el.scrollLeft(),
+				};
 			});
 			return result;
 		},
@@ -27,8 +30,11 @@ const stateEntries = {
 			view.$('[data-scrollable]').each((i, el) => {
 				let $el = $(el);
 				let name = $el.data('scrollable');
-				if(!isNaN(state[name]))
-				  $el.scrollTop(state[name]);
+				let stored = state[name];
+				if(!isNaN(stored.top))
+				  $el.scrollTop(stored.top);
+			  	if(!isNaN(stored.left))
+				  $el.scrollLeft(stored.left);				  
 			});
 		},
 	}

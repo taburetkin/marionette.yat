@@ -27,7 +27,7 @@ export default Base.extend({
 		this.mergeOptions(opts, ["manager"]);
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
-		this._proxyEvents();
+		//this._proxyEvents();
 		this._registerIdentityHandlers();		
 	},
 

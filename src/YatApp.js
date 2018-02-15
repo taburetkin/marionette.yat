@@ -35,11 +35,11 @@ export default Base.extend({
 			return;
 		}
 
-		this.listenTo(pageManager, 'all', (eventName, ...args) => {
-			let prefixedEventName = prefix + ':' + eventName;
-			this.triggerMethod(prefixedEventName, ...args);
-		});
-		this.listenTo(pageManager, 'state:currentPage',(...args) => this.triggerMethod('page:swapped',...args));
+		// this.listenTo(pageManager, 'all', (eventName, ...args) => {
+		// 	let prefixedEventName = prefix + ':' + eventName;
+		// 	this.triggerMethod(prefixedEventName, ...args);
+		// });
+		//this.listenTo(pageManager, 'state:currentPage',(...args) => this.triggerMethod('page:swapped',...args));
 		
 	},
 

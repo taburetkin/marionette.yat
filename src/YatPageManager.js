@@ -152,8 +152,9 @@ let YatPageManager = Base.extend({
 		}
 	},
 
-	_pageStart(page){
+	_pageStart(page, ...args){
 		this.setState('currentPage', page);
+		this.triggerMethod('page:start', page, ...args)
 	},
 	_pageDecline(...args){},
 

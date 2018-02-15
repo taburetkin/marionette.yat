@@ -485,8 +485,8 @@ var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
 
 /*
 	StateEntry = {
-		get: fn(index, domElement),
-		set: fn(index, domElement)
+		get: fn(view, options),
+		set: fn(view, options)
 	}
 
 */
@@ -498,7 +498,10 @@ var stateEntries = {
 			view.$('[data-scrollable]').each(function (i, el) {
 				var $el = $(el);
 				var name = $el.data('scrollable');
-				result[name] = $el.scrollTop();
+				result[name] = {
+					top: $el.scrollTop(),
+					left: $el.scrollLeft()
+				};
 			});
 			return result;
 		},
@@ -507,7 +510,9 @@ var stateEntries = {
 			view.$('[data-scrollable]').each(function (i, el) {
 				var $el = $(el);
 				var name = $el.data('scrollable');
-				if (!isNaN(state[name])) $el.scrollTop(state[name]);
+				var stored = state[name];
+				if (!isNaN(stored.top)) $el.scrollTop(stored.top);
+				if (!isNaN(stored.left)) $el.scrollLeft(stored.left);
 			});
 		}
 	}
@@ -2782,8 +2787,6 @@ var App = Base$1.extend({
 		return this._region;
 	},
 	addPageManager: function addPageManager(pageManager) {
-		var _this = this;
-
 		this._pageManagers || (this._pageManagers = []);
 		this._pageManagers.push(pageManager);
 
@@ -2793,21 +2796,11 @@ var App = Base$1.extend({
 			return;
 		}
 
-		this.listenTo(pageManager, 'all', function (eventName) {
-			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-				args[_key - 1] = arguments[_key];
-			}
-
-			var prefixedEventName = prefix + ':' + eventName;
-			_this.triggerMethod.apply(_this, [prefixedEventName].concat(args));
-		});
-		this.listenTo(pageManager, 'state:currentPage', function () {
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
-			}
-
-			return _this.triggerMethod.apply(_this, ['page:swapped'].concat(args));
-		});
+		// this.listenTo(pageManager, 'all', (eventName, ...args) => {
+		// 	let prefixedEventName = prefix + ':' + eventName;
+		// 	this.triggerMethod(prefixedEventName, ...args);
+		// });
+		//this.listenTo(pageManager, 'state:currentPage',(...args) => this.triggerMethod('page:swapped',...args));
 	},
 	hasPageManagers: function hasPageManagers() {
 		return this._pageManagers && this._pageManagers.length > 0;
@@ -2886,7 +2879,7 @@ var YatPage = Base$2.extend({
 		this.mergeOptions(opts, ["manager"]);
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
-		this._proxyEvents();
+		//this._proxyEvents();
 		this._registerIdentityHandlers();
 	},
 	getLayout: function getLayout() {
@@ -3264,6 +3257,12 @@ var YatPageManager = Base$3.extend({
 	},
 	_pageStart: function _pageStart(page) {
 		this.setState('currentPage', page);
+
+		for (var _len4 = arguments.length, args = Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+			args[_key4 - 1] = arguments[_key4];
+		}
+
+		this.triggerMethod.apply(this, ['page:start', page].concat(args));
 	},
 	_pageDecline: function _pageDecline() {},
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
