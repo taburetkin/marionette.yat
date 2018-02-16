@@ -160,25 +160,20 @@ let YatPageManager = Base.extend({
 	_pageDecline(...args){},
 
 	_registerIdentityHandlers(){
-		this.listenTo(identity, 'change', (...args) => {
-			if(!this._moveToRootIfCurrentPageNotAllowed())
-				this.restartRoutedPage();
-		});
+		this.listenTo(identity, 'change', this._restartOrGoToRoot);
 		this.listenTo(identity, 'token:expired', this.tokenExpired);
+	},
+	_restartOrGoToRoot(){
+		if(!this.routedPage) return;
+
+		if(!this.routedPage.getProperty('preventStart'))
+			this.restartRoutedPage();
+		else
+			this.navigateToRoot();
 	},
 	tokenExpired(){
 		this.restartRoutedPage();
 	},	
-	_moveToRootIfCurrentPageNotAllowed(){
-		let current = this.routedPage; // && routedPage.restart();
-		//let current = this.getCurrentPage();
-		
-		if(!current || !current.getProperty('preventStart')) return;
-		
-		this.navigateToRoot();
-
-		return true;
-	},
 
 
 });

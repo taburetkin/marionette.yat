@@ -30,7 +30,7 @@ export default Base.extend({
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
-		this._registerIdentityHandlers();		
+		//this._registerIdentityHandlers();
 	},
 
 	getLayout(opts = {rebuild: false}){

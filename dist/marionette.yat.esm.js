@@ -2958,7 +2958,7 @@ var YatPage = Base$2.extend({
 		this._initializeLayoutModels(opts);
 		this._initializeRoute(opts);
 		this._proxyEvents();
-		this._registerIdentityHandlers();
+		//this._registerIdentityHandlers();
 	},
 	getLayout: function getLayout() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { rebuild: false };
@@ -3341,25 +3341,16 @@ var YatPageManager = Base$3.extend({
 	},
 	_pageDecline: function _pageDecline() {},
 	_registerIdentityHandlers: function _registerIdentityHandlers() {
-		var _this3 = this;
-
-		this.listenTo(identity, 'change', function () {
-			if (!_this3._moveToRootIfCurrentPageNotAllowed()) _this3.restartRoutedPage();
-		});
+		this.listenTo(identity, 'change', this._restartOrGoToRoot);
 		this.listenTo(identity, 'token:expired', this.tokenExpired);
+	},
+	_restartOrGoToRoot: function _restartOrGoToRoot() {
+		if (!this.routedPage) return;
+
+		if (!this.routedPage.getProperty('preventStart')) this.restartRoutedPage();else this.navigateToRoot();
 	},
 	tokenExpired: function tokenExpired() {
 		this.restartRoutedPage();
-	},
-	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
-		var current = this.routedPage; // && routedPage.restart();
-		//let current = this.getCurrentPage();
-
-		if (!current || !current.getProperty('preventStart')) return;
-
-		this.navigateToRoot();
-
-		return true;
 	}
 });
 
