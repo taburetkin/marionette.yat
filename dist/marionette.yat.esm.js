@@ -1136,19 +1136,16 @@ var Startable = (function (Base) {
 		addStopPromise: function addStopPromise(promise) {
 			this._startable.addRuntimePromise('stop', promise);
 		},
-
-
-		_lifestate: _.extend({}, LifecycleMixin),
-		_startable: _.extend({}, StartableHidden),
-
 		_initializeStartable: function _initializeStartable() {
 
-			if (!(this.constructor.Startable && this.constructor.Stateable)) return;
+			// if(!(this.constructor.Startable && this.constructor.Stateable)) return;
+			this._lifestate = _.extend({}, LifecycleMixin);
+			this._startable = _.extend({}, StartableHidden);
 
 			bindAll(this._lifestate, this);
 			bindAll(this._startable, this);
 
-			console.log('init startable', this.cid);
+			// console.log('init startable', this.cid);
 
 			this._startable.setLifecycleListeners();
 
