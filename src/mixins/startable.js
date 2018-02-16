@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import $ from 'underscore';
 import mix from '../helpers/mix.js';
 import State from './stateable.js';
 import YatError from '../YatError.js';
@@ -50,32 +51,98 @@ function addPropertyPromise(context, propertyName, promise){
 }
 
 
+const LifecycleMixin = {
+	//lifecycle state helpers
+	set(newstate){
+		this.setState(STATE_KEY, newstate);
+	},
+
+	get(){
+		return this.getState(STATE_KEY);
+	},
+
+	is(state){
+		return this._lifestate.get() === state;
+	},
+
+	isIn(...states){
+		return _(states).some((state) => this._lifestate.is(state));
+	},
+
+	isInProcess(){
+		return this._lifestate.isIn(STATES.STARTING, STATES.STOPPING);
+	},
+}
+
+const Overridable = {
+	freezeWhileStarting: false,
+	freezeUI(){ },
+	unFreezeUI(){ },
+	isStartNotAllowed(){ },
+	isStopNotAllowed(){ },
+	prepareForStart(){},
+}
+
+function nestMixin(context, property, mixin){
+	let nested = context[property] = {};
+	_(mixin).each((value, name) => {
+		if(_.isFunction(value)){
+			nested[name] = value;
+			bind(nested[name], context);
+		}else if(_.isArray(value)){
+			nested[name] = value.slice(0);
+		}else if(_.isObject(vale)){
+			nested[name] = _.extend({}, value);
+		}else
+			nested[name] = value;
+	});
+}
+
+function bindAll(holder, context){
+	context || (context = holder);
+	if(!_.isObject(holder)) return;
+	_(holder).each((fn) => _.isFunction(fn) && _.bind(fn, context));
+}
 
 export default (Base) => {
-	let Middle = mix(Base).with(State);
+	let Middle = mix(Base).with(State, Overridable, {_lifestate: _.extend({},LifecycleMixin)});
 	let Mixin = Middle.extend({
 		constructor(...args){
+			
+			bindAll(this._lifestate, this);
+
 			this._startRuntimePromises = [];
 			this._startPromises = [];
-			this._stopPromises = [];
+			this._stopPromises = [];			
 			
 			Middle.apply(this,args);
-			this.initializeStartable();
+
+			this._initializeStartable();
+
 		},
 
-		freezeWhileStarting: false,
-		freezeUI(){ },
-		unFreezeUI(){ },
-		isStartNotAllowed(){ },
-		isStopNotAllowed(){ },
+		initializeStartable(){
+			
+			if(!(this.constructor.Startable && this.constructor.Stateable)) return;
+
+			//nestMixin(this, '_lifestate', LifecycleMixin);
+
+			this._registerStartableLifecycleListeners();
+			this._lifestate.set(STATES.INITIALIZED);
+
+		},	
+
 
 		isStarted(){
-			return this._isLifeState(STATES.RUNNING);
+			return this._lifestate.is(STATES.RUNNING);
+		},
+		isStoped(){
+			return this._lifestate.in(STATES.WAITING, STATES.INITIALIZED);
+		},
+		isInProcess(){
+			return this._lifestate.isInProcess();
 		},
 
-		isStoped(){
-			return this._isLifeStateIn(STATES.WAITING, STATES.INITIALIZED);
-		},
 
 		addStartPromise(promise){
 			addPropertyPromise(this, '_startRuntimePromises', promise);
@@ -83,16 +150,11 @@ export default (Base) => {
 
 		addStopPromise(promise){
 			addPropertyPromise(this,'_stopPromises', promise);
-		},		
-
-		initializeStartable(){
-			
-			if(!(this.constructor.Startable && this.constructor.Stateable)) return;
-
-			this._registerStartableLifecycleListeners();
-			this._setLifeState(STATES.INITIALIZED);
 		},	
-		prepareForStart(){},
+
+		
+
+
 		start(...args){
 			let options = args[0];
 			let _this = this;
@@ -114,17 +176,17 @@ export default (Base) => {
 				}
 
 				this.triggerBeforeStart(...args);				
-				let currentState = this._getLifeState();
-				this._setLifeState(STATES.STARTING);
+				let currentState = this._lifestate.get();
+				this._lifestate.set(STATES.STARTING);
 
 				let dependedOn = this._getStartPromise();
 				dependedOn.then(() => {
 					this._tryMergeStartOptions(options);		
 					this.once('start', (...args) => resolve(...args));
-					this._setLifeState(STATES.RUNNING);
+					this._lifestate.set(STATES.RUNNING);
 					this.triggerStart(options);
 				},(...args) => {
-					this._setLifeState(currentState);
+					this._lifestate.set(currentState);
 					reject(...args);
 				});
 			});
@@ -162,7 +224,7 @@ export default (Base) => {
 				else
 					reject(new YatError({
 						name: 'StartableLifecycleError',
-						message: 'Restart not allowed when startable not in idle. Current state' + this._getLifeState(),
+						message: 'Restart not allowed when startable not in idle. Current state' + this._lifestate.get(),
 					}));
 			});
 			return promise;
@@ -186,17 +248,17 @@ export default (Base) => {
 					return;
 				}				
 
-				let currentState = this._getLifeState();
+				let currentState = this._lifestate.get();
 				this.triggerMethod('before:stop', ...args);
-				this._setLifeState(STATES.STOPPING);
+				this._lifestate.set(STATES.STOPPING);
 				let dependedOn = this._getStopPromise();
 				dependedOn.then(() => {
 					this._tryMergeStopOptions(options);		
 					this.once('stop', (...args) => resolve(...args));
-					this._setLifeState(STATES.WAITING);
+					this._lifestate.set(STATES.WAITING);
 					this.triggerStop(options);
 				},(...args) => {
-					this._setLifeState(currentState);
+					this._lifestate.set(currentState);
 					reject(...args);
 				});
 			});
@@ -212,30 +274,13 @@ export default (Base) => {
 
 
 
-		//lifecycle state helpers
-		_setLifeState(newstate){
-			this.setState(STATE_KEY, newstate);
-		},
 
-		_getLifeState(){
-			return this.getState(STATE_KEY);
-		},
-
-		_isLifeState(state){
-			return this._getLifeState() === state;
-		},
-
-		_isLifeStateIn(...states){
-			return _(states).some((state) => this._isLifeState(state));
-		},
-
-		_isInProcess(){
-			return this._isLifeStateIn(STATES.STARTING, STATES.STOPPING);
-		},
 
 
 		_registerStartableLifecycleListeners(){
+			
 			let freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
+
 			if(freezeWhileStarting && _.isFunction(this.freezeUI))
 				this.on(`state:${STATE_KEY}:${STATES.STARTING}`,() => {
 					this.freezeUI();
@@ -244,13 +289,7 @@ export default (Base) => {
 				this.on('start start:decline',() => {
 					this.unFreezeUI();
 				});
-
-
-			// this.on('before:start', () => this._setLifeState(STATES.STARTING));
-			// this.on('start', () => this._setLifeState(STATES.RUNNING));
-			// this.on('before:stop',() => this._setLifeState(STATES.STOPPING));
-			// this.on('stop',() => this._setLifeState(STATES.WAITING));
-			this.on('destroy',() => this._setLifeState(STATES.DESTROYED));
+			this.on('destroy',() => this._lifestate.set(STATES.DESTROYED));
 
 		},	
 
@@ -272,7 +311,7 @@ export default (Base) => {
 				name: 'StartableLifecycleError',
 				message: message
 			});
-			let destroyed = this._isLifeState(STATES.DESTROYED);
+			let destroyed = this._lifestate.is(STATES.DESTROYED);
 			if(opts.throwError && destroyed){
 				throw error;
 			}
@@ -282,13 +321,13 @@ export default (Base) => {
 		},
 
 		_ensureStartableIsIdle(opts = {throwError:false}){
-			let message = 'Startable is not idle. current state: ' + this._getLifeState();
+			let message = 'Startable is not idle. current state: ' + this._lifestate.get();
 			let error = new YatError({
 				name: 'StartableLifecycleError',
 				message: message
 			});			
 			let isNotIntact = this._ensureStartableIsIntact(opts);
-			let notIdle = this._isInProcess();
+			let notIdle = this.isInProcess();
 			if(opts.throwError && notIdle){
 				throw error;
 			}
@@ -312,7 +351,7 @@ export default (Base) => {
 
 			if(!notIdle && allowStartWithoutStop) return;
 
-			let running = this._isLifeState(STATES.RUNNING);
+			let running = this._lifestate.is(STATES.RUNNING);
 			if(opts.throwError && running){
 				throw error;
 			}else if(notIdle){
@@ -335,7 +374,7 @@ export default (Base) => {
 			let allowStopWithoutStart = this.getProperty('allowStopWithoutStart') === true;
 			if(!notIdle && allowStopWithoutStart) return;
 
-			let running = this._isLifeState(STATES.RUNNING);
+			let running = this._lifestate.is(STATES.RUNNING);
 
 			if(opts.throwError && !running){
 				throw error;

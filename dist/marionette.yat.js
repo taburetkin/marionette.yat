@@ -743,33 +743,86 @@ function addPropertyPromise(context, propertyName, promise) {
 	context[propertyName].push(promise);
 }
 
+var LifecycleMixin = {
+	//lifecycle state helpers
+	set: function set(newstate) {
+		this.setState(STATE_KEY, newstate);
+	},
+	get: function get() {
+		return this.getState(STATE_KEY);
+	},
+	is: function is(state) {
+		return this._lifestate.get() === state;
+	},
+	isIn: function isIn() {
+		var _this3 = this;
+
+		for (var _len = arguments.length, states = Array(_len), _key = 0; _key < _len; _key++) {
+			states[_key] = arguments[_key];
+		}
+
+		return _(states).some(function (state) {
+			return _this3._lifestate.is(state);
+		});
+	},
+	isInProcess: function isInProcess() {
+		return this._lifestate.isIn(STATES.STARTING, STATES.STOPPING);
+	}
+};
+
+var Overridable = {
+	freezeWhileStarting: false,
+	freezeUI: function freezeUI() {},
+	unFreezeUI: function unFreezeUI() {},
+	isStartNotAllowed: function isStartNotAllowed() {},
+	isStopNotAllowed: function isStopNotAllowed() {},
+	prepareForStart: function prepareForStart() {}
+};
+
+function bindAll(holder, context) {
+	context || (context = holder);
+	if (!_.isObject(holder)) return;
+	_(holder).each(function (fn) {
+		return _.isFunction(fn) && _.bind(fn, context);
+	});
+}
+
 var Startable = (function (Base) {
-	var Middle = mix(Base).with(Stateable);
+	var Middle = mix(Base).with(Stateable, Overridable, { _lifestate: _.extend({}, LifecycleMixin) });
 	var Mixin = Middle.extend({
 		constructor: function constructor() {
+
+			bindAll(this._lifestate, this);
+
 			this._startRuntimePromises = [];
 			this._startPromises = [];
 			this._stopPromises = [];
 
-			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-				args[_key] = arguments[_key];
+			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+				args[_key2] = arguments[_key2];
 			}
 
 			Middle.apply(this, args);
-			this.initializeStartable();
+
+			this._initializeStartable();
 		},
+		initializeStartable: function initializeStartable() {
 
+			if (!(this.constructor.Startable && this.constructor.Stateable)) return;
 
-		freezeWhileStarting: false,
-		freezeUI: function freezeUI() {},
-		unFreezeUI: function unFreezeUI() {},
-		isStartNotAllowed: function isStartNotAllowed() {},
-		isStopNotAllowed: function isStopNotAllowed() {},
+			//nestMixin(this, '_lifestate', LifecycleMixin);
+
+			this._registerStartableLifecycleListeners();
+			this._lifestate.set(STATES.INITIALIZED);
+		},
 		isStarted: function isStarted() {
-			return this._isLifeState(STATES.RUNNING);
+			return this._lifestate.is(STATES.RUNNING);
 		},
 		isStoped: function isStoped() {
-			return this._isLifeStateIn(STATES.WAITING, STATES.INITIALIZED);
+			return this._lifestate.in(STATES.WAITING, STATES.INITIALIZED);
+		},
+		isInProcess: function isInProcess() {
+			return this._lifestate.isInProcess();
 		},
 		addStartPromise: function addStartPromise(promise) {
 			addPropertyPromise(this, '_startRuntimePromises', promise);
@@ -777,61 +830,53 @@ var Startable = (function (Base) {
 		addStopPromise: function addStopPromise(promise) {
 			addPropertyPromise(this, '_stopPromises', promise);
 		},
-		initializeStartable: function initializeStartable() {
-
-			if (!(this.constructor.Startable && this.constructor.Stateable)) return;
-
-			this._registerStartableLifecycleListeners();
-			this._setLifeState(STATES.INITIALIZED);
-		},
-		prepareForStart: function prepareForStart() {},
 		start: function start() {
-			var _this3 = this;
+			var _this4 = this;
 
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
+			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+				args[_key3] = arguments[_key3];
 			}
 
 			var options = args[0];
 			this.prepareForStart();
 			var promise = new Promise(function (resolve, reject) {
-				var canNotBeStarted = _this3._ensureStartableCanBeStarted();
+				var canNotBeStarted = _this4._ensureStartableCanBeStarted();
 
 				if (canNotBeStarted) {
-					_this3.triggerMethod('start:decline', canNotBeStarted);
+					_this4.triggerMethod('start:decline', canNotBeStarted);
 					reject(canNotBeStarted);
 					return;
 				}
 
-				var declineReason = _this3.isStartNotAllowed(options);
+				var declineReason = _this4.isStartNotAllowed(options);
 				if (declineReason) {
-					_this3.triggerMethod('start:decline', declineReason);
+					_this4.triggerMethod('start:decline', declineReason);
 					reject(declineReason);
 					return;
 				}
 
-				_this3.triggerBeforeStart.apply(_this3, args);
-				var currentState = _this3._getLifeState();
-				_this3._setLifeState(STATES.STARTING);
+				_this4.triggerBeforeStart.apply(_this4, args);
+				var currentState = _this4._lifestate.get();
+				_this4._lifestate.set(STATES.STARTING);
 
-				var dependedOn = _this3._getStartPromise();
+				var dependedOn = _this4._getStartPromise();
 				dependedOn.then(function () {
-					_this3._tryMergeStartOptions(options);
-					_this3.once('start', function () {
+					_this4._tryMergeStartOptions(options);
+					_this4.once('start', function () {
 						return resolve.apply(undefined, arguments);
 					});
-					_this3._setLifeState(STATES.RUNNING);
-					_this3.triggerStart(options);
+					_this4._lifestate.set(STATES.RUNNING);
+					_this4.triggerStart(options);
 				}, function () {
-					_this3._setLifeState(currentState);
+					_this4._lifestate.set(currentState);
 					reject.apply(undefined, arguments);
 				});
 			});
 			return promise;
 		},
 		triggerBeforeStart: function triggerBeforeStart() {
-			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-				args[_key3] = arguments[_key3];
+			for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+				args[_key4] = arguments[_key4];
 			}
 
 			this.triggerMethod.apply(this, ['before:start'].concat(args));
@@ -840,68 +885,68 @@ var Startable = (function (Base) {
 			this.triggerMethod('start', options);
 		},
 		restart: function restart(options) {
-			var _this4 = this;
+			var _this5 = this;
 
 			var canNotBeStarted = this._ensureStartableCanBeStarted();
 			if (canNotBeStarted) return Promise.reject(canNotBeStarted);
 
 			var promise = new Promise(function (resolve, reject) {
-				if (_this4.isStarted()) _this4.stop().then(function (stopArg) {
-					return _this4.start(options).then(function (startArg) {
+				if (_this5.isStarted()) _this5.stop().then(function (stopArg) {
+					return _this5.start(options).then(function (startArg) {
 						return resolve(startArg);
 					}, function (startArg) {
 						return reject(startArg);
 					});
 				}, function (stopArg) {
 					return reject(stopArg);
-				});else if (_this4.isStoped()) _this4.start(options).then(function (arg) {
+				});else if (_this5.isStoped()) _this5.start(options).then(function (arg) {
 					return resolve(arg);
 				}, function (arg) {
 					return reject(arg);
 				});else reject(new YatError({
 					name: 'StartableLifecycleError',
-					message: 'Restart not allowed when startable not in idle. Current state' + _this4._getLifeState()
+					message: 'Restart not allowed when startable not in idle. Current state' + _this5._lifestate.get()
 				}));
 			});
 			return promise;
 		},
 		stop: function stop() {
-			var _this5 = this;
+			var _this6 = this;
 
-			for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-				args[_key4] = arguments[_key4];
+			for (var _len5 = arguments.length, args = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+				args[_key5] = arguments[_key5];
 			}
 
 			var options = args[0];
 			var promise = new Promise(function (resolve, reject) {
-				var canNotBeStopped = _this5._ensureStartableCanBeStopped();
+				var canNotBeStopped = _this6._ensureStartableCanBeStopped();
 
 				if (canNotBeStopped) {
-					_this5.triggerMethod('stop:decline', canNotBeStopped);
+					_this6.triggerMethod('stop:decline', canNotBeStopped);
 					reject(canNotBeStopped);
 					return;
 				}
 
-				var declineReason = _this5.isStopNotAllowed(options);
+				var declineReason = _this6.isStopNotAllowed(options);
 				if (declineReason) {
-					_this5.triggerMethod('stop:decline', declineReason);
+					_this6.triggerMethod('stop:decline', declineReason);
 					reject(declineReason);
 					return;
 				}
 
-				var currentState = _this5._getLifeState();
-				_this5.triggerMethod.apply(_this5, ['before:stop'].concat(args));
-				_this5._setLifeState(STATES.STOPPING);
-				var dependedOn = _this5._getStopPromise();
+				var currentState = _this6._lifestate.get();
+				_this6.triggerMethod.apply(_this6, ['before:stop'].concat(args));
+				_this6._lifestate.set(STATES.STOPPING);
+				var dependedOn = _this6._getStopPromise();
 				dependedOn.then(function () {
-					_this5._tryMergeStopOptions(options);
-					_this5.once('stop', function () {
+					_this6._tryMergeStopOptions(options);
+					_this6.once('stop', function () {
 						return resolve.apply(undefined, arguments);
 					});
-					_this5._setLifeState(STATES.WAITING);
-					_this5.triggerStop(options);
+					_this6._lifestate.set(STATES.WAITING);
+					_this6.triggerStop(options);
 				}, function () {
-					_this5._setLifeState(currentState);
+					_this6._lifestate.set(currentState);
 					reject.apply(undefined, arguments);
 				});
 			});
@@ -910,49 +955,19 @@ var Startable = (function (Base) {
 		triggerStop: function triggerStop(options) {
 			this.triggerMethod('stop', options);
 		},
-
-
-		//lifecycle state helpers
-		_setLifeState: function _setLifeState(newstate) {
-			this.setState(STATE_KEY, newstate);
-		},
-		_getLifeState: function _getLifeState() {
-			return this.getState(STATE_KEY);
-		},
-		_isLifeState: function _isLifeState(state) {
-			return this._getLifeState() === state;
-		},
-		_isLifeStateIn: function _isLifeStateIn() {
-			var _this6 = this;
-
-			for (var _len5 = arguments.length, states = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
-				states[_key5] = arguments[_key5];
-			}
-
-			return _(states).some(function (state) {
-				return _this6._isLifeState(state);
-			});
-		},
-		_isInProcess: function _isInProcess() {
-			return this._isLifeStateIn(STATES.STARTING, STATES.STOPPING);
-		},
 		_registerStartableLifecycleListeners: function _registerStartableLifecycleListeners() {
 			var _this7 = this;
 
 			var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
+
 			if (freezeWhileStarting && _.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
 				_this7.freezeUI();
 			});
 			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start start:decline', function () {
 				_this7.unFreezeUI();
 			});
-
-			// this.on('before:start', () => this._setLifeState(STATES.STARTING));
-			// this.on('start', () => this._setLifeState(STATES.RUNNING));
-			// this.on('before:stop',() => this._setLifeState(STATES.STOPPING));
-			// this.on('stop',() => this._setLifeState(STATES.WAITING));
 			this.on('destroy', function () {
-				return _this7._setLifeState(STATES.DESTROYED);
+				return _this7._lifestate.set(STATES.DESTROYED);
 			});
 		},
 		_tryMergeStartOptions: function _tryMergeStartOptions(options) {
@@ -973,7 +988,7 @@ var Startable = (function (Base) {
 				name: 'StartableLifecycleError',
 				message: message
 			});
-			var destroyed = this._isLifeState(STATES.DESTROYED);
+			var destroyed = this._lifestate.is(STATES.DESTROYED);
 			if (opts.throwError && destroyed) {
 				throw error;
 			} else if (destroyed) {
@@ -983,13 +998,13 @@ var Startable = (function (Base) {
 		_ensureStartableIsIdle: function _ensureStartableIsIdle() {
 			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
 
-			var message = 'Startable is not idle. current state: ' + this._getLifeState();
+			var message = 'Startable is not idle. current state: ' + this._lifestate.get();
 			var error = new YatError({
 				name: 'StartableLifecycleError',
 				message: message
 			});
 			var isNotIntact = this._ensureStartableIsIntact(opts);
-			var notIdle = this._isInProcess();
+			var notIdle = this.isInProcess();
 			if (opts.throwError && notIdle) {
 				throw error;
 			} else if (isNotIntact) {
@@ -1012,7 +1027,7 @@ var Startable = (function (Base) {
 
 			if (!notIdle && allowStartWithoutStop) return;
 
-			var running = this._isLifeState(STATES.RUNNING);
+			var running = this._lifestate.is(STATES.RUNNING);
 			if (opts.throwError && running) {
 				throw error;
 			} else if (notIdle) {
@@ -1035,7 +1050,7 @@ var Startable = (function (Base) {
 			var allowStopWithoutStart = this.getProperty('allowStopWithoutStart') === true;
 			if (!notIdle && allowStopWithoutStart) return;
 
-			var running = this._isLifeState(STATES.RUNNING);
+			var running = this._lifestate.is(STATES.RUNNING);
 
 			if (opts.throwError && !running) {
 				throw error;
