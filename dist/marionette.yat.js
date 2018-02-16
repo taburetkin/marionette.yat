@@ -769,7 +769,6 @@ var StartableHidden = {
 	setLifecycleListeners: function setLifecycleListeners() {
 		var _this4 = this;
 
-		console.log('sll:', this.cid);
 		var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
 		if (freezeWhileStarting) {
 			if (_.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
@@ -1078,13 +1077,15 @@ var Startable = (function (Base) {
 			this._startPromises = [];
 			this._stopPromises = [];
 
+			this._initializeStartable();
+
 			for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
 				args[_key8] = arguments[_key8];
 			}
 
 			Middle.apply(this, args);
 
-			this._initializeStartable();
+			this._lifestate.set(STATES.INITIALIZED);
 		},
 		start: function start() {
 			for (var _len9 = arguments.length, args = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
@@ -1154,8 +1155,6 @@ var Startable = (function (Base) {
 			// console.log('init startable', this.cid);
 
 			this._startable.setLifecycleListeners();
-
-			this._lifestate.set(STATES.INITIALIZED);
 		}
 	});
 

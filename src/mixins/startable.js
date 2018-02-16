@@ -97,7 +97,6 @@ const LifecycleMixin = {
 
 const StartableHidden = {
 	setLifecycleListeners(){
-		console.log('sll:', this.cid);
 		let freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
 		if(freezeWhileStarting){
 			if(_.isFunction(this.freezeUI))
@@ -419,10 +418,11 @@ export default (Base) => {
 			this._startPromises = [];
 			this._stopPromises = [];			
 			
-			Middle.apply(this,args);
-
 			this._initializeStartable();
 
+			Middle.apply(this,args);
+
+			this._lifestate.set(STATES.INITIALIZED);
 		},
 
 		start(...args){
@@ -488,7 +488,7 @@ export default (Base) => {
 
 			this._startable.setLifecycleListeners();
 
-			this._lifestate.set(STATES.INITIALIZED);
+			
 
 		},	
 		
