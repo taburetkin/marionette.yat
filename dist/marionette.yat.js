@@ -14,17 +14,17 @@
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('backbone'), require('backbone.marionette'), require('underscore'), require('jquery')) :
 	typeof define === 'function' && define.amd ? define(['backbone', 'backbone.marionette', 'underscore', 'jquery'], factory) :
 	(global.MarionetteYat = factory(global.Backbone,global.Marionette,global._,global.jQuery));
-}(this, (function (Bb,Mn$1,_,$) { 'use strict';
+}(this, (function (Bb,Mn,_,$) { 'use strict';
 
 Bb = Bb && Bb.hasOwnProperty('default') ? Bb['default'] : Bb;
-Mn$1 = Mn$1 && Mn$1.hasOwnProperty('default') ? Mn$1['default'] : Mn$1;
+Mn = Mn && Mn.hasOwnProperty('default') ? Mn['default'] : Mn;
 _ = _ && _.hasOwnProperty('default') ? _['default'] : _;
 $ = $ && $.hasOwnProperty('default') ? $['default'] : $;
 
 var version = "0.0.32";
 
 var getCompareABModel = function getCompareABModel(arg) {
-	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn$1.View) return arg.model;else return;
+	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
 };
 var getCompareABView = function getCompareABView(arg) {
 	if (arg instanceof Bb.View) return arg;else return;
@@ -329,7 +329,7 @@ var __ = {
 
 var Functions = { view: view, common: __ };
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _.isFunction(arg);
@@ -339,7 +339,7 @@ function isKnownCtor(arg) {
 	return isFn && result;
 }
 
-var YatError = Mn$1.Error.extend({}, {
+var YatError = Mn.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -388,14 +388,14 @@ function mix(BaseClass) {
 		Mixed = BaseClass;
 	} else if (_.isObject(BaseClass) && BaseClass !== null) {
 		var tmp = function tmp() {};
-		tmp.extend = Mn$1.extend;
+		tmp.extend = Mn.extend;
 		Mixed = tmp.extend(BaseClass);
 	} else {
 		throw new Error('argument should be an object or class definition');
 	}
 	if (!Mixed.extend) {
-		Mixed = Mn$1.extend.call(BaseClass, {});
-		Mixed.extend = Mn$1.extend;
+		Mixed = Mn.extend.call(BaseClass, {});
+		Mixed.extend = Mn.extend;
 	}
 	var fake = {
 		with: function _with() {
@@ -482,7 +482,7 @@ var RadioMixin = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn$1.Object.prototype._initRadio.call(this);
+			Mn.Object.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -497,7 +497,7 @@ var RadioMixin = (function (Base) {
 	return Mixin;
 });
 
-var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
+var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
 
 /*
 	StateEntry = {
@@ -1367,7 +1367,7 @@ var GlobalTemplateContext = (function (Base) {
 	});
 });
 
-var Mx = {
+var Mixins = {
 	GetNameLabel: GetNameLabel,
 	GetOptionProperty: GetOptionProperty,
 	Radioable: RadioMixin,
@@ -1377,7 +1377,7 @@ var Mx = {
 	GlobalTemplateContext: GlobalTemplateContext
 };
 
-var BaseBehavior = mix(Mn$1.Behavior).with(GetOptionProperty);
+var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
 var Behavior = BaseBehavior.extend({
 
 	listenViewInitialize: true,
@@ -2328,9 +2328,9 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 
 var identity = new Identity();
 
-var Region = Mn$1.Region.extend({
+var Region = Mn.Region.extend({
 	constructor: function constructor(options) {
-		Mn$1.Region.apply(this, arguments);
+		Mn.Region.apply(this, arguments);
 		this.mergeOptions(options, ['stateApi']);
 		this.stateApi && this._initStateApi();
 	},
@@ -2369,7 +2369,7 @@ Region.Detachable = function () {
 	return this.extend(detachable);
 };
 
-var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty).extend({
+var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend({
 
 	instantRender: false,
 	renderOnReady: false,
@@ -2382,7 +2382,7 @@ var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty).exte
 			args[_key] = arguments[_key];
 		}
 
-		Mn$1.View.apply(this, args);
+		Mn.View.apply(this, args);
 
 		var options = args[0];
 		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
@@ -2845,7 +2845,7 @@ var modals = {
 
 var Singletons = { TemplateContext: GlobalTemplateContext$1, identity: identity, modals: modals };
 
-var Base$1 = mix(Mn$1.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
+var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -2980,9 +2980,10 @@ var PageLinksMixin = {
 	}
 };
 
-//let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
-var Base$2 = mix(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel, Mx.Startable, PageLinksMixin);
+var Base$2 = mix(App).with(GetNameLabel, PageLinksMixin);
+//let Base = mixin(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel,  Mx.Startable, PageLinksMixin)
 var YatPage = Base$2.extend({
+
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
@@ -2991,7 +2992,6 @@ var YatPage = Base$2.extend({
 		Base$2.apply(this, args);
 		this.initializeYatPage();
 	},
-
 
 	allowStopWithoutStart: true,
 	allowStartWithoutStop: true,
@@ -3194,7 +3194,7 @@ var YatPageManager = Base$3.extend({
 	createRouter: function createRouter() {
 		this._routesHash = this._prepareRouterHash();
 		var options = this._prepareRouterOptions(this._routesHash);
-		var router = new Mn$1.AppRouter(options);
+		var router = new Mn.AppRouter(options);
 		this.setRouter(router);
 	},
 	_prepareRouterHash: function _prepareRouterHash() {
@@ -3343,7 +3343,7 @@ var YatPageManager = Base$3.extend({
 	}
 });
 
-var YatCollectionView = mix(Mn$1.NextCollectionView).with(GlobalTemplateContext);
+var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
 
 var Collection = Bb.Collection.extend({});
 
@@ -3488,7 +3488,7 @@ var marionetteYat = {
 	VERSION: version,
 	Functions: Functions,
 	Helpers: Helpers,
-	Mixins: Mx,
+	Mixins: Mixins,
 	Behaviors: Behaviors,
 	Singletons: Singletons,
 	TemplateContext: GlobalTemplateContext$1,

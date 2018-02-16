@@ -52,11 +52,11 @@ const PageLinksMixin = {
 }
 
 
-//let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
-let Base = mixin(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel,  Mx.Startable, PageLinksMixin)
+let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
+//let Base = mixin(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel,  Mx.Startable, PageLinksMixin)
 export default Base.extend({
 
-	constructor(...args){
+	constructor:function(...args){
 		Base.apply(this,args);
 		this.initializeYatPage();
 	},
