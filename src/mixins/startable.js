@@ -391,7 +391,7 @@ const ProcessEngine = {
 		return promises.length ? Promise.all(promises) : undefined;		
 	},
 
-	_executeOnStartable(startable, rawmethod, args){
+	_executeOnStartable(startable, rawmethod, args = []){
 		let method = camelCase(rawmethod);
 		return _.isFunction(startable[method]) && startable[method](...args);		
 	}

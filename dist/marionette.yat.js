@@ -1052,7 +1052,9 @@ var ProcessEngine = {
 		var promises = workoutArgumentPromises(raw, instance);
 		return promises.length ? Promise.all(promises) : undefined;
 	},
-	_executeOnStartable: function _executeOnStartable(startable, rawmethod, args) {
+	_executeOnStartable: function _executeOnStartable(startable, rawmethod) {
+		var args = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+
 		var method = camelCase(rawmethod);
 		return _.isFunction(startable[method]) && startable[method].apply(startable, _toConsumableArray(args));
 	}
