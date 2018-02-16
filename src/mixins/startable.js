@@ -97,7 +97,7 @@ const LifecycleMixin = {
 
 const StartableHidden = {
 	setLifecycleListeners(){
-			
+		console.log('sll:', this.cid);
 		let freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
 		if(freezeWhileStarting){
 			if(_.isFunction(this.freezeUI))

@@ -769,6 +769,7 @@ var StartableHidden = {
 	setLifecycleListeners: function setLifecycleListeners() {
 		var _this4 = this;
 
+		console.log('sll:', this.cid);
 		var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
 		if (freezeWhileStarting) {
 			if (_.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
