@@ -806,7 +806,7 @@ var Startable = (function (Base) {
 
 			this._initializeStartable();
 		},
-		initializeStartable: function initializeStartable() {
+		_initializeStartable: function _initializeStartable() {
 
 			if (!(this.constructor.Startable && this.constructor.Stateable)) return;
 

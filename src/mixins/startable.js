@@ -121,7 +121,7 @@ export default (Base) => {
 
 		},
 
-		initializeStartable(){
+		_initializeStartable(){
 			
 			if(!(this.constructor.Startable && this.constructor.Stateable)) return;
 
