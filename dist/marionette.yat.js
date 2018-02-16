@@ -3361,7 +3361,7 @@ var YatPageManager = Base$3.extend({
 		var current = this.routedPage; // && routedPage.restart();
 		//let current = this.getCurrentPage();
 
-		if (!current || !current.isStartNotAllowed()) return;
+		if (!current || !current.getProperty('preventStart')) return;
 
 		this.navigateToRoot();
 
