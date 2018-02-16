@@ -406,7 +406,7 @@ function mix(BaseClass) {
 	return fake;
 }
 
-var GetOptionProperty$1 = (function (Base) {
+var GetOptionProperty = (function (Base) {
 	var Mixin = Base.extend({
 		//property first approach
 		getProperty: function getProperty(key, options) {
@@ -491,7 +491,7 @@ var RadioMixin = (function (Base) {
 	return Mixin;
 });
 
-var YatObject = mix(Mn$1.Object).with(GetOptionProperty$1, RadioMixin);
+var YatObject = mix(Mn$1.Object).with(GetOptionProperty, RadioMixin);
 
 /*
 	StateEntry = {
@@ -1161,7 +1161,7 @@ var Startable = (function (Base) {
 	return Mixin;
 });
 
-var Childrenable$1 = (function (Base) {
+var Childrenable = (function (Base) {
 
 	var CHILDREN_FIELD = '_children';
 
@@ -1361,17 +1361,17 @@ var GlobalTemplateContext = (function (Base) {
 	});
 });
 
-var Mixins = {
+var Mx = {
 	GetNameLabel: GetNameLabel,
-	GetOptionProperty: GetOptionProperty$1,
+	GetOptionProperty: GetOptionProperty,
 	Radioable: RadioMixin,
 	Stateable: Stateable,
 	Startable: Startable,
-	Childrenable: Childrenable$1,
+	Childrenable: Childrenable,
 	GlobalTemplateContext: GlobalTemplateContext
 };
 
-var BaseBehavior = mix(Mn$1.Behavior).with(GetOptionProperty$1);
+var BaseBehavior = mix(Mn$1.Behavior).with(GetOptionProperty);
 var Behavior = BaseBehavior.extend({
 
 	listenViewInitialize: true,
@@ -2363,7 +2363,7 @@ Region.Detachable = function () {
 	return this.extend(detachable);
 };
 
-var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty$1).extend({
+var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty).extend({
 
 	instantRender: false,
 	renderOnReady: false,
@@ -2562,7 +2562,7 @@ config.set('defaultModifiers', modalsDefaultModifiers);
 
 var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
 
-var ModalView = mix(YatView).with(GetOptionProperty$1).extend({
+var ModalView = mix(YatView).with(GetOptionProperty).extend({
 
 	instantRender: true,
 	renderOnReady: true,
@@ -2839,7 +2839,7 @@ var modals = {
 
 var Singletons = { TemplateContext: GlobalTemplateContext$1, identity: identity, modals: modals };
 
-var Base$1 = mix(Mn$1.Application).with(GetOptionProperty$1, RadioMixin, Childrenable$1, Startable);
+var Base$1 = mix(Mn$1.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
 
 var App = Base$1.extend({
 
@@ -2975,7 +2975,7 @@ var PageLinksMixin = {
 };
 
 //let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
-var Base$2 = mix(Mn.Object).with(GetOptionProperty, GetNameLabel, Childrenable, PageLinksMixin);
+var Base$2 = mix(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel, Mx.Childrenable, Mx.Startable, PageLinksMixin);
 var YatPage = Base$2.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -3482,7 +3482,7 @@ var marionetteYat = {
 	VERSION: version,
 	Functions: Functions,
 	Helpers: Helpers,
-	Mixins: Mixins,
+	Mixins: Mx,
 	Behaviors: Behaviors,
 	Singletons: Singletons,
 	TemplateContext: GlobalTemplateContext$1,

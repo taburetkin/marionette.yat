@@ -1,6 +1,7 @@
 import _ from 'underscore';
 import App from './YatApp.js';
 import mixin from './helpers/mix';
+import Mx from './mixins/Mixins';
 import Startable from './mixins/startable';
 import GetNameLabel from './mixins/get-name-label';
 import LinkModel from './models/link';
@@ -52,7 +53,7 @@ const PageLinksMixin = {
 
 
 //let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
-let Base = mixin(Mn.Object).with(GetOptionProperty, GetNameLabel, Childrenable,  PageLinksMixin)
+let Base = mixin(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel, Mx.Childrenable, Mx.Startable, PageLinksMixin)
 export default Base.extend({
 
 	constructor(...args){
