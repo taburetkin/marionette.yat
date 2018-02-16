@@ -1153,6 +1153,8 @@ var Startable = (function (Base) {
 			bindAll(this._lifestate, this);
 			bindAll(this._startable, this);
 
+			this._startable.setLifecycleListeners();
+
 			this._lifestate.set(STATES.INITIALIZED);
 		}
 	});
