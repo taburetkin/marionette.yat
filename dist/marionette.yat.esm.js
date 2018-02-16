@@ -11,14 +11,14 @@
 
 
 import Bb from 'backbone';
-import Mn from 'backbone.marionette';
+import Mn$1 from 'backbone.marionette';
 import _ from 'underscore';
 import $ from 'jquery';
 
 var version = "0.0.32";
 
 var getCompareABModel = function getCompareABModel(arg) {
-	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn.View) return arg.model;else return;
+	if (arg instanceof Bb.Model) return arg;else if (arg instanceof Mn$1.View) return arg.model;else return;
 };
 var getCompareABView = function getCompareABView(arg) {
 	if (arg instanceof Bb.View) return arg;else return;
@@ -323,7 +323,7 @@ var __ = {
 
 var Functions = { view: view, common: __ };
 
-var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn.Object];
+var knownCtors = [Bb.Model, Bb.Collection, Bb.View, Bb.Router, Mn$1.Object];
 
 function isKnownCtor(arg) {
 	var isFn = _.isFunction(arg);
@@ -333,7 +333,7 @@ function isKnownCtor(arg) {
 	return isFn && result;
 }
 
-var YatError = Mn.Error.extend({}, {
+var YatError = Mn$1.Error.extend({}, {
 	Http400: function Http400(message) {
 		return this.Http(400, message);
 	},
@@ -382,14 +382,14 @@ function mix(BaseClass) {
 		Mixed = BaseClass;
 	} else if (_.isObject(BaseClass) && BaseClass !== null) {
 		var tmp = function tmp() {};
-		tmp.extend = Mn.extend;
+		tmp.extend = Mn$1.extend;
 		Mixed = tmp.extend(BaseClass);
 	} else {
 		throw new Error('argument should be an object or class definition');
 	}
 	if (!Mixed.extend) {
-		Mixed = Mn.extend.call(BaseClass, {});
-		Mixed.extend = Mn.extend;
+		Mixed = Mn$1.extend.call(BaseClass, {});
+		Mixed.extend = Mn$1.extend;
 	}
 	var fake = {
 		with: function _with() {
@@ -406,7 +406,7 @@ function mix(BaseClass) {
 	return fake;
 }
 
-var GetOptionProperty = (function (Base) {
+var GetOptionProperty$1 = (function (Base) {
 	var Mixin = Base.extend({
 		//property first approach
 		getProperty: function getProperty(key, options) {
@@ -476,7 +476,7 @@ var RadioMixin = (function (Base) {
 				var channel = this.getProperty('channel');
 				if (channel) this.channelName = channel.channelName;
 			}
-			Mn.Object.prototype._initRadio.call(this);
+			Mn$1.Object.prototype._initRadio.call(this);
 		},
 		radioRequest: function radioRequest() {
 			var channel = this.getChannel();
@@ -491,7 +491,7 @@ var RadioMixin = (function (Base) {
 	return Mixin;
 });
 
-var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
+var YatObject = mix(Mn$1.Object).with(GetOptionProperty$1, RadioMixin);
 
 /*
 	StateEntry = {
@@ -1161,7 +1161,7 @@ var Startable = (function (Base) {
 	return Mixin;
 });
 
-var Childrenable = (function (Base) {
+var Childrenable$1 = (function (Base) {
 
 	var CHILDREN_FIELD = '_children';
 
@@ -1363,15 +1363,15 @@ var GlobalTemplateContext = (function (Base) {
 
 var Mixins = {
 	GetNameLabel: GetNameLabel,
-	GetOptionProperty: GetOptionProperty,
+	GetOptionProperty: GetOptionProperty$1,
 	Radioable: RadioMixin,
 	Stateable: Stateable,
 	Startable: Startable,
-	Childrenable: Childrenable,
+	Childrenable: Childrenable$1,
 	GlobalTemplateContext: GlobalTemplateContext
 };
 
-var BaseBehavior = mix(Mn.Behavior).with(GetOptionProperty);
+var BaseBehavior = mix(Mn$1.Behavior).with(GetOptionProperty$1);
 var Behavior = BaseBehavior.extend({
 
 	listenViewInitialize: true,
@@ -2322,9 +2322,9 @@ var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
 
 var identity = new Identity();
 
-var Region = Mn.Region.extend({
+var Region = Mn$1.Region.extend({
 	constructor: function constructor(options) {
-		Mn.Region.apply(this, arguments);
+		Mn$1.Region.apply(this, arguments);
 		this.mergeOptions(options, ['stateApi']);
 		this.stateApi && this._initStateApi();
 	},
@@ -2363,7 +2363,7 @@ Region.Detachable = function () {
 	return this.extend(detachable);
 };
 
-var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend({
+var YatView = mix(Mn$1.View).with(GlobalTemplateContext, GetOptionProperty$1).extend({
 
 	instantRender: false,
 	renderOnReady: false,
@@ -2376,7 +2376,7 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 			args[_key] = arguments[_key];
 		}
 
-		Mn.View.apply(this, args);
+		Mn$1.View.apply(this, args);
 
 		var options = args[0];
 		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
@@ -2562,7 +2562,7 @@ config.set('defaultModifiers', modalsDefaultModifiers);
 
 var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
 
-var ModalView = mix(YatView).with(GetOptionProperty).extend({
+var ModalView = mix(YatView).with(GetOptionProperty$1).extend({
 
 	instantRender: true,
 	renderOnReady: true,
@@ -2839,7 +2839,7 @@ var modals = {
 
 var Singletons = { TemplateContext: GlobalTemplateContext$1, identity: identity, modals: modals };
 
-var Base$1 = mix(Mn.Application).with(GetOptionProperty, RadioMixin, Childrenable, Startable);
+var Base$1 = mix(Mn$1.Application).with(GetOptionProperty$1, RadioMixin, Childrenable$1, Startable);
 
 var App = Base$1.extend({
 
@@ -2974,8 +2974,8 @@ var PageLinksMixin = {
 	}
 };
 
-var Base$2 = mix(App).with(GetNameLabel, PageLinksMixin);
-
+//let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
+var Base$2 = mix(Mn.Object).with(GetOptionProperty, GetNameLabel, Childrenable, Startable, PageLinksMixin);
 var YatPage = Base$2.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
@@ -3188,7 +3188,7 @@ var YatPageManager = Base$3.extend({
 	createRouter: function createRouter() {
 		this._routesHash = this._prepareRouterHash();
 		var options = this._prepareRouterOptions(this._routesHash);
-		var router = new Mn.AppRouter(options);
+		var router = new Mn$1.AppRouter(options);
 		this.setRouter(router);
 	},
 	_prepareRouterHash: function _prepareRouterHash() {
@@ -3337,7 +3337,7 @@ var YatPageManager = Base$3.extend({
 	}
 });
 
-var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
+var YatCollectionView = mix(Mn$1.NextCollectionView).with(GlobalTemplateContext);
 
 var Collection = Bb.Collection.extend({});
 
