@@ -52,7 +52,7 @@ const PageLinksMixin = {
 
 
 //let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
-let Base = mixin(Mn.Object).with(GetOptionProperty,GetNameLabel, Childrenable, Startable, PageLinksMixin)
+let Base = mixin(Mn.Object).with(GetOptionProperty, GetNameLabel, Childrenable,  PageLinksMixin)
 export default Base.extend({
 
 	constructor(...args){

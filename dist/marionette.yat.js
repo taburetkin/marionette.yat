@@ -2981,7 +2981,7 @@ var PageLinksMixin = {
 };
 
 //let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
-var Base$2 = mix(Mn.Object).with(GetOptionProperty, GetNameLabel, Childrenable, Startable, PageLinksMixin);
+var Base$2 = mix(Mn.Object).with(GetOptionProperty, GetNameLabel, Childrenable, PageLinksMixin);
 var YatPage = Base$2.extend({
 	constructor: function constructor() {
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
