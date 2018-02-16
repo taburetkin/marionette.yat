@@ -937,7 +937,7 @@ var Startable = (function (Base) {
 			if (freezeWhileStarting && _.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
 				_this7.freezeUI();
 			});
-			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start', function () {
+			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start start:decline', function () {
 				_this7.unFreezeUI();
 			});
 

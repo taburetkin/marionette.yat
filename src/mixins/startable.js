@@ -241,7 +241,7 @@ export default (Base) => {
 					this.freezeUI();
 				});
 			if(freezeWhileStarting && _.isFunction(this.unFreezeUI))
-				this.on('start',() => {
+				this.on('start start:decline',() => {
 					this.unFreezeUI();
 				});
 
