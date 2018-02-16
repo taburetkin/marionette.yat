@@ -2871,32 +2871,25 @@ var App = Base$1.extend({
 
 			return _this.triggerMethod.apply(_this, ['page:start', pageManager].concat(args));
 		});
-
-		// let prefix = pageManager.getName();
-		// if(!prefix){
-		// 	console.warn('pageManager prefix not defined');
-		// 	return;
-		// }
-
-		// this.listenTo(pageManager, 'all', (eventName, ...args) => {
-		// 	let prefixedEventName = prefix + ':' + eventName;
-		// 	this.triggerMethod(prefixedEventName, ...args);
-		// });
-		//this.listenTo(pageManager, 'state:currentPage',(...args) => this.triggerMethod('page:swapped',...args));
 	},
 	hasPageManagers: function hasPageManagers() {
 		return this._pageManagers && this._pageManagers.length > 0;
 	},
-	getMenuTree: function getMenuTree() {
+	getLinksCollection: function getLinksCollection() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { rebuild: false };
 
 		if (this._menuTree && !opts.rebuild) return this._menuTree;
+
+		this._createLinksCollection();
+
+		return this._menuTree;
+	},
+	_createLinksCollection: function _createLinksCollection() {
 		var managers = this._pageManagers || [];
 		var links = _(managers).chain().map(function (manager) {
 			return manager.getLinks();
 		}).flatten().value();
-		this._menuTree = new Bb.Collection(links);
-		return this._menuTree;
+		if (!this._menuTree) this._menuTree = new Bb.Collection(links);else this._menuTree.set(links);
 	},
 	getCurrentPages: function getCurrentPages() {
 		var pages = _(this._pageManagers).map(function (mngr) {
@@ -2920,7 +2913,7 @@ var App = Base$1.extend({
 
 var Model = Bb.Model.extend({});
 
-var LinkModel = Model.extend({
+Model.extend({
 	defaults: {
 		url: undefined,
 		label: undefined,
@@ -2941,7 +2934,44 @@ function _toConsumableArray$1(arr) { if (Array.isArray(arr)) { for (var i = 0, a
 	YatPage
 */
 
-var Base$2 = mix(App).with(GetNameLabel);
+var PageLinksMixin = {
+	hasLink: function hasLink() {
+		return !this.getProperty('skipMenu') && !this.getProperty('preventStart');
+	},
+	getLink: function getLink(level, index) {
+		if (!this.hasLink()) return;
+		if (this._linkHash) return this._linkHash;
+
+		var parentId = (this.getParent() || {}).cid;
+		var url = this.getRoute();
+		var label = this.getLabel();
+		this._linkHash = { id: this.cid, parentId: parentId, url: url, label: label, level: level, index: index };
+
+		return this._linkHash;
+	},
+	getLinks: function getLinks() {
+		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+		var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+		var link$$1 = this.getLink(level, index);
+		if (!link$$1) return [];
+		var sublinks = this._getSubLinks(level);
+		return [link$$1].concat(sublinks);
+	},
+	_getSubLinks: function _getSubLinks(level) {
+		var children = this.getChildren();
+		if (!children || !children.length) return [];
+		var sublinks = _(children).filter(function (child) {
+			return child.hasLink();
+		});
+		sublinks = _(sublinks).map(function (child, index) {
+			return child.getLinks(level + 1, index);
+		});
+		return _.flatten(sublinks);
+	}
+};
+
+var Base$2 = mix(App).with(GetNameLabel, PageLinksMixin);
 
 var YatPage = Base$2.extend({
 	constructor: function constructor() {
@@ -3070,54 +3100,6 @@ var YatPage = Base$2.extend({
 			return res;
 		}
 	},
-	getLinkModel: function getLinkModel() {
-		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-
-		if (!this._canHaveLinkModel()) return;
-		if (this._linkModel) return this._linkModel;
-
-		var url = this.getRoute();
-		var label = this.getLabel();
-		var children = this._getSublinks(level);
-		this._linkModel = new LinkModel({ url: url, label: label, level: level, children: children });
-
-		return this._linkModel;
-	},
-	_canHaveLinkModel: function _canHaveLinkModel() {
-		return !(this.getProperty('skipMenu') === true || !!this.getProperty('preventStart'));
-	},
-	_destroyLinkModel: function _destroyLinkModel() {
-		if (!this._linkModel) return;
-		this._linkModel.destroy();
-		delete this._linkModel;
-	},
-	getParentLinkModel: function getParentLinkModel() {
-		var parent = this.getParent();
-		if (!parent || !parent.getLinkModel) return;
-		var model = parent.getLinkModel();
-		return model;
-	},
-	getNeighbourLinks: function getNeighbourLinks() {
-		var link = this.getLinkModel();
-		if (link && link.collection) return link.collection;
-	},
-	getChildrenLinks: function getChildrenLinks() {
-		var model = this.getLinkModel();
-		if (!model) return;
-		return model.get('children');
-	},
-	_getSublinks: function _getSublinks(level) {
-		var children = this.getChildren();
-		if (!children || !children.length) return;
-		var sublinks = _(children).chain().filter(function (child) {
-			return child.getProperty("skipMenu") !== true;
-		}).map(function (child) {
-			return child.getLinkModel(level + 1);
-		}).value();
-		if (!sublinks.length) return;
-		var col = new Bb.Collection(sublinks);
-		return col;
-	},
 	_initializeLayoutModels: function _initializeLayoutModels() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -3174,16 +3156,8 @@ var YatPage = Base$2.extend({
 		var manager = this.getProperty('manager');
 		if (manager) add.manager = manager;
 		return _.extend(def, this.getProperty('childOptions'), add);
-	},
-
-	_registerIdentityHandlers: function _registerIdentityHandlers() {
-		var _this = this;
-
-		this.listenTo(identity, 'change', function () {
-			_this._destroyLinkModel();
-			//this.triggerMethod('identity:change', ...args);
-		});
 	}
+
 });
 
 var Base$3 = mix(App).with(GetNameLabel);
@@ -3272,12 +3246,12 @@ var YatPageManager = Base$3.extend({
 	},
 	getLinks: function getLinks() {
 		var children = this.getChildren();
-		if (!children) return;
+		if (!children) return [];
 		return _(children).chain().map(function (child) {
-			return child.getLinkModel();
+			return child.getLinks();
 		}).filter(function (child) {
 			return !!child;
-		}).value();
+		}).flatten().value();
 	},
 	execute: function execute(route) {
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { silent: true };

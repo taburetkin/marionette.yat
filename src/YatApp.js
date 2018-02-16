@@ -31,31 +31,27 @@ export default Base.extend({
 
 		this.triggerMethod('add:pageManager', pageManager);
 		this.listenTo(pageManager, 'page:start', (...args) => this.triggerMethod('page:start', pageManager, ...args));
-
-		// let prefix = pageManager.getName();
-		// if(!prefix){
-		// 	console.warn('pageManager prefix not defined');
-		// 	return;
-		// }
-
-		// this.listenTo(pageManager, 'all', (eventName, ...args) => {
-		// 	let prefixedEventName = prefix + ':' + eventName;
-		// 	this.triggerMethod(prefixedEventName, ...args);
-		// });
-		//this.listenTo(pageManager, 'state:currentPage',(...args) => this.triggerMethod('page:swapped',...args));
-		
+	
 	},
 
 	hasPageManagers(){
 		return this._pageManagers && this._pageManagers.length > 0;
 	},
 
-	getMenuTree(opts = {rebuild:false}){
+	getLinksCollection(opts = {rebuild:false}){
 		if(this._menuTree && !opts.rebuild) return this._menuTree;
+
+		this._createLinksCollection();
+
+		return this._menuTree;
+	},
+	_createLinksCollection(){
 		let managers = this._pageManagers || [];
 		let links = _(managers).chain().map((manager) => manager.getLinks()).flatten().value();
-		this._menuTree = new Bb.Collection(links);
-		return this._menuTree;
+		if(!this._menuTree)
+			this._menuTree = new Bb.Collection(links);
+		else
+			this._menuTree.set(links);
 	},
 	getCurrentPages(){
 		let pages = _(this._pageManagers).map((mngr) => mngr.getCurrentPage());

@@ -76,10 +76,11 @@ let YatPageManager = Base.extend({
 	},
 	getLinks(){
 		let children = this.getChildren();
-		if(!children) return;
+		if(!children) return [];
 		return _(children).chain()			
-			.map((child) => child.getLinkModel())
+			.map((child) => child.getLinks())
 			.filter((child) => !!child)
+			.flatten()
 			.value();
 	},
 	execute(route, opts = {silent:true}){

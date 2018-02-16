@@ -11,7 +11,43 @@ import identity from './singletons/identity';
 	YatPage
 */
 
-let Base = mixin(App).with(GetNameLabel);
+
+
+const PageLinksMixin = {
+
+	hasLink(){
+		return !this.getProperty('skipMenu') && !this.getProperty('preventStart');
+	},
+	getLink(level, index){
+		if(!this.hasLink()) return;
+		if(this._linkHash) return this._linkHash;
+
+		let parentId = (this.getParent() || {}).cid;
+		let url = this.getRoute();
+		let label = this.getLabel();
+		this._linkHash = { id: this.cid, parentId, url, label, level, index };
+
+
+		return this._linkHash;
+	},
+	getLinks(level = 0, index = 0){
+		let link = this.getLink(level, index);
+		if(!link) return [];
+		let sublinks = this._getSubLinks(level);
+		return [link].concat(sublinks);
+	},
+	_getSubLinks(level){
+		let children = this.getChildren();
+		if(!children || !children.length) return [];
+		let sublinks = _(children).filter((child) => child.hasLink());
+		sublinks = _(sublinks).map((child, index) => child.getLinks(level + 1, index));
+		return _.flatten(sublinks);
+	},
+
+}
+
+
+let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
 
 export default Base.extend({
 
@@ -154,55 +190,7 @@ export default Base.extend({
 
 
 
-	getLinkModel(level = 0){
-		if(!this._canHaveLinkModel()) return;		
-		if(this._linkModel) return this._linkModel;
 
-		let url = this.getRoute();
-		let label = this.getLabel();
-		let children = this._getSublinks(level);
-		this._linkModel = new LinkModel({ url, label, level, children });
-
-		return this._linkModel;
-	},
-	_canHaveLinkModel(){
-		return !((this.getProperty('skipMenu') === true) || (!!this.getProperty('preventStart')));
-	},
-	_destroyLinkModel(){
-		if(!this._linkModel) return;
-		this._linkModel.destroy();
-		delete this._linkModel;
-	},
-
-	getParentLinkModel(){
-		let parent = this.getParent();
-		if(!parent || !parent.getLinkModel) return;
-		let model = parent.getLinkModel();
-		return model;
-	},
-
-	getNeighbourLinks(){
-		let link = this.getLinkModel();
-		if(link && link.collection) return link.collection;
-	},
-
-	getChildrenLinks(){
-		let model = this.getLinkModel();
-		if(!model) return;
-		return model.get('children');
-	},
-
-	_getSublinks(level){
-		let children = this.getChildren();
-		if(!children || !children.length) return;
-		let sublinks = _(children).chain()
-			.filter((child) => child.getProperty("skipMenu") !== true)
-			.map((child) => child.getLinkModel(level + 1))
-			.value();
-		if(!sublinks.length) return;
-		let col = new Bb.Collection(sublinks);
-		return col;
-	},
 
 	_initializeLayoutModels(opts = {}){
 		this.addModel(opts.model, opts);
@@ -258,11 +246,5 @@ export default Base.extend({
 		return _.extend(def, this.getProperty('childOptions'), add);
 	},	
 
-	_registerIdentityHandlers(){
-		this.listenTo(identity, 'change', (...args) => {
-			this._destroyLinkModel();
-			//this.triggerMethod('identity:change', ...args);
-		});
-	}
 
 });
