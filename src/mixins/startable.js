@@ -483,6 +483,8 @@ export default (Base) => {
 			bindAll(this._lifestate, this);
 			bindAll(this._startable, this);
 			
+			console.log('init startable', this.cid);
+
 			this._startable.setLifecycleListeners();
 
 			this._lifestate.set(STATES.INITIALIZED);
