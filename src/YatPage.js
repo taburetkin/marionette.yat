@@ -166,7 +166,7 @@ export default Base.extend({
 		return this._linkModel;
 	},
 	_canHaveLinkModel(){
-		return !((this.getProperty('skipMenu') === true) || (!!this.getProperty('isStartNotAllowed')));
+		return !((this.getProperty('skipMenu') === true) || (!!this.getProperty('preventStart')));
 	},
 	_destroyLinkModel(){
 		if(!this._linkModel) return;

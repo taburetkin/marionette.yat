@@ -1193,7 +1193,7 @@ var Childrenable = (function (Base) {
 				return all;
 			} else {
 				return all.filter(function (c) {
-					return !c.getProperty('isStartNotAllowed');
+					return !c.getProperty('preventStart');
 				});
 			}
 		},
@@ -3084,7 +3084,7 @@ var YatPage = Base$2.extend({
 		return this._linkModel;
 	},
 	_canHaveLinkModel: function _canHaveLinkModel() {
-		return !(this.getProperty('skipMenu') === true || !!this.getProperty('isStartNotAllowed'));
+		return !(this.getProperty('skipMenu') === true || !!this.getProperty('preventStart'));
 	},
 	_destroyLinkModel: function _destroyLinkModel() {
 		if (!this._linkModel) return;
