@@ -2880,11 +2880,11 @@ var App = Base$1.extend({
 
 		if (this._menuTree && !opts.rebuild) return this._menuTree;
 
-		this._createLinksCollection();
+		this.createLinksCollection();
 
 		return this._menuTree;
 	},
-	_createLinksCollection: function _createLinksCollection() {
+	createLinksCollection: function createLinksCollection() {
 		var managers = this._pageManagers || [];
 		var links = _(managers).chain().map(function (manager) {
 			return manager.getLinks();

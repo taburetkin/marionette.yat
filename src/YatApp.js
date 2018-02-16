@@ -41,11 +41,11 @@ export default Base.extend({
 	getLinksCollection(opts = {rebuild:false}){
 		if(this._menuTree && !opts.rebuild) return this._menuTree;
 
-		this._createLinksCollection();
+		this.createLinksCollection();
 
 		return this._menuTree;
 	},
-	_createLinksCollection(){
+	createLinksCollection(){
 		let managers = this._pageManagers || [];
 		let links = _(managers).chain().map((manager) => manager.getLinks()).flatten().value();
 		if(!this._menuTree)
