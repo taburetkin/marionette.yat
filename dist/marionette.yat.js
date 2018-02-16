@@ -971,7 +971,7 @@ var ProcessEngine = {
 	},
 	canNotBeDone: function canNotBeDone(context) {
 		var _this = context.startable._startable;
-		var reason = this._executeOnStartable(_this, 'can:not:' + context.process, context.args);
+		var reason = this._executeOnStartable(_this, 'can:not:' + context.process);
 		if (!reason) return;
 
 		context.reject(reason);
