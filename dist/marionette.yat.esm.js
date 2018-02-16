@@ -2936,12 +2936,16 @@ var PageLinksMixin = {
 		if (!this.hasLink()) return;
 		if (this._linkHash) return this._linkHash;
 
-		var parentId = (this.getParent() || {}).cid;
+		var parentId = (this.getParentLink() || {}).id;
 		var url = this.getRoute();
 		var label = this.getLabel();
 		this._linkHash = { id: this.cid, parentId: parentId, url: url, label: label, level: level, index: index };
 
 		return this._linkHash;
+	},
+	getParentLink: function getParentLink() {
+		var parent = this.getParent();
+		return parent && parent.getLink && parent.getLink();
 	},
 	getLinks: function getLinks() {
 		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;

@@ -22,13 +22,17 @@ const PageLinksMixin = {
 		if(!this.hasLink()) return;
 		if(this._linkHash) return this._linkHash;
 
-		let parentId = (this.getParent() || {}).cid;
+		let parentId = (this.getParentLink() || {}).id;
 		let url = this.getRoute();
 		let label = this.getLabel();
 		this._linkHash = { id: this.cid, parentId, url, label, level, index };
 
 
 		return this._linkHash;
+	},
+	getParentLink(){
+		let parent = this.getParent();
+		return parent && parent.getLink && parent.getLink();
 	},
 	getLinks(level = 0, index = 0){
 		let link = this.getLink(level, index);
