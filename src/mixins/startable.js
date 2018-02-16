@@ -321,7 +321,7 @@ const ProcessEngine = {
 		
 		let _this = context.startable;
 		_this._lifestate.set(context.stateEnd);
-		context.resolve(...context.args);
+		context.resolve(...(context.args || []));
 
 		//under question. is it necessary at all
 		//this.once('start', (...args) => resolve(...args));

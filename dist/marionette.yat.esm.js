@@ -991,7 +991,7 @@ var ProcessEngine = {
 
 		var _this = context.startable;
 		_this._lifestate.set(context.stateEnd);
-		context.resolve.apply(context, _toConsumableArray(context.args));
+		context.resolve.apply(context, _toConsumableArray(context.args || []));
 
 		//under question. is it necessary at all
 		//this.once('start', (...args) => resolve(...args));
