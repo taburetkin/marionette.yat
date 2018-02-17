@@ -928,9 +928,6 @@ var ProcessEngine = {
 
 		this.clearRuntimePromises(context);
 
-		//collect all parents promises, instance promises and runtime promises
-		var prepare = this.prepare(context);
-
 		var promise = new Promise(function (resolve, reject) {
 
 			context.reject = reject;
@@ -950,6 +947,9 @@ var ProcessEngine = {
 
 			//remember current state and change it to starting or stopping
 			_this5.updateState(context);
+
+			//collect all parents promises, instance promises and runtime promises
+			var prepare = _this5.prepare(context);
 
 			//call success or fail callbacks when all promisess resolved
 			return prepare.then(function () {
@@ -1033,7 +1033,8 @@ var ProcessEngine = {
 	},
 	runtimePromise: function runtimePromise(context) {
 		if (context.skipRuntimePromises) return;
-		return this._propertyPromise(context.startable, '_' + context.process + 'RuntimePromises', 'getProperty');
+		var runtime = this._propertyPromise(context.startable, '_' + context.process + 'RuntimePromises', 'getProperty');
+		return runtime;
 	},
 	clearRuntimePromises: function clearRuntimePromises(context) {
 		var _this = context.startable;

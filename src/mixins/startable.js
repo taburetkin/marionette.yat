@@ -247,8 +247,7 @@ const ProcessEngine = {
 
 		this.clearRuntimePromises(context);
 
-		//collect all parents promises, instance promises and runtime promises
-		let prepare = this.prepare(context);
+
 
 		let promise = new Promise((resolve, reject) => {
 			
@@ -270,6 +269,9 @@ const ProcessEngine = {
 
 			//remember current state and change it to starting or stopping
 			this.updateState(context);
+
+			//collect all parents promises, instance promises and runtime promises
+			let prepare = this.prepare(context);
 
 			//call success or fail callbacks when all promisess resolved
 			return prepare.then(() => this.success(context), (reason) => this.fail(reason, context));
@@ -376,7 +378,8 @@ const ProcessEngine = {
 
 	runtimePromise(context){
 		if(context.skipRuntimePromises) return;
-		return this._propertyPromise(context.startable, `_${context.process}RuntimePromises`, 'getProperty')
+		let runtime = this._propertyPromise(context.startable, `_${context.process}RuntimePromises`, 'getProperty');
+		return runtime;
 	},
 
 	clearRuntimePromises(context){
