@@ -3231,7 +3231,8 @@ var PMRouterMixin = {
 				_.extend(hash, page.getRouteHash());
 			}
 		});
-		return this._routesHash = hash;
+		this._routesHash = hash;
+		return hash;
 	},
 	getRouterOptions: function getRouterOptions(hash) {
 		var _this = this;

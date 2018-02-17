@@ -35,7 +35,8 @@ const PMRouterMixin = {
 				_.extend(hash, page.getRouteHash());
 			}
 		});
-		return this._routesHash = hash;
+		this._routesHash = hash;
+		return hash;
 
 	},
 	getRouterOptions(hash){
