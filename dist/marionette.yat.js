@@ -3079,6 +3079,10 @@ var PageRouteMixin = {
 			var res = route.replace(/\(\/\)/gmi, '/').replace(/\/+/gmi, '/');
 			return res;
 		}
+	},
+	url: function url() {
+		var route = this.getRoute();
+		return route;
 	}
 };
 
@@ -3197,16 +3201,120 @@ var YatPage = Base$2.extend({
 		var manager = this.getProperty('manager');
 		if (manager) add.manager = manager;
 		return _.extend(def, this.getProperty('childOptions'), add);
-	}
+	},
 
+	getRoot: function getRoot() {
+		var parent = this.getParent();
+		if (parent instanceof Base$2) return parent.getRoot();else return this;
+	}
 });
 
-var Base$3 = mix(App).with(GetNameLabel);
+var PMRouterMixin = {
+
+	routerClass: Mn.AppRouter,
+
+	createRouter: function createRouter() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		var options = this.getRouterOptions();
+		var Router = this.getProperty('routerClass');
+		var router = new Router(options);
+
+		if (opts.doNotSet !== true) this.setRouter(router);
+
+		return router;
+	},
+	_createRoutesHash: function _createRoutesHash() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+		if (this._routesHash && opts.rebuild !== true) return this._routesHash;
+
+		var children = this.getChildren({ startable: false });
+		var hash = {};
+		_(children).each(function (page) {
+			if (_.isFunction(page.getRouteHash)) {
+				_.extend(hash, page.getRouteHash());
+			}
+		});
+		return this._routesHash = hash;
+	},
+	getRouterOptions: function getRouterOptions(hash) {
+		var _this = this;
+
+		this._routesHash = this._createRoutesHash();
+		var appRoutes = {};
+		var controller = {};
+		_(hash).each(function (handlerContext, key) {
+			appRoutes[key] = key;
+			controller[key] = _this.createRouterControllerAction(handlerContext, key);
+		});
+		return { appRoutes: appRoutes, controller: controller };
+	},
+	createRouterControllerAction: function createRouterControllerAction(handlerContext, key) {
+		var _this2 = this;
+
+		var page = handlerContext.context;
+		return function () {
+			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+				args[_key] = arguments[_key];
+			}
+
+			_this2.startPage.apply(_this2, [page].concat(args));
+		};
+	},
+	setRouter: function setRouter(router) {
+		if (this.router && _.isFunction(this.router.destroy)) {
+			this.router.destroy();
+		}
+		this.router = router;
+	},
+	getRouter: function getRouter() {
+		return this.router;
+	},
+	execute: function execute(route) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { silent: true };
+
+		var page = this.getPage(route);
+		if (page) page.start(opts);else throw new YatError.NotFound('Route not found');
+	},
+	navigate: function navigate(url) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
+
+
+		var router = this.getRouter();
+
+		if (router) router.navigate(url, opts);else console.warn('router not found');
+	},
+	navigateToRoot: function navigateToRoot() {
+
+		var current = this.getState('currentPage');
+		if (!current) throw new YatError({ message: "navigateToRoot: root not found" });
+		this.navigate(current.getRoot().url());
+	}
+};
+
+var PMIdentitySupport = {
+	_registerIdentityHandlers: function _registerIdentityHandlers() {
+		this.listenTo(identity, 'change', this._restartOrGoToRoot);
+		this.listenTo(identity, 'token:expired', this.tokenExpired);
+	},
+	_restartOrGoToRoot: function _restartOrGoToRoot() {
+		if (!this.routedPage) return;
+
+		if (!this.routedPage.getProperty('preventStart')) this.restartRoutedPage();else this.navigateToRoot();
+	},
+	tokenExpired: function tokenExpired() {
+		this.restartRoutedPage();
+	}
+};
+
+var Base$3 = mix(App).with(GetNameLabel, PMRouterMixin, PMIdentitySupport);
 
 var YatPageManager = Base$3.extend({
 	constructor: function constructor() {
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
 		}
 
 		Base$3.apply(this, args);
@@ -3223,67 +3331,30 @@ var YatPageManager = Base$3.extend({
 
 
 	throwChildErrors: true,
-	createRouter: function createRouter() {
-		this._routesHash = this._prepareRouterHash();
-		var options = this._prepareRouterOptions(this._routesHash);
-		var router = new Mn.AppRouter(options);
-		this.setRouter(router);
-	},
-	_prepareRouterHash: function _prepareRouterHash() {
-		var children = this.getChildren({ startable: false });
-		var hash = {};
-		_(children).each(function (page) {
-			if (_.isFunction(page.getRouteHash)) {
-				_.extend(hash, page.getRouteHash());
-			}
-		});
-		return hash;
-	},
-	_prepareRouterOptions: function _prepareRouterOptions(hash) {
-		var _this = this;
 
-		var appRoutes = {};
-		var controller = {};
-		_(hash).each(function (handlerContext, key) {
-			appRoutes[key] = key;
-			controller[key] = function () {
-				for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-					args[_key2] = arguments[_key2];
-				}
-
-				_this.startPage.apply(_this, [handlerContext.context].concat(args));
-			};
-		});
-		return { appRoutes: appRoutes, controller: controller };
-	},
 	startPage: function startPage(page) {
-		var _this2 = this;
+		var _this3 = this;
 
+		this.previousRoutedPage = this.routedPage;
 		this.routedPage = page;
 
 		for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
 			args[_key3 - 1] = arguments[_key3];
 		}
 
-		page.start.apply(page, args).catch(function (error) {
-			if (_this2.getProperty('throwChildErrors') === true) {
+		return page.start.apply(page, args).catch(function (error) {
+			if (_this3.getProperty('throwChildErrors') === true) {
 				throw error;
 			}
 			var postfix = error.status ? ':' + error.status.toString() : '';
 			var commonEvent = 'error';
 			var event = commonEvent + postfix;
-			_this2.triggerMethod(commonEvent, error, page);
-			event != commonEvent && _this2.triggerMethod(event, error, page);
+			_this3.triggerMethod(commonEvent, error, page);
+			event != commonEvent && _this3.triggerMethod(event, error, page);
 		});
 	},
 	restartRoutedPage: function restartRoutedPage() {
 		this.routedPage && this.startPage(this.routedPage);
-	},
-	setRouter: function setRouter(router) {
-		this.router = router;
-	},
-	getRouter: function getRouter() {
-		return this.router;
 	},
 	getLinks: function getLinks() {
 		var children = this.getChildren();
@@ -3293,19 +3364,6 @@ var YatPageManager = Base$3.extend({
 		}).filter(function (child) {
 			return !!child;
 		}).flatten().value();
-	},
-	execute: function execute(route) {
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { silent: true };
-
-		var page = this.getPage(route);
-		if (page) page.start(opts);else throw new YatError.NotFound('Route not found');
-	},
-	navigate: function navigate(url) {
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
-
-
-		var router = this.getRouter();
-		if (router) router.navigate(url, opts);else console.warn('router not found');
 	},
 	getPage: function getPage(key) {
 
@@ -3322,22 +3380,9 @@ var YatPageManager = Base$3.extend({
 		var current = this.getCurrentPage();
 		return page === current;
 	},
-	navigateToRoot: function navigateToRoot() {
-		var current = this.getState('currentPage');
-		var rootUrl = this.getProperty('rootUrl');
-		if (!rootUrl) {
-			var children = this.getChildren();
-			if (children && children.length) {
-				var root = children.find(function (child) {
-					return child != current;
-				});
-				rootUrl = root && root.getRoute();
-			}
-		}
-		if (rootUrl != null) this.navigate(rootUrl);else console.warn('root page not found');
-	},
 
 
+	//childrenable: settle manager reference to all children
 	_buildChildOptions: function _buildChildOptions(def) {
 		return _.extend(def, this.getProperty('childOptions'), {
 			manager: this
@@ -3356,23 +3401,9 @@ var YatPageManager = Base$3.extend({
 		}
 	},
 	_pageStart: function _pageStart(page) {
-
 		this.setState('currentPage', page);
-		//this.triggerMethod('page:start', page, ...args)
 	},
-	_pageDecline: function _pageDecline() {},
-	_registerIdentityHandlers: function _registerIdentityHandlers() {
-		this.listenTo(identity, 'change', this._restartOrGoToRoot);
-		this.listenTo(identity, 'token:expired', this.tokenExpired);
-	},
-	_restartOrGoToRoot: function _restartOrGoToRoot() {
-		if (!this.routedPage) return;
-
-		if (!this.routedPage.getProperty('preventStart')) this.restartRoutedPage();else this.navigateToRoot();
-	},
-	tokenExpired: function tokenExpired() {
-		this.restartRoutedPage();
-	}
+	_pageDecline: function _pageDecline() {}
 });
 
 var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);

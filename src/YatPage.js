@@ -131,6 +131,10 @@ const PageRouteMixin = {
 		}
 	},
 
+	url(){
+		let route = this.getRoute();
+		return route;
+	}
 }
 
 const PageModelAndCollectionMixin = {
@@ -236,5 +240,13 @@ export default Base.extend({
 		if(manager) add.manager = manager;
 		return _.extend(def, this.getProperty('childOptions'), add);
 	},	
+
+	getRoot(){
+		let parent = this.getParent();
+		if(parent instanceof Base)
+			return parent.getRoot();
+		else
+			return this;
+	}
 
 });
