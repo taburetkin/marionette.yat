@@ -3234,10 +3234,10 @@ var PMRouterMixin = {
 		this._routesHash = hash;
 		return hash;
 	},
-	getRouterOptions: function getRouterOptions(hash) {
+	getRouterOptions: function getRouterOptions() {
 		var _this = this;
 
-		this._routesHash = this._createRoutesHash();
+		hash = this._createRoutesHash();
 		var appRoutes = {};
 		var controller = {};
 		_(hash).each(function (handlerContext, key) {
