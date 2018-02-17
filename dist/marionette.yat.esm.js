@@ -3237,7 +3237,7 @@ var PMRouterMixin = {
 	getRouterOptions: function getRouterOptions() {
 		var _this = this;
 
-		hash = this._createRoutesHash();
+		var hash = this._createRoutesHash();
 		var appRoutes = {};
 		var controller = {};
 		_(hash).each(function (handlerContext, key) {

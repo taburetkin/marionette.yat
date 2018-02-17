@@ -40,7 +40,7 @@ const PMRouterMixin = {
 
 	},
 	getRouterOptions(){
-		hash = this._createRoutesHash();
+		let hash = this._createRoutesHash();
 		let appRoutes = {};
 		let controller = {};
 		_(hash).each((handlerContext, key) => {
