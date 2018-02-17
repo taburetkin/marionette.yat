@@ -96,21 +96,18 @@ const LifecycleMixin = {
 
 
 const StartableHidden = {
-	setLifecycleListeners(){
-		let freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
-		if(freezeWhileStarting){
-			if(_.isFunction(this.freezeUI))
-				this.on(`state:${STATE_KEY}:${STATES.STARTING}`,() => {
-					this.freezeUI();
-				});
-			if(_.isFunction(this.unFreezeUI))
-				this.on('start start:decline',() => {
-					this.unFreezeUI();
-				});
+	setHelperListeners(){
+		let freezeStart = this.getProperty('freezeWhileStarting') === true;
+		let freezeStop = this.getProperty('freezeWhileStopping') === true;
+		if(_.isFunction(this.freezeUI)){
+			freezeStart && this.on('before:start', this.freezeUI);
+			freezeStop && this.on('before:stop', this.freezeUI);
 		}
-
+		if(_.isFunction(this.unFreezeUI)){
+			freezeStart && this.on('start start:decline', this.unFreezeUI);
+			freezeStop && this.on('stop stop:decline', this.unFreezeUI);
+		}
 		this.on('destroy',() => this._lifestate.set(STATES.DESTROYED));
-
 	},	
 
 	isIntact(opts = { throwError: false }) {
@@ -208,6 +205,7 @@ const StartableHidden = {
 
 const Overridable = {
 	freezeWhileStarting: false,
+	freezeWhileStopping: false,
 	freezeUI(){ },
 	unFreezeUI(){ },
 	
@@ -489,7 +487,7 @@ export default (Base) => {
 			
 			// console.log('init startable', this.cid);
 
-			this._startable.setLifecycleListeners();
+			this._startable.setHelperListeners();
 
 			
 

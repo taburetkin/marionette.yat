@@ -644,6 +644,12 @@ function _defineProperty(obj, key, value) { if (key in obj) { Object.definePrope
 
 var Stateable = (function (BaseClass) {
 	var Mixin = BaseClass.extend({
+
+		verboseStateBoolean: false,
+		verboseStateString: false,
+		verboseStateHash: false,
+		verboseState: false,
+
 		constructor: function constructor() {
 			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 				args[_key] = arguments[_key];
@@ -667,14 +673,15 @@ var Stateable = (function (BaseClass) {
 				var _this = this;
 				options = value;
 				value = key;
+				var propertyOptions = _.extend({}, options, { doNotTriggerStateHash: true });
 				_(value).each(function (propertyValue, propertyName) {
-					return _this.setState(propertyName, propertyValue, _.extend({}, options, { doNotTriggerFullState: true }));
+					return _this.setState(propertyName, propertyValue, propertyOptions);
 				});
-				this._triggerStateChange(value, options);
+				this._tryTriggerStateChange(value, options);
 			} else {
 				var state = this.getState();
 				state[key] = value;
-				this._triggerStateChange(key, value, options);
+				this._tryTriggerStateChange(key, value, options);
 			}
 		},
 		clearState: function clearState() {
@@ -684,25 +691,44 @@ var Stateable = (function (BaseClass) {
 				broadcast[key] = undefined;
 				delete state[key];
 			});
-			this._triggerStateChange(broadcast);
+			this._tryTriggerStateChange(broadcast);
 		},
-		_triggerStateChange: function _triggerStateChange(key, value, options) {
+		_tryTriggerStateChange: function _tryTriggerStateChange(key, value) {
+			var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
-			if (!_.isFunction(this.triggerMethod)) return;
+
+			if (options.silent === true) return;
 
 			if (!_.isObject(key)) {
-				this.triggerMethod('state:' + key, value, options);
-				if (value === true || value === false || !!value && typeof value === 'string') this.triggerMethod('state:' + key + ':' + value.toString(), options);
-				if (!options || options && !options.doNotTriggerFullState) {
-					this.triggerMethod('state', _defineProperty({}, key, value), options);
-				}
+
+				this._triggerStateChange('verboseState', 'state:' + key, value, this, options);
+
+				var stringValue = String(value).toLowerCase().trim();
+
+				if (['true', 'false'].indexOf(stringValue) >= 0) this._triggerStateChange('verboseStateBoolean', 'state:' + key + ':' + stringValue, this, options);
+
+				if (_.isString(value)) this._triggerStateChange('verboseStateString', 'state:' + key + ':' + value, this, options);
+
+				if (!options.doNotTriggerStateHash) this._triggerStateChange('verboseStateHash', 'state', _defineProperty({}, key, value), this, options);
 			} else {
 				//key is a hash of states
 				//value is options
 				options = value;
 				value = key;
-				this.triggerMethod('state', value, options);
+				this._triggerStateChange('verboseStateHash', 'state', value, options);
 			}
+		},
+		_triggerStateChange: function _triggerStateChange(type) {
+			var broadcast = _.isFunction(this.triggerMethod) ? this.triggerMethod : _.isFunction(this.trigger) ? this.trigger : null;
+			var allowed = this.getProperty(type) === true;
+
+			if (!broadcast || !allowed) return;
+
+			for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+				args[_key2 - 1] = arguments[_key2];
+			}
+
+			broadcast.apply(this, args);
 		}
 	});
 	Mixin.Stateable = true;
@@ -766,19 +792,19 @@ var LifecycleMixin = {
 };
 
 var StartableHidden = {
-	setLifecycleListeners: function setLifecycleListeners() {
+	setHelperListeners: function setHelperListeners() {
 		var _this4 = this;
 
-		var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
-		if (freezeWhileStarting) {
-			if (_.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
-				_this4.freezeUI();
-			});
-			if (_.isFunction(this.unFreezeUI)) this.on('start start:decline', function () {
-				_this4.unFreezeUI();
-			});
+		var freezeStart = this.getProperty('freezeWhileStarting') === true;
+		var freezeStop = this.getProperty('freezeWhileStopping') === true;
+		if (_.isFunction(this.freezeUI)) {
+			freezeStart && this.on('before:start', this.freezeUI);
+			freezeStop && this.on('before:stop', this.freezeUI);
 		}
-
+		if (_.isFunction(this.unFreezeUI)) {
+			freezeStart && this.on('start start:decline', this.unFreezeUI);
+			freezeStop && this.on('stop stop:decline', this.unFreezeUI);
+		}
 		this.on('destroy', function () {
 			return _this4._lifestate.set(STATES.DESTROYED);
 		});
@@ -876,6 +902,7 @@ var StartableHidden = {
 
 var Overridable = {
 	freezeWhileStarting: false,
+	freezeWhileStopping: false,
 	freezeUI: function freezeUI() {},
 	unFreezeUI: function unFreezeUI() {},
 	preventStart: function preventStart() {},
@@ -1155,7 +1182,7 @@ var Startable = (function (Base) {
 
 			// console.log('init startable', this.cid);
 
-			this._startable.setLifecycleListeners();
+			this._startable.setHelperListeners();
 		}
 	});
 
@@ -2977,31 +3004,7 @@ var PageLinksMixin = {
 	}
 };
 
-var Base$2 = mix(App).with(GetNameLabel, PageLinksMixin);
-//let Base = mixin(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel,  Mx.Startable, PageLinksMixin)
-var YatPage = Base$2.extend({
-
-	constructor: function constructor() {
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
-		}
-
-		Base$2.apply(this, args);
-		this.initializeYatPage();
-	},
-
-	allowStopWithoutStart: true,
-	allowStartWithoutStop: true,
-
-	proxyEventsToManager: ['before:start', 'start', 'start:decline', 'before:stop', 'stop', 'stop:decline'],
-
-	initializeYatPage: function initializeYatPage(opts) {
-		this.mergeOptions(opts, ["manager"]);
-		this._initializeLayoutModels(opts);
-		this._initializeRoute(opts);
-		this._proxyEvents();
-		//this._registerIdentityHandlers();
-	},
+var PageLayoutMixin = {
 	getLayout: function getLayout() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { rebuild: false };
 
@@ -3010,7 +3013,6 @@ var YatPage = Base$2.extend({
 		}
 		return this._layoutView;
 	},
-	prepareForStart: function prepareForStart() {},
 	buildLayout: function buildLayout() {
 		var Layout = this.getProperty('Layout');
 		if (Layout == null) return;
@@ -3027,38 +3029,10 @@ var YatPage = Base$2.extend({
 	},
 	buildLayoutOptions: function buildLayoutOptions(rawOptions) {
 		return rawOptions;
-	},
-	addModel: function addModel(model) {
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+	}
+};
 
-		if (!model) return;
-		this.model = model;
-		var fetch = opts.fetch || this.getOption('fetchModelOnAdd');
-		if (fetch === undefined) {
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if (fetch === true) {
-			this.addStartPromise(model.fetch(opts));
-		}
-	},
-	addCollection: function addCollection(collection) {
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-		if (!collection) return;
-		this.collection = collection;
-		var fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
-		if (fetch === undefined) {
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if (fetch === true) {
-			this.addStartPromise(collection.fetch(opts));
-		}
-	},
-
-
-	freezeWhileStarting: true,
-	freezeUI: function freezeUI() {},
-	unFreezeUI: function unFreezeUI() {},
+var PageRouteMixin = {
 	getRouteHash: function getRouteHash() {
 
 		var hashes = [{}, this._routeHandler].concat(this.getChildren({ startable: false }).map(function (children) {
@@ -3105,13 +3079,45 @@ var YatPage = Base$2.extend({
 			var res = route.replace(/\(\/\)/gmi, '/').replace(/\/+/gmi, '/');
 			return res;
 		}
+	}
+};
+
+var PageModelAndCollectionMixin = {
+	addModel: function addModel(model) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		if (!model) return;
+		this.model = model;
+		var fetch = opts.fetch || this.getOption('fetchModelOnAdd');
+		if (fetch === undefined) {
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if (fetch === true) {
+			this.addStartPromise(model.fetch(opts));
+		}
+	},
+	addCollection: function addCollection(collection) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		if (!collection) return;
+		this.collection = collection;
+		var fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
+		if (fetch === undefined) {
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if (fetch === true) {
+			this.addStartPromise(collection.fetch(opts));
+		}
 	},
 	_initializeLayoutModels: function _initializeLayoutModels() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 		this.addModel(opts.model, opts);
 		this.addCollection(opts.collection, opts);
-	},
+	}
+};
+
+var PageProxyEventsMixin = {
 	_proxyEvents: function _proxyEvents() {
 		var proxyContexts = this._getProxyContexts();
 		this._proxyEventsTo(proxyContexts);
@@ -3144,8 +3150,8 @@ var YatPage = Base$2.extend({
 		});
 		var page = this;
 		page.on('all', function (eventName) {
-			for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-				args[_key2 - 1] = arguments[_key2];
+			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+				args[_key - 1] = arguments[_key];
 			}
 
 			var contexts = eventName in eventsHash ? eventsHash[eventName] : all;
@@ -3154,9 +3160,38 @@ var YatPage = Base$2.extend({
 				return context.triggerMethod.apply(context, ['page:' + eventName].concat(_toConsumableArray$1(triggerArguments)));
 			});
 		});
+	}
+};
+
+var Base$2 = mix(App).with(GetNameLabel, PageLinksMixin, PageLayoutMixin, PageModelAndCollectionMixin, PageProxyEventsMixin, PageRouteMixin);
+var YatPage = Base$2.extend({
+
+	constructor: function constructor() {
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
+		}
+
+		Base$2.apply(this, args);
+		this.initializeYatPage();
+	},
+
+	freezeWhileStarting: true,
+	allowStopWithoutStart: true,
+	allowStartWithoutStop: true,
+	proxyEventsToManager: function proxyEventsToManager() {
+		return ['before:start', 'start', 'start:decline', 'before:stop', 'stop', 'stop:decline'];
+	},
+
+	initializeYatPage: function initializeYatPage(opts) {
+		this.mergeOptions(opts, ["manager"]);
+		this._initializeLayoutModels(opts);
+		this._initializeRoute(opts);
+		this._proxyEvents();
 	},
 
 
+	// overriding childrenable _buildChildOptions
+	// adding reference to PageManger if it exists
 	_buildChildOptions: function _buildChildOptions(def) {
 		var add = {};
 		var manager = this.getProperty('manager');

@@ -2,10 +2,17 @@ import _ from 'underscore';
 
 export default (BaseClass) => {
 	let Mixin = BaseClass.extend({
+
+		verboseStateBoolean: false,
+		verboseStateString: false,
+		verboseStateHash: false,
+		verboseState: false,
+
 		constructor(...args){
 			BaseClass.apply(this, args);
 			this.initializeStateable();
 		},
+
 		initializeStateable(){
 			this._state = {};
 		},
@@ -23,12 +30,16 @@ export default (BaseClass) => {
 				const _this = this;
 				options = value;
 				value = key;
-				_(value).each((propertyValue, propertyName) => _this.setState(propertyName, propertyValue, _.extend({},options,{doNotTriggerFullState: true})));
-				this._triggerStateChange(value, options);
+				let propertyOptions = _.extend({}, options, {doNotTriggerStateHash: true});
+				_(value).each(
+					(propertyValue, propertyName) => 
+						_this.setState(propertyName, propertyValue, propertyOptions)
+				);
+				this._tryTriggerStateChange(value, options);
 			}else{
 				const state = this.getState();
 				state[key] = value;
-				this._triggerStateChange(key, value, options);
+				this._tryTriggerStateChange(key, value, options);
 			}
 		},
 		clearState(opts = {}){
@@ -38,27 +49,46 @@ export default (BaseClass) => {
 				broadcast[key] = undefined;
 				delete state[key];
 			});
-			this._triggerStateChange(broadcast);
+			this._tryTriggerStateChange(broadcast);
 		},
-		_triggerStateChange(key, value, options){
+		_tryTriggerStateChange(key, value, options = {}){
 
-			if(!_.isFunction(this.triggerMethod)) return;
+			if(options.silent === true) return;
+
 
 			if(!_.isObject(key)){
-				this.triggerMethod('state:' + key, value, options);
-				if(value === true || value === false || (!!value && typeof value === 'string'))
-					this.triggerMethod('state:' + key + ':' + value.toString(), options);
-				if(!options || (options && !options.doNotTriggerFullState)){
-					this.triggerMethod('state', {[key]:value}, options);	
-				}
+
+				this._triggerStateChange('verboseState','state:' + key, value, this, options);
+
+				let stringValue = String(value).toLowerCase().trim();
+
+				if(['true','false'].indexOf(stringValue)>=0)
+					this._triggerStateChange('verboseStateBoolean',`state:${key}:${stringValue}`, this, options);
+
+				if(_.isString(value))
+					this._triggerStateChange('verboseStateString',`state:${key}:${value}`, this, options);
+				
+				if(!options.doNotTriggerStateHash)
+					this._triggerStateChange('verboseStateHash','state', {[key]:value}, this, options);
+				
 			}else{
 				//key is a hash of states
 				//value is options
 				options = value;
 				value = key;
-				this.triggerMethod('state', value, options);
+				this._triggerStateChange('verboseStateHash', 'state', value, options);
 			}
-		},		
+		},
+		_triggerStateChange(type, ...args){
+			let broadcast = _.isFunction(this.triggerMethod) ? this.triggerMethod
+							: _.isFunction(this.trigger) ? this.trigger
+							: null;
+			let allowed = this.getProperty(type) === true;
+			
+			if(!broadcast || !allowed) return;
+
+			broadcast.apply(this, args);
+		}		
 	});
 	Mixin.Stateable = true;
 

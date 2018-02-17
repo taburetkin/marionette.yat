@@ -51,37 +51,13 @@ const PageLinksMixin = {
 
 }
 
-
-let Base = mixin(App).with(GetNameLabel, PageLinksMixin);
-//let Base = mixin(Mn.Object).with(Mx.GetOptionProperty, Mx.GetNameLabel,  Mx.Startable, PageLinksMixin)
-export default Base.extend({
-
-	constructor:function(...args){
-		Base.apply(this,args);
-		this.initializeYatPage();
-	},
-
-	allowStopWithoutStart: true,
-	allowStartWithoutStop: true,
-
-	proxyEventsToManager:['before:start','start','start:decline','before:stop','stop','stop:decline'],
-
-	initializeYatPage(opts){
-		this.mergeOptions(opts, ["manager"]);
-		this._initializeLayoutModels(opts);
-		this._initializeRoute(opts);
-		this._proxyEvents();
-		//this._registerIdentityHandlers();
-	},
-
+const PageLayoutMixin = {
 	getLayout(opts = {rebuild: false}){
 		if(!this._layoutView || opts.rebuild || (this._layoutView && this._layoutView.isDestroyed && this._layoutView.isDestroyed())){
 			this.buildLayout();
 		}
 		return this._layoutView;
 	},
-	prepareForStart(){},
-
 	buildLayout(){
 		let Layout = this.getProperty('Layout');
 		if(Layout == null) return;
@@ -100,42 +76,10 @@ export default Base.extend({
 	},
 	buildLayoutOptions(rawOptions){
 		return rawOptions;
-	},
+	},	
+}
 
-	addModel(model, opts = {}){				
-		if(!model) return;
-		this.model = model;
-		let fetch = opts.fetch || this.getOption('fetchModelOnAdd');
-		if(fetch === undefined){
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if(fetch === true){
-			this.addStartPromise(model.fetch(opts));
-		}
-	},
-	addCollection(collection, opts = {}){
-		if(!collection) return;
-		this.collection = collection;
-		let fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
-		if(fetch === undefined){
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if(fetch === true){
-			this.addStartPromise(collection.fetch(opts));
-		}
-	},
-
-	freezeWhileStarting: true,
-	freezeUI(){ },
-	unFreezeUI(){ },
-
-
-
-
-
-
-
-
+const PageRouteMixin = {
 
 	getRouteHash(){
 
@@ -175,6 +119,7 @@ export default Base.extend({
 
 		return this._normalizeRoute(result, opts);
 	},
+
 	_normalizeRoute(route, opts){		
 		route = route.replace(/\/+/gmi,'/').replace(/^\//,'');
 		if(opts.asPattern){
@@ -186,22 +131,39 @@ export default Base.extend({
 		}
 	},
 
+}
 
-
-
-
-
-
-
-
-
-
-
+const PageModelAndCollectionMixin = {
+	addModel(model, opts = {}){				
+		if(!model) return;
+		this.model = model;
+		let fetch = opts.fetch || this.getOption('fetchModelOnAdd');
+		if(fetch === undefined){
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if(fetch === true){
+			this.addStartPromise(model.fetch(opts));
+		}
+	},
+	addCollection(collection, opts = {}){
+		if(!collection) return;
+		this.collection = collection;
+		let fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
+		if(fetch === undefined){
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if(fetch === true){
+			this.addStartPromise(collection.fetch(opts));
+		}
+	},
 	_initializeLayoutModels(opts = {}){
 		this.addModel(opts.model, opts);
 		this.addCollection(opts.collection, opts);
 	},
+}
 
+
+const PageProxyEventsMixin = {
 	_proxyEvents(){
 		let proxyContexts = this._getProxyContexts();
 		this._proxyEventsTo(proxyContexts);
@@ -243,13 +205,36 @@ export default Base.extend({
 		});
 
 	},
+}
 
+let Base = mixin(App).with(GetNameLabel, PageLinksMixin, PageLayoutMixin, PageModelAndCollectionMixin, PageProxyEventsMixin, PageRouteMixin);
+export default Base.extend({
+
+	constructor:function(...args){
+		Base.apply(this,args);
+		this.initializeYatPage();
+	},
+
+	freezeWhileStarting: true,
+	allowStopWithoutStart: true,
+	allowStartWithoutStop: true,
+	proxyEventsToManager:() => ['before:start','start','start:decline','before:stop','stop','stop:decline'],
+
+	initializeYatPage(opts){
+		this.mergeOptions(opts, ["manager"]);
+		this._initializeLayoutModels(opts);
+		this._initializeRoute(opts);
+		this._proxyEvents();
+	},
+
+
+	// overriding childrenable _buildChildOptions
+	// adding reference to PageManger if it exists
 	_buildChildOptions: function(def){
 		let add = {};
 		let manager = this.getProperty('manager');
 		if(manager) add.manager = manager;
 		return _.extend(def, this.getProperty('childOptions'), add);
 	},	
-
 
 });
