@@ -1,5 +1,0 @@
-# modals
-
-## content
-* config
-* modalView
