@@ -3,126 +3,109 @@ import mix from '../helpers/mix';
 import Stateable from '../mixins/stateable';
 import YatObject from '../YatObject';
 import Bb from 'backbone';
+import Mn from 'backbone.marionette';
 import _ from 'underscore';
+import $ from 'jquery';
 import YatError from '../YatError';
 
 const IDENTITY_CHANNEL = 'identity';
 
 let Base = mix(YatObject).with(Stateable);
 
-let nativeAjax = $ && $.ajax;
+const Ajax = {
+	
+	tokenUrl:'',
+	nativeAjax: $.ajax,
 
-let Identity = Base.extend({	
-	constructor(...args){
-		Base.apply(this, args);
-		this._initializeYatUser();
+	ajax(...args){
+		return this.ensureToken()
+			.then(() => { 
+				let options = args[0];
+				options.headers = _.extend({}, options.headers, this.getAjaxHeaders());
+				return this.nativeAjax.apply($, args)
+			})
+			.catch((error) =>{ 
+				let promise = $.Deferred();
+				promise.reject(error);
+				return promise;
+			});
 	},
-	_initializeYatUser(){},	
-	channelName: IDENTITY_CHANNEL,
-	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
-	isAnonym(){
-		return !this.getState('id');
+	tokenXhr(url, data, method = 'POST'){
+		return this.nativeAjax({ url, data, method });
 	},
-	isUser(){
-		return !this.isAnonym();
+	ensureToken(opts = {}){
+		let refresh = this.isRefreshNecessary(opts);
+		if(!refresh) return Promise.resolve();
+
+		let url = this.getOption('refreshTokenUrl');
+		let data = this.getRefreshTokenData();
+		return this.requestToken(data, url, {refresh:true});
 	},
-	isMe(id){
-		return id && this.getState('id') === id;
-	},
-	update(hash){
-		this.setState(hash);
-		this.trigger('change');
-	},
-	logIn(hash){
-		if(!hash.id) return;
-		this.update(hash);
-		this.trigger('log:in');
-	},
-	logOut(){
-		this.clearState();
-		this.trigger('change');
-		this.trigger('log:out');
-	},
-	getBearerToken(data){
-		let url = this.getOption('bearerTokenUrl');
+	requestToken(data, url, options = {}){
+		url || (url = this.getOption('tokenUrl'));
+		if(!url) return Promise.reject('token url not specified');
 		let promise = new Promise((resolve, reject) => {
-			nativeAjax({url, data, method:'POST'})
+			this.tokenXhr(url, data)
 				.then(
 					(token) => { 
-						this.setTokenObject(token);
+						this.setToken(token);
 						resolve(token);
-						this.triggerMethod('token', token);
 					},
-					(error) => reject(error)
+					(error) => {
+						if([400,401].indexOf(error.status)>-1){
+							this.authenticated = false;
+							this.triggerMethod('token:expired');
+							reject(YatError.Http(error.status));
+						}else{
+							reject(error);
+						}
+					}
 				);
-	
 		});
 		return promise;
 	},
-
-	ajax(...args){
-		let options = args[0];
-		options.headers = _.extend({}, options.headers, this.getAjaxHeaders());
-		let needRefresh = this.isTokenRefreshNeeded();
-		if(!needRefresh){
-			return $.ajax(...args); //nativeAjax.apply($, args);
-		}
-		else {
-			return this.refreshBearerToken()
-				.then(() => nativeAjax.apply($, args))
-				.catch((error) =>{ 
-					let promise = $.Deferred();
-					promise.reject(error);
-					return promise;
-				});
-		}
-	},
 	getAjaxHeaders(){
 		this._ajaxHeaders || (this._ajaxHeaders = {});
-		return this._ajaxHeaders;
+		return _.extend({}, this._ajaxHeaders, this.getOption('ajaxHeader'));
 	},
-	_updateHeaders(){
+	replaceBackboneAjax(){
 		let token = this.getTokenValue();
-		let headers = this.getAjaxHeaders();
-	
+		if(!token)
+			Bb.ajax = $.ajax;
+		else
+			Bb.ajax = (...args) => this.ajax(...args);
+	},
+	updateAjaxHeaders(){
+		this._ajaxHeaders || (this._ajaxHeaders = {});
+		let token = this.getTokenValue();
+		let headers = this._ajaxHeaders;
 		if(token){
 			headers.Authorization = 'Bearer ' + token;
 			headers.Accept = 'application/json';
 		}else{
 			delete headers.Authorization;
 		}
-	},	
-	setTokenObject(token){
-
-		if(token != null && _.isObject(token))
-			token.expires = new Date(Date.now() + (token.expires_in * 1000));
-
-		this._token = token;
-		this._updateHeaders();
-		this._replaceBackboneAjax();
-
-		this.triggerMethod('tocken:change');
 	},
-	getTokenObject(){
-		return this._token;
-	},
-	_replaceBackboneAjax(){
-		let token = this.getTokenValue();
-		if(!token)
-			Bb.ajax = $.ajax;//$.ajax = nativeAjax;
-		else
-			Bb.ajax = (...args) => this.ajax(...args); //$.ajax = (...args) => Yat.identity.ajax(...args);
+}
+
+const Token = {
+	tokenExpireOffset: undefined,
+	getToken(){
+		return this.token;
 	},
 	getTokenValue(){
-		let token = this.getTokenObject();
-		return token.access_token;
+		let token = this.getToken();
+		return token && token.access_token;
 	},
-	getRefreshToken(){
-		let token = this.getTokenObject();
-		return token.refresh_token;
+	getRefreshTokenData(){
+		let token = this.getToken() || {};
+		return {
+			'grant_type':'refresh_token',
+			'refresh_token': token.refresh_token
+		};
 	},
 	getTokenExpires(){
-		let token = this.getTokenObject();
+		let token = this.getToken();
 		return (token || {}).expires;
 	},
 	getTokenSeconds(){
@@ -139,43 +122,105 @@ let Identity = Base.extend({
 		var deadline = expires.valueOf() - offset;
 		var deadlineMs = deadline - Date.now();
 		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
-	},
-	isTokenRefreshNeeded(){
+	},	
+	isRefreshNecessary(opts){
+		
+		if(opts.force === true) return true;
+
 		let token = this.getTokenValue();
 		if(!token) return false;	
 		return !this.getTokenSeconds();
 	},
-	refreshBearerToken(){
-		let bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
-		let doRefresh = this.isTokenRefreshNeeded();
-		return new Promise((resolve, reject) => {
-			if(!doRefresh){
-				resolve();
-				return;
-			}
-	
-			if(bearerTokenRenewUrl == null){
-				reject(new Error('Token expired and `bearerTokenRenewUrl` not set'));
-				return;
-			}
-			let data = {
-				'grant_type':'refresh_token',
-				'refresh_token': this.getRefreshToken()
-			};
-			nativeAjax({
-				url:bearerTokenRenewUrl, 
-				data,
-				method:'POST'
-			})
-				.then((token) => {
-					this.setTokenObject(token);
-					resolve();
-				}, () => {
-					this.triggerMethod('refresh:token:expired');
-					reject(YatError.Http401());
-				});
-	
+
+	setToken(token, opts = {}){
+		
+		this.token = this.parseToken(token, opts);
+
+		this.beforeTokenChange(opts);
+		this.triggerMethod('before:token:change', this.token, opts);
+
+		if(opts.silent !== true)
+			this.triggerMethod('token:change', this.token);
+		
+		this.afterTokenChange(opts);
+		if(opts.identity !== false)
+			this.syncUser(opts);
+
+	},
+	parseToken(token){
+		if(token == null) return token;
+
+		if(token != null && _.isObject(token))
+			token.expires = new Date(Date.now() + (token.expires_in * 1000));
+
+		return token;
+	},
+	beforeTokenChange(opts){
+		this.updateAjaxHeaders();
+		this.replaceBackboneAjax();		
+	},	
+	afterTokenChange(){},
+}
+
+const Auth = {
+	authenticated: false,	
+	isAuth(){
+		return this.authenticated === true;
+	},
+	isAnonym(){ return !this.isAuth();},
+	isMe(value){
+		return value && this.isAuth() && this.me == value;
+	},
+	setMe(value){
+		this.me = value;
+	},
+}
+
+const User = {
+	syncUser(opts){
+		let user = this.getUser();
+		if(!user) {
+			this.triggerChange();
+			return;
+		}
+		user.fetch().then(() => { 
+			this.applyUser(user);
+		}, () => {
+			this.syncUserEror();
 		});
+	},
+	syncUserEror(){
+		this.reset();
+	},
+	applyUser(user){
+		let id = user == null ? null : user.id;
+		this.setMe(id);
+		this.authenticated = id != null;
+		this.triggerChange();
+	},
+	getUser(){
+		return this.user;
+	},
+	setUser(user){
+		this.user = user;
+		this.applyUser(user);
+	},
+	isUser(){
+		return this.isAuth() && this.user && !!this.user.id;
+	},
+}
+
+const Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
+	triggerChange(){
+		this.triggerMethod('change');
+	},
+	reset(){
+		this.authorized = false;
+		let user = this.getUser();
+		user.clear();
+		this.setToken(null,{identity: false});
+		this.applyUser(user);		
+		this.triggerMethod('reset');
 	}
 });
 

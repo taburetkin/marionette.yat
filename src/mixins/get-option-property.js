@@ -19,10 +19,10 @@ export default (Base) => {
 			options.args || (options.args = []);
 
 			//key and valueContext should be passed
-			if(key == null || valueContext == null) return;
+			if(key == null) return;
 			
 			//getting raw value
-			let value = valueContext[key];
+			let value = valueContext && valueContext[key];
 
 			//if there is no raw value and deep option is true then getting value from fallback
 			if(value === undefined && options.deep && _.isFunction(fallback)){

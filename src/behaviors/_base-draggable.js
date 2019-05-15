@@ -1,5 +1,6 @@
 import _ from 'underscore';
 import Behavior from './behavior';
+import $ from 'jquery';
 
 const BaseDraggable = Behavior.extend({
 

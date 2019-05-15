@@ -29,32 +29,38 @@ export default Base.extend({
 		this._pageManagers || (this._pageManagers = []);
 		this._pageManagers.push(pageManager);
 
-		let prefix = pageManager.getName();
-		if(!prefix){
-			console.warn('pageManager prefix not defined');
-			return;
-		}
-
-		this.listenTo(pageManager, 'all', (eventName, ...args) => {
-			let prefixedEventName = prefix + ':' + eventName;
-			this.triggerMethod(prefixedEventName, ...args);
-		});
-		this.listenTo(pageManager, 'state:currentPage',(...args) => this.triggerMethod('page:swapped',...args));
-		
+		this.triggerMethod('add:pageManager', pageManager);
+		this.listenTo(pageManager, 'page:start', (...args) => this.triggerMethod('page:start', pageManager, ...args));
+	
 	},
 
 	hasPageManagers(){
 		return this._pageManagers && this._pageManagers.length > 0;
 	},
 
-	getMenuTree(opts = {rebuild:false}){
+	getLinksCollection(opts = {rebuild:false}){
 		if(this._menuTree && !opts.rebuild) return this._menuTree;
-		let managers = this._pageManagers || [];
-		let links = _(managers).chain().map((manager) => manager.getLinks()).flatten().value();
-		this._menuTree = new Bb.Collection(links);
+
+		this.createLinksCollection();
+
 		return this._menuTree;
 	},
-
+	createLinksCollection(){
+		let managers = this._pageManagers || [];
+		let links = _(managers).chain().map((manager) => manager.getLinks()).flatten().value();
+		if(!this._menuTree)
+			this._menuTree = new Bb.Collection(links);
+		else
+			this._menuTree.set(links);
+	},
+	getCurrentPages(){
+		let pages = _(this._pageManagers).map((mngr) => mngr.getCurrentPage());
+		return _(pages).filter((p) => p != null);
+	},
+	isCurrentPage(page){
+		let current = this.getCurrentPages();
+		return current.indexOf(page) > -1;
+	},
 	getPage(key){
 		if(!this.hasPageManagers()) return;
 		return _(this._pageManagers).find((mngr) => mngr.getPage(key));

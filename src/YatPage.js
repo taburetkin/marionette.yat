@@ -1,9 +1,9 @@
 import _ from 'underscore';
 import App from './YatApp.js';
 import mixin from './helpers/mix';
+import Mx from './mixins/Mixins';
 import Startable from './mixins/startable';
 import GetNameLabel from './mixins/get-name-label';
-import Router from './YatRouter.js';
 import LinkModel from './models/link';
 import Bb from 'backbone';
 import identity from './singletons/identity';
@@ -12,34 +12,52 @@ import identity from './singletons/identity';
 	YatPage
 */
 
-let Base = mixin(App).with(GetNameLabel);
 
-export default Base.extend({
 
-	constructor(...args){
-		Base.apply(this,args);
-		this.initializeYatPage();
+const PageLinksMixin = {
+
+	hasLink(){
+		return !this.getProperty('skipMenu') && !this.getProperty('preventStart');
+	},
+	getLink(level, index){
+		if(!this.hasLink()) return;
+		if(this._linkHash) return this._linkHash;
+
+		let parentId = (this.getParentLink() || {}).id;
+		let url = this.getRoute();
+		let label = this.getLabel();
+		this._linkHash = { id: this.cid, parentId, url, label, level, index };
+
+
+		return this._linkHash;
+	},
+	getParentLink(){
+		let parent = this.getParent();
+		return parent && parent.getLink && parent.getLink();
+	},
+	getLinks(level = 0, index = 0){
+		let link = this.getLink(level, index);
+		if(!link) return [];
+		let sublinks = this._getSubLinks(level);
+		return [link].concat(sublinks);
+	},
+	_getSubLinks(level){
+		let children = this.getChildren();
+		if(!children || !children.length) return [];
+		let sublinks = _(children).filter((child) => child.hasLink());
+		sublinks = _(sublinks).map((child, index) => child.getLinks(level + 1, index));
+		return _.flatten(sublinks);
 	},
 
-	allowStopWithoutStart: true,
-	allowStartWithoutStop: true,
+}
 
-	initializeYatPage(opts){
-		this.mergeOptions(opts, ["manager"]);
-		this._initializeModels(opts);
-		this._initializeRoute(opts);
-		this._proxyEvents();
-		this._tryCreateRouter();
-		this._registerIdentityHandlers();		
-	},
-
+const PageLayoutMixin = {
 	getLayout(opts = {rebuild: false}){
 		if(!this._layoutView || opts.rebuild || (this._layoutView && this._layoutView.isDestroyed && this._layoutView.isDestroyed())){
 			this.buildLayout();
 		}
 		return this._layoutView;
 	},
-
 	buildLayout(){
 		let Layout = this.getProperty('Layout');
 		if(Layout == null) return;
@@ -56,38 +74,12 @@ export default Base.extend({
 		this._layoutView = new Layout(options);
 		return this._layoutView;
 	},
-
 	buildLayoutOptions(rawOptions){
 		return rawOptions;
-	},
+	},	
+}
 
-	addModel(model, opts = {}){				
-		if(!model) return;
-		this.model = model;
-		let fetch = opts.fetch || this.getOption('fetchModelOnAdd');
-		if(fetch === undefined){
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if(fetch === true){
-			this.addStartPromise(model.fetch(opts));
-		}
-	},
-
-	addCollection(collection, opts = {}){
-		if(!collection) return;
-		this.collection = collection;
-		let fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
-		if(fetch === undefined){
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if(fetch === true){
-			this.addStartPromise(collection.fetch(opts));
-		}
-	},
-
-	freezeWhileStarting: true,
-	freezeUI(){ },
-	unFreezeUI(){ },
+const PageRouteMixin = {
 
 	getRouteHash(){
 
@@ -100,67 +92,15 @@ export default Base.extend({
 		return _.isObject(this.getRouteHash())
 	},
 
-	getLinkModel(level = 0){
-		if(!this._canHaveLinkModel()) return;		
-		if(this._linkModel) return this._linkModel;
-
-		let url = this.getRoute();
-		let label = this.getLabel();
-		let children = this._getSublinks(level);
-		this._linkModel = new LinkModel({ url, label, level, children });
-
-		return this._linkModel;
-	},
-	_canHaveLinkModel(){
-		return !((this.getProperty('skipMenu') === true) || (!!this.getProperty('isStartNotAllowed')));
-	},
-	_destroyLinkModel(){
-		if(!this._linkModel) return;
-		this._linkModel.destroy();
-		delete this._linkModel;
-	},
-
-	getParentLinkModel(){
-		let parent = this.getParent();
-		if(!parent || !parent.getLinkModel) return;
-		let model = parent.getLinkModel();
-		return model;
-	},
-
-	getNeighbourLinks(){
-		let link = this.getLinkModel();
-		if(link && link.collection) return link.collection;
-	},
-
-	getChildrenLinks(){
-		let model = this.getLinkModel();
-		if(!model) return;
-		return model.get('children');
-	},
-
-	_getSublinks(level){
-		let children = this.getChildren();
-		if(!children || !children.length) return;
-		let sublinks = _(children).chain()
-			.filter((child) => child.getProperty("skipMenu") !== true)
-			.map((child) => child.getLinkModel(level + 1))
-			.value();
-		if(!sublinks.length) return;
-		let col = new Bb.Collection(sublinks);
-		return col;
-	},
-
-	_initializeModels(opts = {}){
-		this.addModel(opts.model, opts);
-		this.addCollection(opts.collection, opts);
-	},
-
 	_initializeRoute(){
 		let route = this.getRoute({asPattern:true});
 		if(route == null) return;
 		let page = this;
 		this._routeHandler = {
-			[route]:{context: page, action: (...args) => page.start(...args) }
+			[route]:{
+				context: page, 
+				action: (...args) => page.start(...args) 
+			}
 		};
 	},
 
@@ -179,6 +119,7 @@ export default Base.extend({
 
 		return this._normalizeRoute(result, opts);
 	},
+
 	_normalizeRoute(route, opts){		
 		route = route.replace(/\/+/gmi,'/').replace(/^\//,'');
 		if(opts.asPattern){
@@ -189,19 +130,44 @@ export default Base.extend({
 			return res;
 		}
 	},
-	_tryCreateRouter(){
-		let create = this.getProperty('createRouter') === true;
-		if(create){
-			this.router = this._createAppRouter();
+
+	url(){
+		let route = this.getRoute();
+		return route;
+	}
+}
+
+const PageModelAndCollectionMixin = {
+	addModel(model, opts = {}){				
+		if(!model) return;
+		this.model = model;
+		let fetch = opts.fetch || this.getOption('fetchModelOnAdd');
+		if(fetch === undefined){
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if(fetch === true){
+			this.addStartPromise(model.fetch(opts));
 		}
 	},
-
-	_createAppRouter(){
-		let hash = this.getRouteHash();
-		if(!_.size(hash)) return;
-		return new Router(hash);
+	addCollection(collection, opts = {}){
+		if(!collection) return;
+		this.collection = collection;
+		let fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
+		if(fetch === undefined){
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if(fetch === true){
+			this.addStartPromise(collection.fetch(opts));
+		}
 	},
+	_initializeLayoutModels(opts = {}){
+		this.addModel(opts.model, opts);
+		this.addCollection(opts.collection, opts);
+	},
+}
 
+
+const PageProxyEventsMixin = {
 	_proxyEvents(){
 		let proxyContexts = this._getProxyContexts();
 		this._proxyEventsTo(proxyContexts);
@@ -210,7 +176,8 @@ export default Base.extend({
 		let rdy = [];
 		let manager = this.getProperty('manager');
 		if(manager){
-			rdy.push({context:manager})
+			let allowed = this.getProperty('proxyEventsToManager');
+			rdy.push({ context:manager, allowed });
 		}
 		let radio = this.getChannel();
 		if(radio){
@@ -242,7 +209,31 @@ export default Base.extend({
 		});
 
 	},
+}
 
+let Base = mixin(App).with(GetNameLabel, PageLinksMixin, PageLayoutMixin, PageModelAndCollectionMixin, PageProxyEventsMixin, PageRouteMixin);
+export default Base.extend({
+
+	constructor:function(...args){
+		Base.apply(this,args);
+		this.initializeYatPage();
+	},
+
+	freezeWhileStarting: true,
+	allowStopWithoutStart: true,
+	allowStartWithoutStop: true,
+	proxyEventsToManager:() => ['before:start','start','start:decline','before:stop','stop','stop:decline'],
+
+	initializeYatPage(opts){
+		this.mergeOptions(opts, ["manager"]);
+		this._initializeLayoutModels(opts);
+		this._initializeRoute(opts);
+		this._proxyEvents();
+	},
+
+
+	// overriding childrenable _buildChildOptions
+	// adding reference to PageManger if it exists
 	_buildChildOptions: function(def){
 		let add = {};
 		let manager = this.getProperty('manager');
@@ -250,11 +241,12 @@ export default Base.extend({
 		return _.extend(def, this.getProperty('childOptions'), add);
 	},	
 
-	_registerIdentityHandlers(){
-		this.listenTo(identity, 'change', (...args) => {
-			this._destroyLinkModel();
-			this.triggerMethod('identity:change', ...args);
-		});
+	getRoot(){
+		let parent = this.getParent();
+		if(parent instanceof Base)
+			return parent.getRoot();
+		else
+			return this;
 	}
 
 });

@@ -25,7 +25,7 @@ export default (Base) => {
 			if(!opts.startable){
 				return all;
 			}else{
-				return all.filter((c) => !c.getProperty('isStartNotAllowed'));
+				return all.filter((c) => !c.getProperty('preventStart'));
 			}
 		},
 

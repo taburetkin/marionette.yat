@@ -8,6 +8,7 @@ import getByPath from './set-get-by-path/get-by-path'
 import flattenObject from './flatten-unflatten/flatten-object';
 import unFlattenObject from './flatten-unflatten/unflatten-object';
 import isView from './is-view';
+import camelCase from './camel-case';
 export default {
-	getLabel, getName, getValue, wrap, unwrap, setByPath, getByPath, flattenObject, unFlattenObject, isView
+	camelCase, getLabel, getName, getValue, wrap, unwrap, setByPath, getByPath, flattenObject, unFlattenObject, isView
 }

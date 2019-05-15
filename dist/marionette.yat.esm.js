@@ -13,7 +13,7 @@
 import Bb from 'backbone';
 import Mn from 'backbone.marionette';
 import _ from 'underscore';
-import $$1 from 'jquery';
+import $ from 'jquery';
 
 var version = "0.0.32";
 
@@ -307,8 +307,18 @@ var isView = (function (arg) {
   return arg instanceof Bb.View;
 });
 
+// camelCase('asd:qwe:zxc') -> asdQweZxc
+// camelCase('asd:qwe:zxc', true) -> AsdQweZxc
+function camelCase(text, first) {
+	if (!_.isString(text)) return text;
+	var splitter = first === true ? /(^|:)(\w)/gi : /(:)(\w)/gi;
+	return text.replace(splitter, function (match, prefix, text) {
+		return text.toUpperCase();
+	});
+}
+
 var __ = {
-	getLabel: getLabel, getName: getName, getValue: getValue, wrap: cid, unwrap: unwrap, setByPath: setByPath, getByPath: getByPath, flattenObject: flattenObject, unFlattenObject: unFlattenObject, isView: isView
+	camelCase: camelCase, getLabel: getLabel, getName: getName, getValue: getValue, wrap: cid, unwrap: unwrap, setByPath: setByPath, getByPath: getByPath, flattenObject: flattenObject, unFlattenObject: unFlattenObject, isView: isView
 };
 
 var Functions = { view: view, common: __ };
@@ -396,40 +406,6 @@ function mix(BaseClass) {
 	return fake;
 }
 
-var Helpers = {
-	isKnownCtor: isKnownCtor,
-	mix: mix
-};
-
-function GetNameLabel (Base) {
-	return Base.extend({
-		getName: function getName() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			var options = _.extend({}, opts);
-			options.exclude = 'getName';
-			options.args = [options];
-			return __.getName(this, options);
-		},
-		getLabel: function getLabel() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			var options = _.extend({}, opts);
-			options.exclude = 'getLabel';
-			options.args = [options];
-			return __.getLabel(this, options);
-		},
-		getValue: function getValue() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			var options = _.extend({}, opts);
-			options.exclude = 'getValue';
-			options.args = [options];
-			return __.getValue(this, options);
-		}
-	});
-}
-
 var GetOptionProperty = (function (Base) {
 	var Mixin = Base.extend({
 		//property first approach
@@ -450,10 +426,10 @@ var GetOptionProperty = (function (Base) {
 			options.args || (options.args = []);
 
 			//key and valueContext should be passed
-			if (key == null || valueContext == null) return;
+			if (key == null) return;
 
 			//getting raw value
-			var value = valueContext[key];
+			var value = valueContext && valueContext[key];
 
 			//if there is no raw value and deep option is true then getting value from fallback
 			if (value === undefined && options.deep && _.isFunction(fallback)) {
@@ -515,10 +491,159 @@ var RadioMixin = (function (Base) {
 	return Mixin;
 });
 
+var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
+
+/*
+	StateEntry = {
+		get: fn(view, options),
+		set: fn(view, options)
+	}
+
+*/
+
+var stateEntries = {
+	scrollable: {
+		get: function get(view) {
+			var result = {};
+			view.$('[data-scrollable]').each(function (i, el) {
+				var $el = $(el);
+				var name = $el.data('scrollable');
+				result[name] = {
+					top: $el.scrollTop(),
+					left: $el.scrollLeft()
+				};
+			});
+			return result;
+		},
+		set: function set(view) {
+			var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+			view.$('[data-scrollable]').each(function (i, el) {
+				var $el = $(el);
+				var name = $el.data('scrollable');
+				var stored = state[name];
+				if (!isNaN(stored.top)) $el.scrollTop(stored.top);
+				if (!isNaN(stored.left)) $el.scrollLeft(stored.left);
+			});
+		}
+	}
+};
+
+var stateStore = {};
+
+var Api = YatObject.extend({
+	initialize: function initialize(options) {
+		this._initStates();
+	},
+	_initStates: function _initStates() {
+		var _this = this;
+
+		this._states = {};
+		var states = this.getOption('states');
+		_(states).each(function (state, name) {
+			if (typeof state === 'string') {
+				name = state;
+				state = stateEntries[state];
+			}
+			if (!_this._isStateEntry(state)) return;
+			_this._states[name] = state;
+		});
+	},
+	_isStateEntry: function _isStateEntry(arg) {
+		return _.isObject(arg) && _.isFunction(arg.get) && _.isFunction(arg.set);
+	},
+	apply: function apply(view) {
+		var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		var store = this.getStore(view, options);
+		_(this._states).each(function (state, name) {
+			state.set(view, store[name], options);
+		});
+	},
+	collect: function collect(view) {
+		var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		var store = this.getStore(view, options);
+		_(this._states).each(function (state, name) {
+			store[name] = state.get(view, options);
+		});
+	},
+	getStore: function getStore(view) {
+		var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		var key = this.getStoreKey(view, options);
+		stateStore[key] || (stateStore[key] = {});
+		return stateStore[key];
+	},
+	getStoreKey: function getStoreKey(view) {
+		var prefix = this.getOption('storeIdPrefix');
+		return (prefix ? prefix + ":" : '') + String(view.id || view.cid);
+	}
+});
+
+Api.set = function (name, entry) {
+	stateEntries[name] = entry;
+};
+Api.remove = function (name) {
+	delete stateEntries[name];
+};
+Api.clear = function () {
+	var keys = _(stateEntries).keys();
+	_(keys).each(function (key) {
+		return delete stateEntries[key];
+	});
+};
+Api.states = function () {
+	return stateEntries;
+};
+Api.store = function () {
+	return stateStore;
+};
+
+var Helpers = {
+	isKnownCtor: isKnownCtor,
+	mix: mix,
+	ViewStateApi: Api
+};
+
+function GetNameLabel (Base) {
+	return Base.extend({
+		getName: function getName() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
+			options.exclude = 'getName';
+			options.args = [options];
+			return __.getName(this, options);
+		},
+		getLabel: function getLabel() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
+			options.exclude = 'getLabel';
+			options.args = [options];
+			return __.getLabel(this, options);
+		},
+		getValue: function getValue() {
+			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+			var options = _.extend({}, opts);
+			options.exclude = 'getValue';
+			options.args = [options];
+			return __.getValue(this, options);
+		}
+	});
+}
+
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var Stateable = (function (BaseClass) {
 	var Mixin = BaseClass.extend({
+
+		verboseStateBoolean: false,
+		verboseStateString: false,
+		verboseStateHash: false,
+		verboseState: false,
+
 		constructor: function constructor() {
 			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 				args[_key] = arguments[_key];
@@ -542,14 +667,15 @@ var Stateable = (function (BaseClass) {
 				var _this = this;
 				options = value;
 				value = key;
+				var propertyOptions = _.extend({}, options, { doNotTriggerStateHash: true });
 				_(value).each(function (propertyValue, propertyName) {
-					return _this.setState(propertyName, propertyValue, _.extend({}, options, { doNotTriggerFullState: true }));
+					return _this.setState(propertyName, propertyValue, propertyOptions);
 				});
-				this._triggerStateChange(value, options);
+				this._tryTriggerStateChange(value, options);
 			} else {
 				var state = this.getState();
 				state[key] = value;
-				this._triggerStateChange(key, value, options);
+				this._tryTriggerStateChange(key, value, options);
 			}
 		},
 		clearState: function clearState() {
@@ -559,31 +685,52 @@ var Stateable = (function (BaseClass) {
 				broadcast[key] = undefined;
 				delete state[key];
 			});
-			this._triggerStateChange(broadcast);
+			this._tryTriggerStateChange(broadcast);
 		},
-		_triggerStateChange: function _triggerStateChange(key, value, options) {
+		_tryTriggerStateChange: function _tryTriggerStateChange(key, value) {
+			var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
-			if (!_.isFunction(this.triggerMethod)) return;
+
+			if (options.silent === true) return;
 
 			if (!_.isObject(key)) {
-				this.triggerMethod('state:' + key, value, options);
-				if (value === true || value === false || !!value && typeof value === 'string') this.triggerMethod('state:' + key + ':' + value.toString(), options);
-				if (!options || options && !options.doNotTriggerFullState) {
-					this.triggerMethod('state', _defineProperty({}, key, value), options);
-				}
+
+				this._triggerStateChange('verboseState', 'state:' + key, value, this, options);
+
+				var stringValue = String(value).toLowerCase().trim();
+
+				if (['true', 'false'].indexOf(stringValue) >= 0) this._triggerStateChange('verboseStateBoolean', 'state:' + key + ':' + stringValue, this, options);
+
+				if (_.isString(value)) this._triggerStateChange('verboseStateString', 'state:' + key + ':' + value, this, options);
+
+				if (!options.doNotTriggerStateHash) this._triggerStateChange('verboseStateHash', 'state', _defineProperty({}, key, value), this, options);
 			} else {
 				//key is a hash of states
 				//value is options
 				options = value;
 				value = key;
-				this.triggerMethod('state', value, options);
+				this._triggerStateChange('verboseStateHash', 'state', value, options);
 			}
+		},
+		_triggerStateChange: function _triggerStateChange(type) {
+			var broadcast = _.isFunction(this.triggerMethod) ? this.triggerMethod : _.isFunction(this.trigger) ? this.trigger : null;
+			var allowed = this.getProperty(type) === true;
+
+			if (!broadcast || !allowed) return;
+
+			for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+				args[_key2 - 1] = arguments[_key2];
+			}
+
+			broadcast.apply(this, args);
 		}
 	});
 	Mixin.Stateable = true;
 
 	return Mixin;
 });
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 var STATES = {
 	INITIALIZED: 'initialized',
@@ -596,382 +743,440 @@ var STATES = {
 
 var STATE_KEY = 'life';
 
-function getPropertyPromise(context, propertyName) {
-	var _this2 = this;
-
-	if (context == null || propertyName == null) return Promise.resolve();
-
-	var _promises1 = context['_' + propertyName] || [];
-	var _promises2 = _.result(context, propertyName) || [];
-
-	var rawPromises = _promises1.concat(_promises2);
-	//context[propertyName] || [];
-
-	var promises = [];
-	_(rawPromises).each(function (promiseArg) {
-		if (_.isFunction(promiseArg)) promises.push(promiseArg.call(_this2));else if (promiseArg != null) promises.push(promiseArg);
-	});
-	return Promise.all(promises);
+function workoutArgumentPromises(arg, context) {
+	if (arg == null) return [];else if (_.isArray(arg)) {
+		var raw = _(arg).map(function (a) {
+			if (_.isFunction(a)) return a.call(context, a);else if (_.isObject(a)) return a;
+		});
+		return _(raw).filter(function (f) {
+			return f != null;
+		});
+	} else if (_.isObject(arg)) {
+		return [arg];
+	}
 }
 
-function addPropertyPromise(context, propertyName, promise) {
-	context[propertyName] || (context[propertyName] = []);
-	var promises = context[propertyName];
-	promises.push(promise);
+var LifecycleMixin = {
+	set: function set(newstate) {
+		this.setState(STATE_KEY, newstate);
+	},
+	get: function get() {
+		return this.getState(STATE_KEY);
+	},
+	is: function is(state) {
+		return this._lifestate.get() === state;
+	},
+	isIn: function isIn() {
+		var _this3 = this;
+
+		for (var _len = arguments.length, states = Array(_len), _key = 0; _key < _len; _key++) {
+			states[_key] = arguments[_key];
+		}
+
+		return _(states).some(function (state) {
+			return _this3._lifestate.is(state);
+		});
+	},
+	isInProcess: function isInProcess() {
+		return this._lifestate.isIn(STATES.STARTING, STATES.STOPPING);
+	},
+	isIdle: function isIdle() {
+		return this._lifestate.isIn(STATES.INITIALIZED, STATES.RUNNING, STATES.WAITING);
+	}
+};
+
+var StartableHidden = {
+	setHelperListeners: function setHelperListeners() {
+		var _this4 = this;
+
+		var freezeStart = this.getProperty('freezeWhileStarting') === true;
+		var freezeStop = this.getProperty('freezeWhileStopping') === true;
+		if (_.isFunction(this.freezeUI)) {
+			freezeStart && this.on('before:start', this.freezeUI);
+			freezeStop && this.on('before:stop', this.freezeUI);
+		}
+		if (_.isFunction(this.unFreezeUI)) {
+			freezeStart && this.on('start start:decline', this.unFreezeUI);
+			freezeStop && this.on('stop stop:decline', this.unFreezeUI);
+		}
+		this.on('destroy', function () {
+			return _this4._lifestate.set(STATES.DESTROYED);
+		});
+	},
+	isIntact: function isIntact() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
+
+		var message = 'Startable has already been destroyed and cannot be used.';
+		var error = new YatError({
+			name: 'StartableLifecycleError',
+			message: message
+		});
+		var destroyed = this._lifestate.is(STATES.DESTROYED);
+		if (opts.throwError && destroyed) {
+			throw error;
+		} else if (destroyed) {
+			return error;
+		}
+	},
+	isIdle: function isIdle() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
+
+
+		var isNotIntact = this._startable.isIntact(opts);
+
+		var message = 'Startable is not idle. current state: ' + this._lifestate.get();
+		var error = new YatError({
+			name: 'StartableLifecycleError',
+			message: message
+		});
+
+		var notIdle = this._lifestate.isInProcess();
+		if (opts.throwError && notIdle) {
+			throw error;
+		} else if (isNotIntact) {
+			return isNotIntact;
+		} else if (notIdle) {
+			return error;
+		}
+	},
+	canNotStart: function canNotStart() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
+
+
+		var message = 'Startable has already been started.';
+		var error = new YatError({
+			name: 'StartableLifecycleError',
+			message: message
+		});
+		var notIdle = this._startable.isIdle(opts);
+		var allowStartWithoutStop = this.getProperty('allowStartWithoutStop') === true;
+
+		if (!notIdle && allowStartWithoutStop) return;
+
+		var running = this._lifestate.is(STATES.RUNNING);
+		if (opts.throwError && running) {
+			throw error;
+		} else if (notIdle) {
+			return notIdle;
+		} else if (running) {
+			return error;
+		}
+	},
+	canNotStop: function canNotStop() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
+
+
+		var message = 'Startable should be in `running` state.';
+		var error = new YatError({
+			name: 'StartableLifecycleError',
+			message: message
+		});
+		var notIdle = this._startable.isIdle(opts);
+
+		var allowStopWithoutStart = this.getProperty('allowStopWithoutStart') === true;
+		if (!notIdle && allowStopWithoutStart) return;
+
+		var running = this._lifestate.is(STATES.RUNNING);
+
+		if (opts.throwError && !running) {
+			throw error;
+		} else if (notIdle) {
+			return notIdle;
+		} else if (!running) {
+			return error;
+		}
+	},
+	addRuntimePromise: function addRuntimePromise(type, promise) {
+		if (promise == null) return;
+		var name = '_' + type + 'RuntimePromises';
+		this[name] || (this[name] = []);
+		this[name].push(promise);
+	}
+};
+
+var Overridable = {
+	freezeWhileStarting: false,
+	freezeWhileStopping: false,
+	freezeUI: function freezeUI() {},
+	unFreezeUI: function unFreezeUI() {},
+	preventStart: function preventStart() {},
+	preventStop: function preventStop() {},
+	triggerStartBegin: function triggerStartBegin() {},
+	triggerBeforeStart: function triggerBeforeStart() {
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
+		}
+
+		this.triggerMethod.apply(this, ['before:start'].concat(args));
+	},
+	triggerStart: function triggerStart() {
+		for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+			args[_key3] = arguments[_key3];
+		}
+
+		this.triggerMethod.apply(this, ['start'].concat(args));
+	},
+	triggerStartDecline: function triggerStartDecline() {
+		for (var _len4 = arguments.length, args = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+			args[_key4] = arguments[_key4];
+		}
+
+		this.triggerMethod.apply(this, ['start:decline'].concat(args));
+	},
+	triggerStopBegin: function triggerStopBegin() {},
+	triggerBeforeStop: function triggerBeforeStop() {
+		for (var _len5 = arguments.length, args = Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
+			args[_key5] = arguments[_key5];
+		}
+
+		this.triggerMethod.apply(this, ['before:stop'].concat(args));
+	},
+	triggerStop: function triggerStop() {
+		for (var _len6 = arguments.length, args = Array(_len6), _key6 = 0; _key6 < _len6; _key6++) {
+			args[_key6] = arguments[_key6];
+		}
+
+		this.triggerMethod.apply(this, ['stop'].concat(args));
+	},
+	triggerStopDecline: function triggerStopDecline() {
+		for (var _len7 = arguments.length, args = Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
+			args[_key7] = arguments[_key7];
+		}
+
+		this.triggerMethod.apply(this, ['stop:decline'].concat(args));
+	}
+};
+
+var ProcessEngine = {
+	process: function process(context) {
+		var _this5 = this;
+
+		if (context == null || !_.isObject(context) || !_.isObject(context.startable)) throw new Error('process context missing or incorrect');
+
+		this.clearRuntimePromises(context);
+
+		var promise = new Promise(function (resolve, reject) {
+
+			context.reject = reject;
+			context.resolve = resolve;
+
+			//notify on begin (not before:start)
+			_this5.triggerBegin(context);
+
+			//check if a process can be done.
+			if (_this5.canNotBeDone(context)) return;
+
+			//check if a process allowed to be done.
+			if (_this5.isNotAllowed(context)) return;
+
+			//notify about `before:start` or `before:stop`
+			_this5.triggerBefore(context);
+
+			//remember current state and change it to starting or stopping
+			_this5.updateState(context);
+
+			//collect all parents promises, instance promises and runtime promises
+			var prepare = _this5.prepare(context);
+
+			//call success or fail callbacks when all promisess resolved
+			return prepare.then(function () {
+				return _this5.success(context);
+			}, function (reason) {
+				return _this5.fail(reason, context);
+			});
+		});
+		return promise;
+	},
+	triggerBegin: function triggerBegin(context) {
+		this._executeOnStartable(context.startable, 'trigger:' + context.process + ':begin', context.args);
+	},
+	canNotBeDone: function canNotBeDone(context) {
+		var _this = context.startable._startable;
+		var reason = this._executeOnStartable(_this, 'can:not:' + context.process);
+		if (!reason) return;
+
+		context.reject(reason);
+		return reason;
+	},
+	isNotAllowed: function isNotAllowed(context) {
+		var _this = context.startable;
+		var reason = this._executeOnStartable(_this, 'prevent:' + context.process, context.args);
+		if (!reason) return;
+
+		context.reject(reason);
+		return reason;
+	},
+	triggerBefore: function triggerBefore(context) {
+		this._executeOnStartable(context.startable, 'trigger:before:' + context.process, context.args);
+	},
+	updateState: function updateState(context) {
+		var _this = context.startable;
+		context.stateRollback = _this._lifestate.get();
+		_this._lifestate.set(context.stateProcess);
+	},
+	success: function success(context) {
+
+		var _this = context.startable;
+		_this._lifestate.set(context.stateEnd);
+		context.resolve.apply(context, _toConsumableArray(context.args || []));
+
+		//under question. is it necessary at all
+		//this.once('start', (...args) => resolve(...args));
+
+		this._executeOnStartable(context.startable, 'trigger:' + context.process, context.args);
+	},
+	fail: function fail(reason, context) {
+
+		var _this = context.startable;
+		_this._lifestate.set(context.stateRollback);
+
+		var newreason = this._executeOnStartable(context.startable, 'trigger:' + context.process + ':decline', context.args);
+
+		return context.reject(newreason || reason);
+	},
+	prepare: function prepare(context) {
+		if (!context.startable) return;
+
+		var raw = [this.parentPromise(context), this.instancePromise(context), this.runtimePromise(context)];
+		var promises = _(raw).filter(function (f) {
+			return f != null;
+		});
+		if (context.skipRuntimePromises) return promises.length ? Promise.all(promises) : undefined;else return Promise.all(promises);
+	},
+	parentPromise: function parentPromise(context) {
+		var _this = context.startable;
+		var parent = _.result(_this, 'getParent');
+		if (!parent) return;
+
+		var parentContext = {
+			startable: parent,
+			process: context.process,
+			skipRuntimePromises: true
+		};
+		return this.prepare(parentContext);
+	},
+	instancePromise: function instancePromise(context) {
+		return this._propertyPromise(context.startable, context.process + 'Promises');
+	},
+	runtimePromise: function runtimePromise(context) {
+		if (context.skipRuntimePromises) return;
+		var runtime = this._propertyPromise(context.startable, '_' + context.process + 'RuntimePromises', 'getProperty');
+		return runtime;
+	},
+	clearRuntimePromises: function clearRuntimePromises(context) {
+		var _this = context.startable;
+		_this['_' + context.process + 'RuntimePromises'] = [];
+	},
+	_propertyPromise: function _propertyPromise(instance, property) {
+		var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'getOption';
+
+		var raw = instance[method](property);
+		var promises = workoutArgumentPromises(raw, instance);
+		return promises.length ? Promise.all(promises) : undefined;
+	},
+	_executeOnStartable: function _executeOnStartable(startable, rawmethod) {
+		var args = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+
+		var method = camelCase(rawmethod);
+		return _.isFunction(startable[method]) && startable[method].apply(startable, _toConsumableArray(args));
+	}
+};
+
+function bindAll(holder, context) {
+	context || (context = holder);
+	_(holder).each(function (fn, name) {
+		if (_.isFunction(fn, name)) {
+			holder[name] = _.bind(fn, context);
+		}
+	});
 }
 
 var Startable = (function (Base) {
-	var Middle = mix(Base).with(Stateable);
+	var Middle = mix(Base).with(Stateable, Overridable);
 	var Mixin = Middle.extend({
 		constructor: function constructor() {
-			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-				args[_key] = arguments[_key];
+
+			this._startPromises = [];
+			this._stopPromises = [];
+
+			this._initializeStartable();
+
+			for (var _len8 = arguments.length, args = Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+				args[_key8] = arguments[_key8];
 			}
 
 			Middle.apply(this, args);
-			this.initializeStartable();
-		},
 
-
-		freezeWhileStarting: false,
-		freezeUI: function freezeUI() {},
-		unFreezeUI: function unFreezeUI() {},
-		isStartNotAllowed: function isStartNotAllowed() {},
-		isStopNotAllowed: function isStopNotAllowed() {},
-		addStartPromise: function addStartPromise(promise) {
-			addPropertyPromise(this, '_startRuntimePromises', promise);
-		},
-		addStopPromise: function addStopPromise(promise) {
-			addPropertyPromise(this, '_stopPromises', promise);
-		},
-		initializeStartable: function initializeStartable() {
-
-			if (!(this.constructor.Startable && this.constructor.Stateable)) return;
-
-			this._registerStartableLifecycleListeners();
-			this._setLifeState(STATES.INITIALIZED);
-			this._startRuntimePromises = [];
-			this._startPromises = [];
-			this._stopPromises = [];
+			this._lifestate.set(STATES.INITIALIZED);
 		},
 		start: function start() {
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
+			for (var _len9 = arguments.length, args = Array(_len9), _key9 = 0; _key9 < _len9; _key9++) {
+				args[_key9] = arguments[_key9];
 			}
 
-			var options = args[0];
-			/*
-   let canNotBeStarted = this._ensureStartableCanBeStarted();
-   let resultPromise = null;
-   let catchMethod = null;
-   		if(canNotBeStarted){
-   	catchMethod = () => this.triggerMethod('start:decline',canNotBeStarted);
-   	//resultPromise = Promise.reject(canNotBeStarted);				
-   }
-   		if(resultPromise == null){
-   	let declineReason = this.isStartNotAllowed(options);
-   	if(declineReason) {
-   		catchMethod = () => this.triggerMethod('start:decline',declineReason);
-   		resultPromise = Promise.reject(declineReason);
-   	}
-   }
-   		if(resultPromise == null){
-   	var currentState = this._getLifeState();
-   	this._tryMergeStartOptions(options);		
-   	this.triggerMethod('before:start', ...args);
-   			resultPromise = this._getStartPromise();
-   }
-   */
-
-			// return resultPromise.then(() => {
-			// 	this.triggerStart(options)
-			// }, (error) => {				
-			// 	this._setLifeState(currentState);
-			// 	if(catchMethod) catchMethod();
-			// 	return Promise.reject(error);
-			// });	
-			var _this = this;
-			var promise = new Promise(function (resolve, reject) {
-				var canNotBeStarted = _this._ensureStartableCanBeStarted();
-
-				if (canNotBeStarted) {
-					_this.triggerMethod('start:decline', canNotBeStarted);
-					reject(canNotBeStarted);
-					return;
-				}
-
-				var declineReason = _this.isStartNotAllowed(options);
-				if (declineReason) {
-					_this.triggerMethod('start:decline', declineReason);
-					reject(declineReason);
-					return;
-				}
-
-				_this.triggerMethod.apply(_this, ['before:start'].concat(args));
-				var currentState = _this._getLifeState();
-				var dependedOn = _this._getStartPromise();
-				dependedOn.then(function () {
-					_this._tryMergeStartOptions(options);
-					_this.once('start', function () {
-						return resolve.apply(undefined, arguments);
-					});
-					_this.triggerStart(options);
-				}, function () {
-					_this._setLifeState(currentState);
-					reject.apply(undefined, arguments);
-				});
-			});
-			return promise;
-		},
-		triggerStart: function triggerStart(options) {
-			this.triggerMethod('start', options);
+			var context = {
+				startable: this,
+				process: 'start',
+				stateProcess: STATES.STARTING,
+				stateEnd: STATES.RUNNING,
+				args: args
+			};
+			return ProcessEngine.process(context);
 		},
 		stop: function stop() {
-			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-				args[_key3] = arguments[_key3];
+			for (var _len10 = arguments.length, args = Array(_len10), _key10 = 0; _key10 < _len10; _key10++) {
+				args[_key10] = arguments[_key10];
 			}
 
-			var options = args[0];
-			/*
-   let canNotBeStopped = this._ensureStartableCanBeStopped();
-   if(canNotBeStopped){
-   	this.triggerMethod('stop:decline',canNotBeStopped);
-   	return Promise.reject(canNotBeStopped);				
-   }
-   let declineReason = this.isStopNotAllowed(options);
-   if(declineReason){
-   	this.triggerMethod('stop:decline', declineReason);
-   	return Promise.reject(declineReason);
-   }
-   
-   		var currentState = this._getLifeState();
-   		this._tryMergeStopOptions(options);
-   this.triggerMethod('before:stop', this, options);
-   		let promise = this._getStopPromise();
-   		return promise.then(() => {
-   	this.triggerStop(options)
-   }, () => {
-   	this._setLifeState(currentState);
-   });	
-   */
+			var context = {
+				startable: this,
+				process: 'stop',
+				stateProcess: STATES.STOPPING,
+				stateEnd: STATES.WAITING,
+				args: args
+			};
+			return ProcessEngine.process(context);
+		},
+		restart: function restart() {
+			var _this6 = this;
 
-			var _this = this;
-			var promise = new Promise(function (resolve, reject) {
-				var canNotBeStopped = _this._ensureStartableCanBeStopped();
+			for (var _len11 = arguments.length, args = Array(_len11), _key11 = 0; _key11 < _len11; _key11++) {
+				args[_key11] = arguments[_key11];
+			}
 
-				if (canNotBeStopped) {
-					_this.triggerMethod('stop:decline', canNotBeStopped);
-					reject(canNotBeStopped);
-					return;
-				}
-
-				var declineReason = _this.isStopNotAllowed(options);
-				if (declineReason) {
-					_this.triggerMethod('stop:decline', declineReason);
-					reject(declineReason);
-					return;
-				}
-
-				var currentState = _this._getLifeState();
-				var dependedOn = _this._getStopPromise();
-				_this.triggerMethod.apply(_this, ['before:stop'].concat(args));
-				dependedOn.then(function () {
-					_this._tryMergeStopOptions(options);
-					_this.once('stop', function () {
-						return resolve.apply(undefined, arguments);
-					});
-					_this.triggerStop(options);
-				}, function () {
-					_this._setLifeState(currentState);
-					reject.apply(undefined, arguments);
+			if (!this.isStarted()) return this.start.apply(this, args);else {
+				return this.stop().then(function () {
+					return _this6.start.apply(_this6, args);
 				});
-			});
-			return promise;
-		},
-		triggerStop: function triggerStop(options) {
-			this.triggerMethod('stop', options);
-		},
-
-
-		//lifecycle state helpers
-		_setLifeState: function _setLifeState(newstate) {
-			this.setState(STATE_KEY, newstate);
-		},
-		_getLifeState: function _getLifeState() {
-			return this.getState(STATE_KEY);
-		},
-		_isLifeState: function _isLifeState(state) {
-			return this._getLifeState() === state;
-		},
-		_isLifeStateIn: function _isLifeStateIn() {
-			var _this3 = this;
-
-			for (var _len4 = arguments.length, states = Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-				states[_key4] = arguments[_key4];
-			}
-
-			return _(states).some(function (state) {
-				return _this3._isLifeState(state);
-			});
-		},
-		_isInProcess: function _isInProcess() {
-			return this._isLifeStateIn(STATES.STARTING, STATES.STOPPING);
-		},
-		_registerStartableLifecycleListeners: function _registerStartableLifecycleListeners() {
-			var _this4 = this;
-
-			var freezeWhileStarting = this.getProperty('freezeWhileStarting') === true;
-			if (freezeWhileStarting && _.isFunction(this.freezeUI)) this.on('state:' + STATE_KEY + ':' + STATES.STARTING, function () {
-				_this4.freezeUI();
-			});
-			if (freezeWhileStarting && _.isFunction(this.unFreezeUI)) this.on('start', function () {
-				_this4.unFreezeUI();
-			});
-
-			this.on('before:start', function () {
-				return _this4._setLifeState(STATES.STARTING);
-			});
-			this.on('start', function () {
-				return _this4._setLifeState(STATES.RUNNING);
-			});
-			this.on('before:stop', function () {
-				return _this4._setLifeState(STATES.STOPPING);
-			});
-			this.on('stop', function () {
-				return _this4._setLifeState(STATES.WAITING);
-			});
-			this.on('destroy', function () {
-				return _this4._setLifeState(STATES.DESTROYED);
-			});
-		},
-		_tryMergeStartOptions: function _tryMergeStartOptions(options) {
-			if (!this.mergeOptions) return;
-			var mergeoptions = this.getProperty('mergeStartOptions') || [];
-			this.mergeOptions(options, mergeoptions);
-		},
-		_tryMergeStopOptions: function _tryMergeStopOptions(options) {
-			if (!this.mergeOptions) return;
-			var mergeoptions = this.getProperty('mergeStopOptions') || [];
-			this.mergeOptions(options, mergeoptions);
-		},
-		_ensureStartableIsIntact: function _ensureStartableIsIntact() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
-
-			var message = 'Startable has already been destroyed and cannot be used.';
-			var error = new YatError({
-				name: 'StartableLifecycleError',
-				message: message
-			});
-			var destroyed = this._isLifeState(STATES.DESTROYED);
-			if (opts.throwError && destroyed) {
-				throw error;
-			} else if (destroyed) {
-				return error;
 			}
 		},
-		_ensureStartableIsIdle: function _ensureStartableIsIdle() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
-
-			var message = 'Startable is not idle. current state: ' + this._getLifeState();
-			var error = new YatError({
-				name: 'StartableLifecycleError',
-				message: message
-			});
-			var isNotIntact = this._ensureStartableIsIntact(opts);
-			var notIdle = this._isInProcess();
-			if (opts.throwError && notIdle) {
-				throw error;
-			} else if (isNotIntact) {
-				return isNotIntact;
-			} else if (notIdle) {
-				return error;
-			}
+		isStarted: function isStarted() {
+			return this._lifestate.is(STATES.RUNNING);
 		},
-		_ensureStartableCanBeStarted: function _ensureStartableCanBeStarted() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
-
-
-			var message = 'Startable has already been started.';
-			var error = new YatError({
-				name: 'StartableLifecycleError',
-				message: message
-			});
-			var notIdle = this._ensureStartableIsIdle(opts);
-			var allowStartWithoutStop = this.getProperty('allowStartWithoutStop') === true;
-
-			if (!notIdle && allowStartWithoutStop) return;
-
-			var running = this._isLifeState(STATES.RUNNING);
-			if (opts.throwError && running) {
-				throw error;
-			} else if (notIdle) {
-				return notIdle;
-			} else if (running) {
-				return error;
-			}
+		isStoped: function isStoped() {
+			return this._lifestate.in(STATES.WAITING, STATES.INITIALIZED);
 		},
-		_ensureStartableCanBeStopped: function _ensureStartableCanBeStopped() {
-			var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { throwError: false };
+		isInProcess: function isInProcess() {
+			return this._lifestate.isInProcess();
+		},
+		addStartPromise: function addStartPromise(promise) {
+			this._startable.addRuntimePromise('start', promise);
+		},
+		addStopPromise: function addStopPromise(promise) {
+			this._startable.addRuntimePromise('stop', promise);
+		},
+		_initializeStartable: function _initializeStartable() {
 
+			// if(!(this.constructor.Startable && this.constructor.Stateable)) return;
+			this._lifestate = _.extend({}, LifecycleMixin);
+			this._startable = _.extend({}, StartableHidden);
 
-			var message = 'Startable should be in `running` state.';
-			var error = new YatError({
-				name: 'StartableLifecycleError',
-				message: message
-			});
-			var notIdle = this._ensureStartableIsIdle(opts);
+			bindAll(this._lifestate, this);
+			bindAll(this._startable, this);
 
-			var allowStopWithoutStart = this.getProperty('allowStopWithoutStart') === true;
-			if (!notIdle && allowStopWithoutStart) return;
+			// console.log('init startable', this.cid);
 
-			var running = this._isLifeState(STATES.RUNNING);
-
-			if (opts.throwError && !running) {
-				throw error;
-			} else if (notIdle) {
-				return notIdle;
-			} else if (!running) {
-				return error;
-			}
-		},
-		_getStartPromise: function _getStartPromise() {
-			var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			return Promise.all(this._getStartPromises(options));
-		},
-		_getStartPromises: function _getStartPromises() {
-			var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-			var promises = [];
-			promises.push(this._getStartParentPromise());
-			promises.push(this._getStartPagePromise());
-			if (options.noruntime !== true) promises.push(this._getStartRuntimePromise());
-			return promises;
-		},
-		_getStartRuntimePromise: function _getStartRuntimePromise() {
-			return getPropertyPromise(this, 'startRuntimePromises');
-		},
-		_getStartPagePromise: function _getStartPagePromise() {
-			return getPropertyPromise(this, 'startPromises');
-		},
-		_getStartParentPromise: function _getStartParentPromise() {
-			var parent = _.result(this, 'getParent');
-			if (_.isObject(parent) && _.isFunction(parent._getStartPromise)) return parent._getStartPromise({ noruntime: true });
-		},
-		_getStopPromise: function _getStopPromise() {
-			return Promise.all(this._getStopPromises());
-		},
-		_getStopPromises: function _getStopPromises() {
-			var promises = [];
-			promises.push(this._getStopRuntimePromise());
-			return promises;
-		},
-		_getStopRuntimePromise: function _getStopRuntimePromise() {
-			return getPropertyPromise(this, 'stopPromises');
-		},
-		_getStopParentPromise: function _getStopParentPromise() {
-			var parent = _.result(this, 'getParent');
-			if (_.isObject(parent) && _.isFunction(parent._getStopPromise)) return parent._getStopPromise();
+			this._startable.setHelperListeners();
 		}
 	});
 
@@ -1011,7 +1216,7 @@ var Childrenable = (function (Base) {
 				return all;
 			} else {
 				return all.filter(function (c) {
-					return !c.getProperty('isStartNotAllowed');
+					return !c.getProperty('preventStart');
 				});
 			}
 		},
@@ -1917,134 +2122,109 @@ var FormToHash = mix(Behavior).with(Stateable).extend({
 
 var Behaviors = { Behavior: Behavior, Draggable: DraggableBehavior, Droppable: DroppableBehavior, DynamicClass: DynamicClass, FormToHash: FormToHash };
 
-var YatObject = mix(Mn.Object).with(GetOptionProperty, RadioMixin);
-
-var IDENTITY_CHANNEL = 'identity';
-
 var Base = mix(YatObject).with(Stateable);
 
-var nativeAjax = $ && $.ajax;
+var Ajax = {
 
-var Identity = Base.extend({
-	constructor: function constructor() {
+	tokenUrl: '',
+	nativeAjax: $.ajax,
+
+	ajax: function ajax() {
+		var _this = this;
+
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
 		}
 
-		Base.apply(this, args);
-		this._initializeYatUser();
+		return this.ensureToken().then(function () {
+			var options = args[0];
+			options.headers = _.extend({}, options.headers, _this.getAjaxHeaders());
+			return _this.nativeAjax.apply($, args);
+		}).catch(function (error) {
+			var promise = $.Deferred();
+			promise.reject(error);
+			return promise;
+		});
 	},
-	_initializeYatUser: function _initializeYatUser() {},
+	tokenXhr: function tokenXhr(url, data) {
+		var method = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'POST';
 
-	channelName: IDENTITY_CHANNEL,
-	tokenExpireOffset: 120000, // try to renew token on 2 minutes before access token expires 
-	isAnonym: function isAnonym() {
-		return !this.getState('id');
+		return this.nativeAjax({ url: url, data: data, method: method });
 	},
-	isUser: function isUser() {
-		return !this.isAnonym();
-	},
-	isMe: function isMe(id) {
-		return id && this.getState('id') === id;
-	},
-	update: function update(hash) {
-		this.setState(hash);
-		this.trigger('change');
-	},
-	logIn: function logIn(hash) {
-		if (!hash.id) return;
-		this.update(hash);
-		this.trigger('log:in');
-	},
-	logOut: function logOut() {
-		this.clearState();
-		this.trigger('change');
-		this.trigger('log:out');
-	},
-	getBearerToken: function getBearerToken(data) {
-		var _this = this;
+	ensureToken: function ensureToken() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-		var url = this.getOption('bearerTokenUrl');
+		var refresh = this.isRefreshNecessary(opts);
+		if (!refresh) return Promise.resolve();
+
+		var url = this.getOption('refreshTokenUrl');
+		var data = this.getRefreshTokenData();
+		return this.requestToken(data, url, { refresh: true });
+	},
+	requestToken: function requestToken(data, url) {
+		var _this2 = this;
+
+		url || (url = this.getOption('tokenUrl'));
+		if (!url) return Promise.reject('token url not specified');
 		var promise = new Promise(function (resolve, reject) {
-			nativeAjax({ url: url, data: data, method: 'POST' }).then(function (token) {
-				_this.setTokenObject(token);
+			_this2.tokenXhr(url, data).then(function (token) {
+				_this2.setToken(token);
 				resolve(token);
-				_this.triggerMethod('token', token);
 			}, function (error) {
-				return reject(error);
+				if ([400, 401].indexOf(error.status) > -1) {
+					_this2.authenticated = false;
+					_this2.triggerMethod('token:expired');
+					reject(YatError.Http(error.status));
+				} else {
+					reject(error);
+				}
 			});
 		});
 		return promise;
 	},
-	ajax: function ajax() {
-		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-			args[_key2] = arguments[_key2];
-		}
-
-		var options = args[0];
-		options.headers = _.extend({}, options.headers, this.getAjaxHeaders());
-		var needRefresh = this.isTokenRefreshNeeded();
-		if (!needRefresh) {
-			var _$;
-
-			return (_$ = $).ajax.apply(_$, args); //nativeAjax.apply($, args);
-		} else {
-			return this.refreshBearerToken().then(function () {
-				return nativeAjax.apply($, args);
-			}).catch(function (error) {
-				var promise = $.Deferred();
-				promise.reject(error);
-				return promise;
-			});
-		}
-	},
 	getAjaxHeaders: function getAjaxHeaders() {
 		this._ajaxHeaders || (this._ajaxHeaders = {});
-		return this._ajaxHeaders;
+		return _.extend({}, this._ajaxHeaders, this.getOption('ajaxHeader'));
 	},
-	_updateHeaders: function _updateHeaders() {
-		var token = this.getTokenValue();
-		var headers = this.getAjaxHeaders();
+	replaceBackboneAjax: function replaceBackboneAjax() {
+		var _this3 = this;
 
+		var token = this.getTokenValue();
+		if (!token) Bb.ajax = $.ajax;else Bb.ajax = function () {
+			return _this3.ajax.apply(_this3, arguments);
+		};
+	},
+	updateAjaxHeaders: function updateAjaxHeaders() {
+		this._ajaxHeaders || (this._ajaxHeaders = {});
+		var token = this.getTokenValue();
+		var headers = this._ajaxHeaders;
 		if (token) {
 			headers.Authorization = 'Bearer ' + token;
 			headers.Accept = 'application/json';
 		} else {
 			delete headers.Authorization;
 		}
-	},
-	setTokenObject: function setTokenObject(token) {
+	}
+};
 
-		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
-
-		this._token = token;
-		this._updateHeaders();
-		this._replaceBackboneAjax();
-
-		this.triggerMethod('tocken:change');
-	},
-	getTokenObject: function getTokenObject() {
-		return this._token;
-	},
-	_replaceBackboneAjax: function _replaceBackboneAjax() {
-		var _this2 = this;
-
-		var token = this.getTokenValue();
-		if (!token) Bb.ajax = $.ajax; //$.ajax = nativeAjax;
-		else Bb.ajax = function () {
-				return _this2.ajax.apply(_this2, arguments);
-			}; //$.ajax = (...args) => Yat.identity.ajax(...args);
+var Token = {
+	tokenExpireOffset: undefined,
+	getToken: function getToken() {
+		return this.token;
 	},
 	getTokenValue: function getTokenValue() {
-		var token = this.getTokenObject();
-		return token.access_token;
+		var token = this.getToken();
+		return token && token.access_token;
 	},
-	getRefreshToken: function getRefreshToken() {
-		var token = this.getTokenObject();
-		return token.refresh_token;
+	getRefreshTokenData: function getRefreshTokenData() {
+		var token = this.getToken() || {};
+		return {
+			'grant_type': 'refresh_token',
+			'refresh_token': token.refresh_token
+		};
 	},
 	getTokenExpires: function getTokenExpires() {
-		var token = this.getTokenObject();
+		var token = this.getToken();
 		return (token || {}).expires;
 	},
 	getTokenSeconds: function getTokenSeconds() {
@@ -2062,56 +2242,160 @@ var Identity = Base.extend({
 		var deadlineMs = deadline - Date.now();
 		return deadlineMs > 0 ? deadlineMs / 1000 : 0;
 	},
-	isTokenRefreshNeeded: function isTokenRefreshNeeded() {
+	isRefreshNecessary: function isRefreshNecessary(opts) {
+
+		if (opts.force === true) return true;
+
 		var token = this.getTokenValue();
 		if (!token) return false;
 		return !this.getTokenSeconds();
 	},
-	refreshBearerToken: function refreshBearerToken() {
-		var _this3 = this;
+	setToken: function setToken(token) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-		var bearerTokenRenewUrl = this.getProperty('bearerTokenRenewUrl') || this.getProperty('bearerTokenUrl');
-		var doRefresh = this.isTokenRefreshNeeded();
-		return new Promise(function (resolve, reject) {
-			if (!doRefresh) {
-				resolve();
-				return;
-			}
 
-			if (bearerTokenRenewUrl == null) {
-				reject(new Error('Token expired and `bearerTokenRenewUrl` not set'));
-				return;
-			}
-			var data = {
-				'grant_type': 'refresh_token',
-				'refresh_token': _this3.getRefreshToken()
-			};
-			nativeAjax({
-				url: bearerTokenRenewUrl,
-				data: data,
-				method: 'POST'
-			}).then(function (token) {
-				_this3.setTokenObject(token);
-				resolve();
-			}, function () {
-				_this3.triggerMethod('refresh:token:expired');
-				reject(YatError.Http401());
-			});
+		this.token = this.parseToken(token, opts);
+
+		this.beforeTokenChange(opts);
+		this.triggerMethod('before:token:change', this.token, opts);
+
+		if (opts.silent !== true) this.triggerMethod('token:change', this.token);
+
+		this.afterTokenChange(opts);
+		if (opts.identity !== false) this.syncUser(opts);
+	},
+	parseToken: function parseToken(token) {
+		if (token == null) return token;
+
+		if (token != null && _.isObject(token)) token.expires = new Date(Date.now() + token.expires_in * 1000);
+
+		return token;
+	},
+	beforeTokenChange: function beforeTokenChange(opts) {
+		this.updateAjaxHeaders();
+		this.replaceBackboneAjax();
+	},
+	afterTokenChange: function afterTokenChange() {}
+};
+
+var Auth = {
+	authenticated: false,
+	isAuth: function isAuth() {
+		return this.authenticated === true;
+	},
+	isAnonym: function isAnonym() {
+		return !this.isAuth();
+	},
+	isMe: function isMe(value) {
+		return value && this.isAuth() && this.me == value;
+	},
+	setMe: function setMe(value) {
+		this.me = value;
+	}
+};
+
+var User = {
+	syncUser: function syncUser(opts) {
+		var _this4 = this;
+
+		var user = this.getUser();
+		if (!user) {
+			this.triggerChange();
+			return;
+		}
+		user.fetch().then(function () {
+			_this4.applyUser(user);
+		}, function () {
+			_this4.syncUserEror();
 		});
+	},
+	syncUserEror: function syncUserEror() {
+		this.reset();
+	},
+	applyUser: function applyUser(user) {
+		var id = user == null ? null : user.id;
+		this.setMe(id);
+		this.authenticated = id != null;
+		this.triggerChange();
+	},
+	getUser: function getUser() {
+		return this.user;
+	},
+	setUser: function setUser(user) {
+		this.user = user;
+		this.applyUser(user);
+	},
+	isUser: function isUser() {
+		return this.isAuth() && this.user && !!this.user.id;
+	}
+};
+
+var Identity = mix(YatObject).with(Auth, Ajax, Token, User).extend({
+	triggerChange: function triggerChange() {
+		this.triggerMethod('change');
+	},
+	reset: function reset() {
+		this.authorized = false;
+		var user = this.getUser();
+		user.clear();
+		this.setToken(null, { identity: false });
+		this.applyUser(user);
+		this.triggerMethod('reset');
 	}
 });
 
 var identity = new Identity();
 
+var Region = Mn.Region.extend({
+	constructor: function constructor(options) {
+		Mn.Region.apply(this, arguments);
+		this.mergeOptions(options, ['stateApi']);
+		this.stateApi && this._initStateApi();
+	},
+	_initStateApi: function _initStateApi() {
+		this.off('show', this._onStatableShow);
+		this.off('before:empty', this._onStatableBeforeEmpty);
+		this.on('show', this._onStatableShow);
+		this.on('before:empty', this._onStatableBeforeEmpty);
+	},
+	_onStatableShow: function _onStatableShow(region, view) {
+		var api = this.stateApi && _.isFunction(this.stateApi.apply) ? this.stateApi : undefined;
+		api && api.apply(view, { region: region });
+	},
+	_onStatableBeforeEmpty: function _onStatableBeforeEmpty(region, view) {
+		var api = this.stateApi && _.isFunction(this.stateApi.collect) ? this.stateApi : undefined;
+		api && api.collect(view, { region: region });
+	},
+	setStateApi: function setStateApi(api) {
+		this.stateApi = api;
+		this._initStateApi();
+	},
+
+	removeView: function removeView(view) {
+		var removeBehavior = this.getOption('removeBehavior') || 'destroy';
+		if (removeBehavior === 'detach') this.detachView(view);else this.destroyView(view);
+	},
+	getParentView: function getParentView() {
+		return this._parentView;
+	}
+});
+
+Region.Detachable = function () {
+	var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+	var detachable = _.extend({}, opts, { removeBehavior: 'detach' });
+	return this.extend(detachable);
+};
+
 var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend({
 
 	instantRender: false,
 	renderOnReady: false,
-	triggerReady: false,
-
-	manualAfterInitialize: true,
 
 	constructor: function constructor() {
+
+		this._fixRegionProperty();
+
 		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 			args[_key] = arguments[_key];
 		}
@@ -2121,15 +2405,36 @@ var YatView = mix(Mn.View).with(GlobalTemplateContext, GetOptionProperty).extend
 		var options = args[0];
 		this.mergeOptions(options, ['instantRender', 'renderOnReady', 'triggerReady', 'manualAfterInitialize']);
 
-		if (this.manualAfterInitialize === true) this._afterInitialize();
-	},
-	_afterInitialize: function _afterInitialize() {
-
-		if (this.instantRender === true) this.render();
-
 		if (this.renderOnReady === true) this.once('ready', this.render);
+		if (this.instantRender === true && !this.renderOnReady) this.render();else if (this.instantRender === true && this.renderOnReady === true) this.triggerReady();
+	},
+	_fixRegionProperty: function _fixRegionProperty() {
+		var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-		if (this.renderOnReady === true || this.triggerReady === true) this.trigger('ready', this);
+		var detachable = this.getProperty('detachableRegion');
+		if (detachable == null) detachable = options.detachableRegion === true;
+
+		var stateApi = this.getProperty('stateApi');
+		if (stateApi == null) stateApi = options.stateApi;
+
+		var ViewRegion = stateApi ? Region.extend({ stateApi: stateApi }) : Region;
+		this.regionClass = detachable ? ViewRegion.Detachable() : ViewRegion;
+	},
+	triggerReady: function triggerReady() {
+		this.trigger('ready', this);
+	},
+	stateApi: function stateApi() {
+		var options = this.getOption('stateApiOptions');
+		return new Api(options);
+	},
+	stateApiOptions: function stateApiOptions() {
+		var _this = this;
+		return {
+			storeIdPrefix: function storeIdPrefix() {
+				return _this.getOption('id');
+			},
+			states: ['scrollable']
+		};
 	}
 });
 
@@ -2226,18 +2531,35 @@ var modalsLabelsDefaults = {
 	reject: 'cancel'
 };
 
+var modalsDefaultModifiers = {
+	'after:render': {
+		'centering': function centering() {
+			var box = this.$('[data-role=modal-content-wrapper]');
+			if (!box.length) return;
+			var ch = box.outerHeight();
+			var wh = $(window).height();
+			var dif = (wh - ch) / 3;
+			if (dif > 0 && box.length) box.css({
+				'margin-top': dif + 'px'
+			});
+		}
+	}
+};
+
 var modalsTypes = {
 	full: {
 		css: modalsCssDefaults,
 		show: modalsShowFull,
 		labels: modalsLabelsDefaults,
-		options: modalOptionsDefault
+		options: modalOptionsDefault,
+		modifiers: modalsDefaultModifiers
 	},
 	simple: {
 		css: modalsCssDefaults,
 		show: modalsShowSimple,
 		labels: modalsLabelsDefaults,
-		options: modalOptionsDefault
+		options: modalOptionsDefault,
+		modifiers: modalsDefaultModifiers
 	},
 	confirm: {
 		css: modalsCssDefaults,
@@ -2248,7 +2570,8 @@ var modalsTypes = {
 			closeOnPromise: true,
 			preventClose: false,
 			asPromise: true
-		}
+		},
+		modifiers: modalsDefaultModifiers
 	}
 };
 
@@ -2259,11 +2582,13 @@ config.set('types.confirm', modalsTypes.confirm);
 config.set('defaultShow', modalsShowFull);
 config.set('defaultCss', modalsCssDefaults);
 config.set('defaultLabels', modalsLabelsDefaults);
+config.set('defaultModifiers', modalsDefaultModifiers);
 
 var template = _.template('<% if(show.bg) {%><div <%= css(\'bg\') %> data-role="modal-bg"></div><% } %>\n<div <%= css(\'contentWrapper\') %> data-role="modal-content-wrapper">\n\t<% if(show.close) {%><button  <%= css(\'close\') %> data-role="modal-close"><%= label(\'close\') %></button><% } %>\n\t<% if(show.header) {%><header <%= css(\'header\') %> data-role="modal-header"><%= header %></header><% } %>\n\t<div <%= css(\'content\') %> data-role="modal-content"><%= text %></div>\n\t<% if(show.actions) {%>\n\t<div <%= css(\'actions\') %> data-role="modal-actions">\n\t\t<% if(show.resolve) {%><button <%= css(\'resolve\') %> data-role="modal-resolve"><%= label(\'resolve\') %></button><% } %>\n\t\t<% if(show.reject) {%><button <%= css(\'reject\') %> data-role="modal-reject"><%= label(\'reject\') %></button><% } %>\n\t</div>\n\t<% } %>\n</div>\n');
 
 var ModalView = mix(YatView).with(GetOptionProperty).extend({
 
+	instantRender: true,
 	renderOnReady: true,
 	template: template,
 
@@ -2294,6 +2619,10 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 			if (_this2.getConfigValue('options', 'closeOnPromise') && !destroying) {
 				_this2.destroy();
 			}
+		});
+
+		this.on('all', function (name) {
+			return _this2.applyModifiers(name);
 		});
 	},
 	canBeClosed: function canBeClosed() {
@@ -2359,9 +2688,10 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 	},
 	onRender: function onRender() {
 		if (this.content instanceof Bb.View) {
-			this.showChildView('content', this.content);
 			this.content.inModal = this;
+			this.showChildView('content', this.content);
 		}
+		this.applyModifiers('after:render');
 	},
 	_getModalOptions: function _getModalOptions() {
 		var h = {};
@@ -2385,7 +2715,7 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		type.show = _.extend({}, config.get('dafaultShow'), type.show, this.getOption('show'));
 		type.labels = _.extend({}, config.get('defaultLabels'), type.labels, this.getOption('labels'));
 		type.css = _.extend({}, config.get('defaultCss'), type.css, this.getOption('css'));
-
+		type.modifiers = _.extend({}, config.get('defaultModifiers'), type.modifiers, this.getOption('modifiers'));
 		type.options = _.extend({}, config.get('defaultOptions'), type.options, this._getModalOptions());
 
 		if (type.show.header == null && this.getOption('header')) type.show.header = true;
@@ -2396,6 +2726,14 @@ var ModalView = mix(YatView).with(GetOptionProperty).extend({
 		if (type.show.actions == null && (type.show.resolve || type.show.reject)) type.show.actions = true;
 
 		return this.config = type;
+	},
+	applyModifiers: function applyModifiers(name) {
+		var _this3 = this;
+
+		var modifiers = this.getConfigValue('modifiers', name);
+		_(modifiers).each(function (mod) {
+			return _.isFunction(mod) && mod.call(_this3);
+		});
 	},
 	templateContext: function templateContext() {
 		var cfg = this.getConfig();
@@ -2426,8 +2764,8 @@ var ModalEngine = mix(YatObject).with(Stateable).extend({
 
 		YatObject.apply(this, args);
 		this.listenForEsc = _.bind(this._listenForEsc, this);
-		$$1(function () {
-			_this2.doc = $$1(document);
+		$(function () {
+			_this2.doc = $(document);
 			_this2.doc.on('keyup', _this2.listenForEsc);
 		});
 	},
@@ -2548,41 +2886,45 @@ var App = Base$1.extend({
 		this._pageManagers || (this._pageManagers = []);
 		this._pageManagers.push(pageManager);
 
-		var prefix = pageManager.getName();
-		if (!prefix) {
-			console.warn('pageManager prefix not defined');
-			return;
-		}
-
-		this.listenTo(pageManager, 'all', function (eventName) {
-			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-				args[_key - 1] = arguments[_key];
+		this.triggerMethod('add:pageManager', pageManager);
+		this.listenTo(pageManager, 'page:start', function () {
+			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+				args[_key] = arguments[_key];
 			}
 
-			var prefixedEventName = prefix + ':' + eventName;
-			_this.triggerMethod.apply(_this, [prefixedEventName].concat(args));
-		});
-		this.listenTo(pageManager, 'state:currentPage', function () {
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
-			}
-
-			return _this.triggerMethod.apply(_this, ['page:swapped'].concat(args));
+			return _this.triggerMethod.apply(_this, ['page:start', pageManager].concat(args));
 		});
 	},
 	hasPageManagers: function hasPageManagers() {
 		return this._pageManagers && this._pageManagers.length > 0;
 	},
-	getMenuTree: function getMenuTree() {
+	getLinksCollection: function getLinksCollection() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { rebuild: false };
 
 		if (this._menuTree && !opts.rebuild) return this._menuTree;
+
+		this.createLinksCollection();
+
+		return this._menuTree;
+	},
+	createLinksCollection: function createLinksCollection() {
 		var managers = this._pageManagers || [];
 		var links = _(managers).chain().map(function (manager) {
 			return manager.getLinks();
 		}).flatten().value();
-		this._menuTree = new Bb.Collection(links);
-		return this._menuTree;
+		if (!this._menuTree) this._menuTree = new Bb.Collection(links);else this._menuTree.set(links);
+	},
+	getCurrentPages: function getCurrentPages() {
+		var pages = _(this._pageManagers).map(function (mngr) {
+			return mngr.getCurrentPage();
+		});
+		return _(pages).filter(function (p) {
+			return p != null;
+		});
+	},
+	isCurrentPage: function isCurrentPage(page) {
+		var current = this.getCurrentPages();
+		return current.indexOf(page) > -1;
 	},
 	getPage: function getPage(key) {
 		if (!this.hasPageManagers()) return;
@@ -2592,39 +2934,9 @@ var App = Base$1.extend({
 	}
 });
 
-var Router = Mn.AppRouter.extend({}, {
-	create: function create(hash, context) {
-		var appRoutes = {};
-		var controller = {};
-		var _this = this;
-		_(hash).each(function (handlerContext, key) {
-			appRoutes[key] = key;
-			controller[key] = function () {
-				handlerContext.action.apply(handlerContext, arguments).catch(function (error) {
-					_this._catchError(error, context);
-				});
-			};
-		});
-		return new this({ controller: controller, appRoutes: appRoutes });
-	},
-	_catchError: function _catchError(error, context) {
-		if (!context || context.getProperty('throwChildErrors') === true) {
-			throw error;
-		} else {
-			var postfix = error.status ? ":" + error.status.toString() : '';
-			var commonEvent = 'error';
-			var event = commonEvent + postfix;
-
-			context.triggerMethod(commonEvent, error, this);
-
-			if (event != commonEvent) context.triggerMethod(event, error, this);
-		}
-	}
-});
-
 var Model = Bb.Model.extend({});
 
-var LinkModel = Model.extend({
+Model.extend({
 	defaults: {
 		url: undefined,
 		label: undefined,
@@ -2639,36 +2951,54 @@ var LinkModel = Model.extend({
 
 function _defineProperty$2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+function _toConsumableArray$1(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 /* 
 	YatPage
 */
 
-var Base$2 = mix(App).with(GetNameLabel);
-
-var YatPage = Base$2.extend({
-	constructor: function constructor() {
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
-		}
-
-		Base$2.apply(this, args);
-		this.initializeYatPage();
+var PageLinksMixin = {
+	hasLink: function hasLink() {
+		return !this.getProperty('skipMenu') && !this.getProperty('preventStart');
 	},
+	getLink: function getLink(level, index) {
+		if (!this.hasLink()) return;
+		if (this._linkHash) return this._linkHash;
 
+		var parentId = (this.getParentLink() || {}).id;
+		var url = this.getRoute();
+		var label = this.getLabel();
+		this._linkHash = { id: this.cid, parentId: parentId, url: url, label: label, level: level, index: index };
 
-	allowStopWithoutStart: true,
-	allowStartWithoutStop: true,
-
-	initializeYatPage: function initializeYatPage(opts) {
-		this.mergeOptions(opts, ["manager"]);
-		this._initializeModels(opts);
-		this._initializeRoute(opts);
-		this._proxyEvents();
-		this._tryCreateRouter();
-		this._registerIdentityHandlers();
+		return this._linkHash;
 	},
+	getParentLink: function getParentLink() {
+		var parent = this.getParent();
+		return parent && parent.getLink && parent.getLink();
+	},
+	getLinks: function getLinks() {
+		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+		var index = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+
+		var link$$1 = this.getLink(level, index);
+		if (!link$$1) return [];
+		var sublinks = this._getSubLinks(level);
+		return [link$$1].concat(sublinks);
+	},
+	_getSubLinks: function _getSubLinks(level) {
+		var children = this.getChildren();
+		if (!children || !children.length) return [];
+		var sublinks = _(children).filter(function (child) {
+			return child.hasLink();
+		});
+		sublinks = _(sublinks).map(function (child, index) {
+			return child.getLinks(level + 1, index);
+		});
+		return _.flatten(sublinks);
+	}
+};
+
+var PageLayoutMixin = {
 	getLayout: function getLayout() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { rebuild: false };
 
@@ -2693,109 +3023,30 @@ var YatPage = Base$2.extend({
 	},
 	buildLayoutOptions: function buildLayoutOptions(rawOptions) {
 		return rawOptions;
-	},
-	addModel: function addModel(model) {
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+	}
+};
 
-		if (!model) return;
-		this.model = model;
-		var fetch = opts.fetch || this.getOption('fetchModelOnAdd');
-		if (fetch === undefined) {
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if (fetch === true) {
-			this.addStartPromise(model.fetch(opts));
-		}
-	},
-	addCollection: function addCollection(collection) {
-		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-		if (!collection) return;
-		this.collection = collection;
-		var fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
-		if (fetch === undefined) {
-			fetch = this.getProperty('fetchDataOnAdd');
-		}
-		if (fetch === true) {
-			this.addStartPromise(collection.fetch(opts));
-		}
-	},
-
-
-	freezeWhileStarting: true,
-	freezeUI: function freezeUI() {},
-	unFreezeUI: function unFreezeUI() {},
+var PageRouteMixin = {
 	getRouteHash: function getRouteHash() {
 
 		var hashes = [{}, this._routeHandler].concat(this.getChildren({ startable: false }).map(function (children) {
 			return children.getRouteHash();
 		}));
-		return _.extend.apply(_, _toConsumableArray(hashes));
+		return _.extend.apply(_, _toConsumableArray$1(hashes));
 	},
 	hasRouteHash: function hasRouteHash() {
 		return _.isObject(this.getRouteHash());
-	},
-	getLinkModel: function getLinkModel() {
-		var level = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
-
-		if (!this._canHaveLinkModel()) return;
-		if (this._linkModel) return this._linkModel;
-
-		var url = this.getRoute();
-		var label = this.getLabel();
-		var children = this._getSublinks(level);
-		this._linkModel = new LinkModel({ url: url, label: label, level: level, children: children });
-
-		return this._linkModel;
-	},
-	_canHaveLinkModel: function _canHaveLinkModel() {
-		return !(this.getProperty('skipMenu') === true || !!this.getProperty('isStartNotAllowed'));
-	},
-	_destroyLinkModel: function _destroyLinkModel() {
-		if (!this._linkModel) return;
-		this._linkModel.destroy();
-		delete this._linkModel;
-	},
-	getParentLinkModel: function getParentLinkModel() {
-		var parent = this.getParent();
-		if (!parent || !parent.getLinkModel) return;
-		var model = parent.getLinkModel();
-		return model;
-	},
-	getNeighbourLinks: function getNeighbourLinks() {
-		var link = this.getLinkModel();
-		if (link && link.collection) return link.collection;
-	},
-	getChildrenLinks: function getChildrenLinks() {
-		var model = this.getLinkModel();
-		if (!model) return;
-		return model.get('children');
-	},
-	_getSublinks: function _getSublinks(level) {
-		var children = this.getChildren();
-		if (!children || !children.length) return;
-		var sublinks = _(children).chain().filter(function (child) {
-			return child.getProperty("skipMenu") !== true;
-		}).map(function (child) {
-			return child.getLinkModel(level + 1);
-		}).value();
-		if (!sublinks.length) return;
-		var col = new Bb.Collection(sublinks);
-		return col;
-	},
-	_initializeModels: function _initializeModels() {
-		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-		this.addModel(opts.model, opts);
-		this.addCollection(opts.collection, opts);
 	},
 	_initializeRoute: function _initializeRoute() {
 		var route = this.getRoute({ asPattern: true });
 		if (route == null) return;
 		var page = this;
-		this._routeHandler = _defineProperty$2({}, route, { context: page, action: function action() {
+		this._routeHandler = _defineProperty$2({}, route, {
+			context: page,
+			action: function action() {
 				return page.start.apply(page, arguments);
-			} });
+			}
+		});
 	},
 	getRoute: function getRoute() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : { asPattern: false };
@@ -2823,17 +3074,48 @@ var YatPage = Base$2.extend({
 			return res;
 		}
 	},
-	_tryCreateRouter: function _tryCreateRouter() {
-		var create = this.getProperty('createRouter') === true;
-		if (create) {
-			this.router = this._createAppRouter();
+	url: function url() {
+		var route = this.getRoute();
+		return route;
+	}
+};
+
+var PageModelAndCollectionMixin = {
+	addModel: function addModel(model) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		if (!model) return;
+		this.model = model;
+		var fetch = opts.fetch || this.getOption('fetchModelOnAdd');
+		if (fetch === undefined) {
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if (fetch === true) {
+			this.addStartPromise(model.fetch(opts));
 		}
 	},
-	_createAppRouter: function _createAppRouter() {
-		var hash = this.getRouteHash();
-		if (!_.size(hash)) return;
-		return new Router(hash);
+	addCollection: function addCollection(collection) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+		if (!collection) return;
+		this.collection = collection;
+		var fetch = opts.fetch || this.getOption('fetchCollectionOnAdd');
+		if (fetch === undefined) {
+			fetch = this.getProperty('fetchDataOnAdd');
+		}
+		if (fetch === true) {
+			this.addStartPromise(collection.fetch(opts));
+		}
 	},
+	_initializeLayoutModels: function _initializeLayoutModels() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		this.addModel(opts.model, opts);
+		this.addCollection(opts.collection, opts);
+	}
+};
+
+var PageProxyEventsMixin = {
 	_proxyEvents: function _proxyEvents() {
 		var proxyContexts = this._getProxyContexts();
 		this._proxyEventsTo(proxyContexts);
@@ -2842,12 +3124,13 @@ var YatPage = Base$2.extend({
 		var rdy = [];
 		var manager = this.getProperty('manager');
 		if (manager) {
-			rdy.push({ context: manager });
+			var allowed = this.getProperty('proxyEventsToManager');
+			rdy.push({ context: manager, allowed: allowed });
 		}
 		var radio = this.getChannel();
 		if (radio) {
-			var allowed = this.getProperty('proxyEventsToRadio');
-			rdy.push({ context: radio, allowed: allowed });
+			var _allowed = this.getProperty('proxyEventsToRadio');
+			rdy.push({ context: radio, allowed: _allowed });
 		}
 		return rdy;
 	},
@@ -2865,19 +3148,48 @@ var YatPage = Base$2.extend({
 		});
 		var page = this;
 		page.on('all', function (eventName) {
-			for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-				args[_key2 - 1] = arguments[_key2];
+			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+				args[_key - 1] = arguments[_key];
 			}
 
 			var contexts = eventName in eventsHash ? eventsHash[eventName] : all;
 			var triggerArguments = [page].concat(args);
 			_(contexts).each(function (context) {
-				return context.triggerMethod.apply(context, ['page:' + eventName].concat(_toConsumableArray(triggerArguments)));
+				return context.triggerMethod.apply(context, ['page:' + eventName].concat(_toConsumableArray$1(triggerArguments)));
 			});
 		});
+	}
+};
+
+var Base$2 = mix(App).with(GetNameLabel, PageLinksMixin, PageLayoutMixin, PageModelAndCollectionMixin, PageProxyEventsMixin, PageRouteMixin);
+var YatPage = Base$2.extend({
+
+	constructor: function constructor() {
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
+		}
+
+		Base$2.apply(this, args);
+		this.initializeYatPage();
+	},
+
+	freezeWhileStarting: true,
+	allowStopWithoutStart: true,
+	allowStartWithoutStop: true,
+	proxyEventsToManager: function proxyEventsToManager() {
+		return ['before:start', 'start', 'start:decline', 'before:stop', 'stop', 'stop:decline'];
+	},
+
+	initializeYatPage: function initializeYatPage(opts) {
+		this.mergeOptions(opts, ["manager"]);
+		this._initializeLayoutModels(opts);
+		this._initializeRoute(opts);
+		this._proxyEvents();
 	},
 
 
+	// overriding childrenable _buildChildOptions
+	// adding reference to PageManger if it exists
 	_buildChildOptions: function _buildChildOptions(def) {
 		var add = {};
 		var manager = this.getProperty('manager');
@@ -2885,34 +3197,33 @@ var YatPage = Base$2.extend({
 		return _.extend(def, this.getProperty('childOptions'), add);
 	},
 
-	_registerIdentityHandlers: function _registerIdentityHandlers() {
-		var _this = this;
-
-		this.listenTo(identity, 'change', function () {
-			for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-				args[_key3] = arguments[_key3];
-			}
-
-			_this._destroyLinkModel();
-			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
-		});
+	getRoot: function getRoot() {
+		var parent = this.getParent();
+		if (parent instanceof Base$2) return parent.getRoot();else return this;
 	}
 });
 
-var Base$3 = mix(App).with(GetNameLabel);
+var PMRouterMixin = {
 
-var YatPageManager = Base$3.extend({
-	constructor: function constructor() {
-		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-			args[_key] = arguments[_key];
-		}
+	routerClass: Mn.AppRouter,
 
-		Base$3.apply(this, args);
-		this._initializeYatPageManager.apply(this, args);
-	},
-
-	throwChildErrors: true,
 	createRouter: function createRouter() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+		var options = this.getRouterOptions();
+		var Router = this.getProperty('routerClass');
+		var router = new Router(options);
+
+		if (opts.doNotSet !== true) this.setRouter(router);
+
+		return router;
+	},
+	_createRoutesHash: function _createRoutesHash() {
+		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+		if (this._routesHash && opts.rebuild !== true) return this._routesHash;
+
 		var children = this.getChildren({ startable: false });
 		var hash = {};
 		_(children).each(function (page) {
@@ -2921,55 +3232,88 @@ var YatPageManager = Base$3.extend({
 			}
 		});
 		this._routesHash = hash;
-		this.setRouter(Router.create(hash, this));
+		return hash;
+	},
+	getRouterOptions: function getRouterOptions() {
+		var _this = this;
+
+		var hash = this._createRoutesHash();
+		var appRoutes = {};
+		var controller = {};
+		_(hash).each(function (handlerContext, key) {
+			appRoutes[key] = key;
+			controller[key] = _this.createRouterControllerAction(handlerContext, key);
+		});
+		return { appRoutes: appRoutes, controller: controller };
+	},
+	createRouterControllerAction: function createRouterControllerAction(handlerContext, key) {
+		var _this2 = this;
+
+		var page = handlerContext.context;
+		return function () {
+			for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+				args[_key] = arguments[_key];
+			}
+
+			_this2.startPage.apply(_this2, [page].concat(args));
+		};
 	},
 	setRouter: function setRouter(router) {
+		if (this.router && _.isFunction(this.router.destroy)) {
+			this.router.destroy();
+		}
 		this.router = router;
 	},
 	getRouter: function getRouter() {
 		return this.router;
 	},
-	getLinks: function getLinks() {
-		var children = this.getChildren();
-		if (!children) return;
-		return _(children).chain().map(function (child) {
-			return child.getLinkModel();
-		}).filter(function (child) {
-			return !!child;
-		}).value();
-	},
 	execute: function execute(route) {
+		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { silent: true };
+
 		var page = this.getPage(route);
-		if (!!page) page.start({ text: error.message });else if (route === '*NotFound') throw new YatError.NotFound('*NotFound handler is missing');else this.execute('*NotFound');
+		if (page) page.start(opts);else throw new YatError.NotFound('Route not found');
 	},
 	navigate: function navigate(url) {
 		var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : { trigger: true };
 
 
 		var router = this.getRouter();
+
 		if (router) router.navigate(url, opts);else console.warn('router not found');
 	},
-	getPage: function getPage(key) {
-
-		var found = _(this._routesHash).find(function (pageContext, route) {
-			if (route === key) return true;
-			if (pageContext.context.getName() === key) return true;
-		});
-		return found && found.context;
-	},
 	navigateToRoot: function navigateToRoot() {
+
 		var current = this.getState('currentPage');
-		var rootUrl = this.getProperty('rootUrl');
-		if (!rootUrl) {
-			var children = this.getChildren();
-			if (children && children.length) {
-				var root = children.find(function (child) {
-					return child != current;
-				});
-				rootUrl = root && root.getRoute();
-			}
+		if (!current) throw new YatError({ message: "navigateToRoot: root not found" });
+		this.navigate(current.getRoot().url());
+	}
+};
+
+var PMIdentitySupport = {
+	_registerIdentityHandlers: function _registerIdentityHandlers() {
+		this.listenTo(identity, 'change', this._restartOrGoToRoot);
+		this.listenTo(identity, 'token:expired', this.tokenExpired);
+	},
+	_restartOrGoToRoot: function _restartOrGoToRoot() {
+		if (!this.routedPage) return;
+
+		if (!this.routedPage.getProperty('preventStart')) this.restartRoutedPage();else this.navigateToRoot();
+	},
+	tokenExpired: function tokenExpired() {
+		this.restartRoutedPage();
+	}
+};
+
+var Base$3 = mix(App).with(GetNameLabel, PMRouterMixin, PMIdentitySupport);
+
+var YatPageManager = Base$3.extend({
+	constructor: function constructor() {
+		for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+			args[_key2] = arguments[_key2];
 		}
-		if (rootUrl != null) this.navigate(rootUrl);else console.warn('root page not found');
+
+		Base$3.apply(this, args);
+		this._initializeYatPageManager.apply(this, args);
 	},
 	_initializeYatPageManager: function _initializeYatPageManager() {
 		var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -2981,6 +3325,59 @@ var YatPageManager = Base$3.extend({
 	},
 
 
+	throwChildErrors: true,
+
+	startPage: function startPage(page) {
+		var _this3 = this;
+
+		this.previousRoutedPage = this.routedPage;
+		this.routedPage = page;
+
+		for (var _len3 = arguments.length, args = Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+			args[_key3 - 1] = arguments[_key3];
+		}
+
+		return page.start.apply(page, args).catch(function (error) {
+			if (_this3.getProperty('throwChildErrors') === true) {
+				throw error;
+			}
+			var postfix = error.status ? ':' + error.status.toString() : '';
+			var commonEvent = 'error';
+			var event = commonEvent + postfix;
+			_this3.triggerMethod(commonEvent, error, page);
+			event != commonEvent && _this3.triggerMethod(event, error, page);
+		});
+	},
+	restartRoutedPage: function restartRoutedPage() {
+		this.routedPage && this.startPage(this.routedPage);
+	},
+	getLinks: function getLinks() {
+		var children = this.getChildren();
+		if (!children) return [];
+		return _(children).chain().map(function (child) {
+			return child.getLinks();
+		}).filter(function (child) {
+			return !!child;
+		}).flatten().value();
+	},
+	getPage: function getPage(key) {
+
+		var found = _(this._routesHash).find(function (pageContext, route) {
+			if (route === key) return true;
+			if (pageContext.context.getName() === key) return true;
+		});
+		return found && found.context;
+	},
+	getCurrentPage: function getCurrentPage() {
+		return this.getState('currentPage');
+	},
+	isCurrentPage: function isCurrentPage(page) {
+		var current = this.getCurrentPage();
+		return page === current;
+	},
+
+
+	//childrenable: settle manager reference to all children
 	_buildChildOptions: function _buildChildOptions(def) {
 		return _.extend(def, this.getProperty('childOptions'), {
 			manager: this
@@ -3001,27 +3398,7 @@ var YatPageManager = Base$3.extend({
 	_pageStart: function _pageStart(page) {
 		this.setState('currentPage', page);
 	},
-	_pageDecline: function _pageDecline() {
-		//console.log("decline", args)
-	},
-	_registerIdentityHandlers: function _registerIdentityHandlers() {
-		var _this = this;
-
-		this.listenTo(identity, 'change', function () {
-			for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-				args[_key2] = arguments[_key2];
-			}
-
-			_this.triggerMethod.apply(_this, ['identity:change'].concat(args));
-			_this._moveToRootIfCurrentPageNotAllowed();
-		});
-	},
-	_moveToRootIfCurrentPageNotAllowed: function _moveToRootIfCurrentPageNotAllowed() {
-		var current = this.getState('currentPage');
-		if (!current || !current.isStartNotAllowed()) return;
-
-		this.navigateToRoot();
-	}
+	_pageDecline: function _pageDecline() {}
 });
 
 var YatCollectionView = mix(Mn.NextCollectionView).with(GlobalTemplateContext);
@@ -3180,10 +3557,10 @@ var marionetteYat = {
 	Error: YatError,
 	App: App,
 	Page: YatPage,
-	Router: Router,
 	PageManager: YatPageManager,
 	View: YatView,
 	CollectionView: YatCollectionView,
+	Region: Region,
 	Model: Model,
 	Collection: Collection,
 	CollectionGroups: CollectionGroups

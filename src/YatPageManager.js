@@ -1,62 +1,165 @@
+import $ from 'jquery';
+import Mn from 'backbone.marionette';
 import _ from 'underscore';
 import App from './YatApp';
 import GetNameLabel from './mixins/get-name-label';
-import Router from './YatRouter';
 import mixin from './helpers/mix';
 import identity from './singletons/identity';
 import YatError from './YatError';
 
-let Base = mixin(App).with(GetNameLabel);
+
+
+const PMRouterMixin = {
+
+	routerClass: Mn.AppRouter,
+
+	createRouter(opts = {}){		
+		let options = this.getRouterOptions();
+		let Router = this.getProperty('routerClass');
+		let router = new Router(options);
+
+		if(opts.doNotSet !== true)
+			this.setRouter(router);
+
+		return router;
+	},
+
+	_createRoutesHash(opts = {}){
+
+		if(this._routesHash && opts.rebuild !== true) return this._routesHash;
+
+		let children = this.getChildren({startable:false});
+		let hash = {};
+		_(children).each((page) => {
+			if(_.isFunction(page.getRouteHash)){
+				_.extend(hash, page.getRouteHash());
+			}
+		});
+		this._routesHash = hash;
+		return hash;
+
+	},
+	getRouterOptions(){
+		let hash = this._createRoutesHash();
+		let appRoutes = {};
+		let controller = {};
+		_(hash).each((handlerContext, key) => {
+			appRoutes[key] = key;
+			controller[key] = this.createRouterControllerAction(handlerContext, key)
+		});
+		return { appRoutes, controller };
+	},
+	createRouterControllerAction(handlerContext, key){
+		let page = handlerContext.context;
+		return (...args) => {
+			this.startPage(page, ...args);
+		};
+	},
+	setRouter(router){
+		if(this.router && _.isFunction(this.router.destroy)){
+			this.router.destroy();
+		}
+		this.router = router;
+	},
+	getRouter(){
+		return this.router;
+	},
+	
+	execute(route, opts = {silent:true}){
+		let page = this.getPage(route);
+		if(page)
+			page.start(opts);
+		else
+			throw new YatError.NotFound('Route not found'); 
+	},
+	navigate(url, opts = {trigger:true}){
+
+		let router = this.getRouter();
+
+		if(router)
+			router.navigate(url, opts);
+		else
+			console.warn('router not found');
+
+	},
+
+	navigateToRoot(){
+
+		let current = this.getState('currentPage');
+		if(!current) throw new YatError({message:"navigateToRoot: root not found"});
+		this.navigate(current.getRoot().url());
+
+	},	
+
+};
+
+const PMIdentitySupport = {
+
+	_registerIdentityHandlers(){
+		this.listenTo(identity, 'change', this._restartOrGoToRoot);
+		this.listenTo(identity, 'token:expired', this.tokenExpired);
+	},
+
+	_restartOrGoToRoot(){
+		if(!this.routedPage) return;
+
+		if(!this.routedPage.getProperty('preventStart'))
+			this.restartRoutedPage();
+		else
+			this.navigateToRoot();
+	},
+
+	tokenExpired(){
+		this.restartRoutedPage();
+	},
+
+}
+
+
+
+let Base = mixin(App).with(GetNameLabel, PMRouterMixin, PMIdentitySupport);
 
 let YatPageManager = Base.extend({
 	constructor(...args){
 		Base.apply(this, args);
 		this._initializeYatPageManager(...args);
 	},
+	_initializeYatPageManager(opts = {}){
+		this.mergeOptions(opts, ['id','name','label']);
+		this._registerPageHandlers(opts);
+		this._registerIdentityHandlers();
+		this.createRouter();
+	},
+
 	throwChildErrors:true,
-	createRouter(){
-		let children = this.getChildren({startable:false});
-		let hash = {};
-		_(children).each(function(page){
-			if(_.isFunction(page.getRouteHash)){
-				_.extend(hash, page.getRouteHash());
+
+
+	startPage(page, ...args){
+		this.previousRoutedPage = this.routedPage;
+		this.routedPage = page;
+		return page.start(...args).catch((error) => {
+			if(this.getProperty('throwChildErrors') === true){				
+				throw error;
 			}
+			let postfix = error.status ? ':' + error.status.toString() : '';
+			let commonEvent = 'error';
+			let event = commonEvent + postfix;
+			this.triggerMethod(commonEvent, error, page);
+			event != commonEvent && this.triggerMethod(event, error, page);
 		});
-		this._routesHash = hash;		
-		this.setRouter(Router.create(hash, this));
 	},
-	setRouter(router){
-		this.router = router;
-	},
-	getRouter(){
-		return this.router;
-	},
+	restartRoutedPage(){
+		this.routedPage && this.startPage(this.routedPage);
+	},	
 	getLinks(){
 		let children = this.getChildren();
-		if(!children) return;
+		if(!children) return [];
 		return _(children).chain()			
-			.map((child) => child.getLinkModel())
+			.map((child) => child.getLinks())
 			.filter((child) => !!child)
+			.flatten()
 			.value();
 	},
-	execute(route){
-		let page = this.getPage(route);
-		if(!!page) 
-			page.start({text: error.message});
-		else if(route === '*NotFound')
-			throw new YatError.NotFound('*NotFound handler is missing');
-		else
-			this.execute('*NotFound');
-	},
-	navigate(url, opts = {trigger:true}){
-
-		let router = this.getRouter();
-		if(router)
-			router.navigate(url, opts);
-		else
-			console.warn('router not found');
-	},
-
 	getPage(key){
 
 		let found = _(this._routesHash)
@@ -67,31 +170,17 @@ let YatPageManager = Base.extend({
 		return found && found.context;
 
 	},
-
-
-	navigateToRoot(){
-		let current = this.getState('currentPage');
-		let rootUrl = this.getProperty('rootUrl');
-		if(!rootUrl){
-			let children = this.getChildren();
-			if(children && children.length) {
-				let root = children.find((child) => child != current);
-				rootUrl = root && root.getRoute()
-			}
-		}
-		if(rootUrl != null)
-			this.navigate(rootUrl);
-		else
-			console.warn('root page not found');
+	getCurrentPage(){
+		return this.getState('currentPage');
+	},
+	isCurrentPage(page){
+		let current = this.getCurrentPage();
+		return page === current;
 	},
 
-	_initializeYatPageManager(opts = {}){
-		this.mergeOptions(opts, ['id','name','label']);
-		this._registerPageHandlers(opts);
-		this._registerIdentityHandlers();
-		this.createRouter();
-	},
 
+
+	//childrenable: settle manager reference to all children
 	_buildChildOptions: function(def){
 		return _.extend(def, this.getProperty('childOptions'), {
 			manager: this
@@ -111,27 +200,15 @@ let YatPageManager = Base.extend({
 		}
 	},
 
-	_pageStart(page){
+	_pageStart(page, ...args){
 		this.setState('currentPage', page);
 	},
+	_pageDecline(...args){ },
 
-	_pageDecline(...args){
-		//console.log("decline", args)
-	},
 
-	_registerIdentityHandlers(){
-		this.listenTo(identity, 'change', (...args) => {
-			this.triggerMethod('identity:change', ...args);
-			this._moveToRootIfCurrentPageNotAllowed();
-		});
-	},
+
 	
-	_moveToRootIfCurrentPageNotAllowed(){
-		let current = this.getState('currentPage');
-		if(!current || !current.isStartNotAllowed()) return;
-		
-		this.navigateToRoot();
-	}
+
 
 });
 
