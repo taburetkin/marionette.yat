@@ -1,6 +1,10 @@
 {
-  "presets": ["es2015"],
-  "plugins":[
-	["babel-plugin-root-import"]
-  ]
+	"presets": [
+		"@babel/env"
+	],
+	"plugins": [
+		"@babel/plugin-transform-runtime"
+	],
+	"sourceMaps": "inline",
+	"retainLines": true
 }
