@@ -45,8 +45,10 @@ export default {
 	findPage() {
 		return this.findPages(...arguments)[0];
 	},
-	findPageByUrl(url) {
-		return this.findPages(p => p._routes.some(r => r.registeredRoute.test(url)));
+	findPageByUrl(url, all) {
+		let pages = this.findPages(p => p._routes.some(r => r.registeredRoute.test(url)));
+		if (!all) return pages[0];
+		return pages;
 	},
 	getSiblings({ includeSelf = false } = {}) {
 		let parent = this.getParent();
