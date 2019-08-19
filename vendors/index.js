@@ -1,11 +1,14 @@
-import { Model, Collection, View as BackboneView, Router, History } from 'backbone';
-import { MnObject, Application } from 'backbone.marionette'
+import { Model, Collection, View as BackboneView, Router, History, Events } from 'backbone';
+import { MnObject, Application, Region, View } from 'backbone.marionette'
 export {
 	Model,
 	Collection,
 	BackboneView,
+	Events,
 	Router,
 	History,
 	MnObject,
-	Application
+	Application,
+	Region,
+	View
 }

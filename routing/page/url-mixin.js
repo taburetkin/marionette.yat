@@ -8,27 +8,37 @@ export default {
 		return this._buildUrl(routeContext, options);
 	},
 	_buildUrl(routeContext, options = {}) {
+		if (options.urlOptions) {
+			options = options.urlOptions;
+		}
 		let { data, search, hash } = options;
+		if (data == null && _.isObject(options.args)) {
+			data = options.args;
+		}
+		data = this.getUrlData(data);
 		let url = buildRouteUrl(routeContext.route, data, search, hash);
 		return url;
 	},
-
+	getUrlData(data) {
+		return data;
+	},
 
 	getMenuIcon() {
 		return this.getOption('menuIcon');
 	},
-	getMenuLabel(options) {
-		return this.getOption('menuLabel') || this.getHeader(options) || this.getOption('name') || this.cid;
+	getMenuLabel(options = {}) {
+		let locals = options.locals;
+		return this.getOption('menuLabel', { locals }) || this.getHeader(options) || this.getOption('name', { locals }) || this.getId();
 	},
 
 
 	createMenu(options) {
 		return {
-			id: this.cid,
-			name: this.getOption('name'),
+			id: this.getId(),
 			label: this.getMenuLabel(options),
 			icon: this.getMenuIcon(options),
 			url: this.getUrl(options),
+			title: this.getTitle(options)
 		}
 	},
 	_getPagesMenu(pages, options) {
@@ -44,14 +54,25 @@ export default {
 	},
 	isAvailableForMenu(options = {}) {
 		let notInMenu = this.getOption('notInMenu');
-		let available = !notInMenu && (options.data || !this.hasRouteParameters);
+		if (notInMenu === true) {
+			return false;
+		}
+		let routeContext = this.getRoute(options.routeName);
+		if (!routeContext) return false;
+		if (this.hasRouteParameters && !(options.data && _.every(routeContext.routeParameters, param => param in options.data))) {
+			return false;
+		}
+		//let available = !notInMenu && (options.data || !this.hasRouteParameters);
 		let na = this._isNotAvailable({ for: 'menu' });
-		return available && (na == null || na === true);
+		return (na == null || na === true);
 	},
 	getMenu(options = {}) {
 		if (!this.isAvailableForMenu(options)) return;
 
 		let menu = this.createMenu(options);
+		if (options.simple) {
+			return menu;
+		}
 		let childOptions = _.extend({}, options, { parent: false, children: false, siblings: false });
 		let apply = (menuKey, value) => {
 			if (!value) return;

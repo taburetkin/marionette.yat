@@ -9,7 +9,8 @@
 	  "node": true
 	},
 	"globals": {
-		"Promise": true
+		"Promise": true,
+		"Symbol": true
 	},
 	"rules": {
 	  "array-bracket-spacing": [ 2, "never" ],

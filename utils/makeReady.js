@@ -1,5 +1,5 @@
-import config from './config';
-function makeReady(view) {
+//import config from './config';
+export default function makeReady(view) {
 	if (view._supportsReady) {
 		view.ready();
 	} else {
@@ -11,5 +11,5 @@ function makeReady(view) {
 			: view.trigger('ready')
 	}
 }
-config.makeReadyUtil = makeReady;
-export default makeReady;
+//config.makeReadyUtil = makeReady;
+//export default makeReady;

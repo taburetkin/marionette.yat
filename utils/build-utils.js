@@ -1,4 +1,4 @@
-import { isClass, isInstance, isViewClass } from './is-utils';
+import { isClass, isInstance } from './is-utils';
 import camelCase from './camelCase';
 import { BackboneView } from '../vendors';
 import _ from 'underscore';
@@ -62,51 +62,89 @@ function normalizeArgs(ownArgs, cmnArgs, cmnArgsIndex = 0, ownArgsIndex = 0) {
 	}
 }
 
+function extractGetOptions(buildOptions = {}) {
+	let { getArgs, getOptions } = buildOptions;
+	let options = getOptions
+		|| _.isArray(getArgs) ? { args: getArgs }
+		: void 0;
+	return options
+}
+
 //#endregion
 
-export function buildItem(context, arg, buildOptions = {}) {
+export function buildItem(arg, buildOptions = {}) {
 	if (arg == null) return;
 
-	let { BaseClass, ctorArgs, ctorArgsIndex } = buildOptions;
+	let { BaseClass, ctorArgs, ctorArgsIndex, context } = buildOptions;
 
+	// if given argument is a function we should call it
 	if (_.isFunction(arg) && !isClass(arg, BaseClass)) {
 
-		return buildItem(arg.call(context, context, ctorArgs), buildOptions);
+		return buildItem(arg.call(context, ctorArgs, buildOptions, context), buildOptions);
 
 	} else if (isClass(arg, BaseClass)) {
-
+		// if arg is a class, just creating the instance
 		return create(arg, ctorArgs);
 
 	} else if (isInstance(arg, BaseClass)) {
-
+		// if arg is an instance of a given BaseClass just return it
 		return arg;
 
-	} else if (_.isObject(arg) && arg.class) {
+	} else if (_.isObject(arg) && arg.class && !arg.build) {
+		//if argument is a context and there is no build in it, then trying to operate with it like with context
 		let args = normalizeArgs(arg.ctorArgs, ctorArgs, ctorArgsIndex, arg.ctorArgsIndex);
 		return create(arg.class, args);
 
 	} else if (_.isFunction(arg.build)) {
-		return arg.buid.call(context, arg, ctorArgs, context);
+		// if context has build, use it
+		return arg.buid.call(context, arg, ctorArgs, buildOptions, context);
+	} else if (typeof arg == 'string' && buildOptions.buildFromText) {
+		return buildOptions.buildFromText(arg, ...buildOptions.ctorArgs);
 	}
 }
 
+export function buildByKey(context, key, buildOptions = {}) {
+	let getOptions = extractGetOptions(buildOptions);
+	let arg;
+	if (isClass(key, buildOptions.BaseClass)) {
+		arg = key;
+	} else {
+		if (context.getOption) {
+			arg = context.getOption(key, getOptions);
+		} else {
+			arg = context[key];
+		}
+	}
 
-export function buildView(context, arg, { BaseClass, options } = {}) {
-	const buildOptions = {
-		BaseClass: BaseClass || BackboneView
+	if (!buildOptions.context) {
+		buildOptions.context = context;
 	}
-	if (isViewClass(arg)) {
-		buildOptions.BaseClass = arg;
-	}
-	if (options != null) {
-		buildOptions.ctorArgs = [options];
-	}
-	return buildItem(context, arg, buildOptions);
+	return buildItem(arg, buildOptions);
 }
 
-export function buildViewByKey(context, key, { defaultOptions, options, keyToCamelCase = true } = {}) {
-	let arg = context.getOption(key);
-	let optionsKey = keyToCamelCase ? camelCase(key, 'options') : key + 'Options';
-	let viewOptions = _.extend({}, defaultOptions, context.getOption(optionsKey), options);
-	return buildView(context, arg, { options: viewOptions});
+export function buildInstanceByKey(context, key, buildOptions = {}) {
+	if (!buildOptions.ctorArgs) {
+		let { keyToCamelCase, defaultOptions, options, optionsKey } = buildOptions;
+		if (!optionsKey) {
+			optionsKey = keyToCamelCase ? camelCase(key, 'options') : key + 'Options';
+		}
+		let getOptions = extractGetOptions(buildOptions);
+		let contextOptions;
+		if (context.getOption) {
+			contextOptions = context.getOption(optionsKey, getOptions);
+		} else {
+			contextOptions = context[optionsKey];
+		}
+		let instanceOptions = _.extend({}, defaultOptions, contextOptions, options);
+
+		buildOptions.ctorArgs = [instanceOptions];
+	}
+	return buildByKey(context, key, buildOptions);
+}
+
+export function buildViewByKey(context, key, buildOptions = {}) {
+	if (!buildOptions.BaseClass) {
+		buildOptions.BaseClass = BackboneView;
+	}
+	return buildInstanceByKey(context, key, buildOptions);
 }

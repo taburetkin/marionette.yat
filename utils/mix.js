@@ -72,6 +72,9 @@ function withMethod(...args) {
 	}
 }
 
+export function mixWith(...args) {
+	return mix(this).with(...args);
+}
 
 export default function mix(_ctor, options) {
 

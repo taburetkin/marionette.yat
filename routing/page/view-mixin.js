@@ -15,6 +15,9 @@ export default {
 			page: this,
 			req
 		};
+		if (this.collection) defaultOptions.collection = this.collection;
+		if (this.model) defaultOptions.model = this.model;
+
 		return buildViewByKey(this, 'view', { defaultOptions });
 	},
 }

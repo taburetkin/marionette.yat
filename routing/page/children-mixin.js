@@ -1,7 +1,7 @@
 import _ from 'underscore';
 import BasePage from './basePage';
 import { buildItem } from '../../utils/build-utils';
-import { isInstance } from '../../utils';
+import { isInstance, isClass } from '../../utils';
 export default {
 	getParent() {
 		return this.parent;
@@ -12,16 +12,46 @@ export default {
 		return parent.getRoot();
 	},
 	getChildren(options = {}) {
+		let children = this._children;
+		if (options.traverse && children && children.length) {
+			children = children.reduce((memo, child) => {
+				let childChildren = child.getChildren(options);
+				memo.push(child, ...childChildren);
+				return memo;
+			}, []);
+		}
+		if (options.clone) {
+			children = children.slice(0);
+		}
 		if (!options.predicate) {
-			return this._children;
+			return children;
 		} else {
-			return _.filter(this._children, options.predicate);
+			return _.filter(children, options.predicate);
 		}
 	},
-	getSiblings() {
+	findPages(predicate, options = {}) {
+		if (!_.isFunction(predicate)) {
+			let idValue = predicate;
+			predicate = p => p.getId() == idValue;
+		}
+		if (options.traverse == null) {
+			options.traverse = true;
+		}
+		options.clone = true;
+		let pages = this.getChildren(options);
+		pages.push(this);
+		return pages.filter(predicate);
+	},
+	findPage() {
+		return this.findPages(...arguments)[0];
+	},
+	findPageByUrl(url) {
+		return this.findPages(p => p._routes.some(r => r.registeredRoute.test(url)));
+	},
+	getSiblings({ includeSelf = false } = {}) {
 		let parent = this.getParent();
 		if (!parent) return;
-		let predicate = page => page != this;
+		let predicate = includeSelf ? void 0 : page => page != this;
 		return parent.getChildren({ predicate });
 	},
 	hasChildren() {
@@ -63,22 +93,22 @@ export default {
 	},
 	_buildChild(arg, opts = {}) {
 		opts = this.getChildOptions(opts);
+		let buildOptions = {
+			context: this,
+			BaseClass: BasePage,
+			ctorArgs: opts,
+		};
 		if (isInstance(arg, BasePage)) {
 			return arg;
 		} else if (!_.isFunction(arg) && _.isObject(arg)) {
-			let item = {
-				class: this.childPage
-			}
-			let pageOptions = {
-				BaseClass: BasePage,
-				ctorArgs: _.extend({}, opts, arg)
-			}
-			return buildItem(this, item, pageOptions);
+			let item = this.childPage;
+			buildOptions.ctorArgs = _.extend({}, buildOptions.ctorArgs, arg);
+			return buildItem(item, buildOptions);
+		} else if (_.isFunction(arg) && !isClass(arg, BasePage)) {
+			arg = arg();
+			return this._buildChild(arg, opts);
 		}
-		return buildItem(this, arg, {
-			BaseClass: BasePage,
-			ctorArgs: opts
-		});
+		return buildItem(arg, buildOptions);
 	},
 	//#endregion
 };

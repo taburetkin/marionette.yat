@@ -1,8 +1,13 @@
 import _ from 'underscore';
 import BaseClass from '../coms/baseClass';
 import * as ctorsNs from '../vendors';
-
-let ctors = _.map(ctorsNs, ctor => ctor);
+import makeReadyUtil from './makeReady';
+let ctors = _.reduce(ctorsNs, (memo, ctor) => {
+	if (_.isFunction(ctor)) {
+		memo.push(ctor);
+	}
+	return memo;
+}, []);
 ctors.unshift(BaseClass);
 
 const config = {
@@ -13,6 +18,9 @@ const config = {
 	mixOptions: {
 		mergeObjects: true,
 		wrapObjectWithConstructor: true,
-	}
+	},
+
+	// for views which does not support ready
+	makeReadyUtil
 };
 export default config;

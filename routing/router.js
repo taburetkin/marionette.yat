@@ -1,4 +1,2 @@
 import { Router } from '../vendors';
-export default Router.extend({
-
-});
+export default Router.extend({});

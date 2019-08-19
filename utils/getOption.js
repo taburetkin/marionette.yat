@@ -9,10 +9,11 @@ export default function getOption(instance, key, options = {}) {
 	let shouldInvoke = options.force !== false ? arg => !isKnownCtor(arg) : false;
 	let context = options.context || instance;
 	let args = options.args;
-	let value = result(instance.options, key, { shouldInvoke, args, context });
+	let byPath = options.byPath;
+	let value = result(instance.options, key, { shouldInvoke, args, context, byPath });
 	if (value != null || options.deep === false) {
 		return value != null ? value : options.default;
 	}
-	value = result(instance, key, { shouldInvoke, args });
+	value = result(instance, key, { shouldInvoke, args, byPath });
 	return value != null ? value : options.default;
 }

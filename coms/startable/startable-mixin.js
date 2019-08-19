@@ -1,6 +1,6 @@
 import StartLifecycle from './startLifecycle';
 import StateModel from '../stateModel/model';
-import { awaiter } from '../../utils/async-utils';
+import { toAsyncResult } from 'asyncresult-js';
 
 export default Base => Base.extend({
 	startStateKey: 'start-state',
@@ -15,10 +15,11 @@ export default Base => Base.extend({
 		});
 	},
 	start(...args) {
+
 		return this._startable.start(...args);
 	},
 	startAsync() {
-		return awaiter(this.start(...arguments));
+		return toAsyncResult(this.start(...arguments));
 	},
 	stop(...args) {
 		this.triggerMethod('before:stop', ...args);

@@ -8,27 +8,36 @@ export default {
 		let args = options.args;
 		if (!args && isView(this)) {
 			args = [];
-			if (this.model) {
-				args.push(this.model);
-			}
-			args.push(this);
+			args.push(this.model, this);
+			options.args = args;
 		}
 		return getOption(this, key, options);
 	},
+
 	getOptions(...args) {
-		let options;
+		let options = {};
 		let keys;
-		if (_.isObject(_.last(args))) {
+		let lastArgument = _.last(args);
+
+		if (lastArgument != null && _.isObject(lastArgument) && !Array.isArray(lastArgument)) {
 			options = args.pop();
 		}
-		if (args.length == 1 && !_.isArray(args)) {
-			keys = [args]
+
+		if (args.length == 1) {
+			if (_.isArray(args[0])) {
+				keys = args[0];
+			} else {
+				keys = [args];
+			}
 		} else {
 			keys = args;
 		}
 
 		return _.reduce(keys, (memo, key) => {
-			memo[key] = this.getOption(key, options);
+			let option = this.getOption(key, options);
+			if (option !== void 0 || options.takeUndefined) {
+				memo[key] = option;
+			}
 			return memo;
 		}, {});
 	}

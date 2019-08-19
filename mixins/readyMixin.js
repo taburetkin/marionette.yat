@@ -11,6 +11,9 @@ export default Base => Base.extend({
 		}
 		return result;
 	},
+	// rerender() {
+	// 	//return this.render({ triggerReady: true });
+	// },
 	ready() {
 		if (this._isReady) { return; }
 		this._isReady = true;

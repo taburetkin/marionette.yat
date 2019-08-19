@@ -1,5 +1,5 @@
 import BasePage from './basePage';
-import { awaiter } from '../../utils/async-utils';
+import { toAsyncResult } from 'asyncresult-js';
 
 const errHelper = (result, onFalse = false) => {
 	if (result === false) {
@@ -18,7 +18,7 @@ const Page = BasePage.extend({
 
 	constructor(options) {
 		BasePage.apply(this, arguments);
-		this.mergeOptions(options, ['parent','router', 'app']);
+		this.mergeOptions(options, ['parent','router', 'app', 'name', 'id']);
 		if (!this.childPage) {
 			this.childPage = this.getOption('childPage');
 		}
@@ -29,6 +29,9 @@ const Page = BasePage.extend({
 		}
 	},
 
+	getId() {
+		return this.id || this.cid;
+	},
 
 	// start lifecycle:
 	// isNotAvailable: null || error
@@ -37,17 +40,12 @@ const Page = BasePage.extend({
 
 	//#region Helpers
 
-	getOption(key, options = {}) {
-		if (options.args == null) {
-			options.args = [this];
-		}
-		if (this.model) {
-			options.args.push(this.model);
-		}
-		return BasePage.prototype.getOption.call(this, key, options);
+
+	getHeader(options = {}) {
+		return this.getOption('header', { locals: options.locals });
 	},
-	getHeader() {
-		return this.getOption('header');
+	getTitle(options) {
+		return this.getOption('title', { locals: options.locals }) || this.getHeader(options);
 	},
 
 	// all validators should return: true | null | undefined - for available page, other values will be treaten as error
@@ -61,7 +59,7 @@ const Page = BasePage.extend({
 
 	},
 	_isNotAvailableAsync() {
-		return awaiter(this._isNotAvailable(...arguments));
+		return toAsyncResult(this._isNotAvailable(...arguments));
 	},
 	// you have to write this by your own
 	// return true | null | undefined - for passed check, other return values treated as check fail

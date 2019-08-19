@@ -3,13 +3,18 @@
   "version": "2.0.0",
   "description": "Marionette Yet Another Toolkit is a set of mixins, components and utils for backbone.marionette",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/taburetkin/marionette.yat.git"
   },
-  "keywords": ["backbone", "backbone.marionette", "components", "utils", "mixins"],
+  "keywords": [
+    "backbone",
+    "backbone.marionette",
+    "components",
+    "utils",
+    "mixins"
+  ],
   "author": "dimtabu <dima.taburetkin@gmail.com>",
   "license": "MIT",
   "bugs": {
@@ -17,28 +22,29 @@
   },
   "homepage": "https://github.com/taburetkin/marionette.yat",
   "devDependencies": {
-    "@babel/core": "^7.4.4",
-    "@babel/plugin-transform-runtime": "^7.4.4",
-    "@babel/preset-env": "^7.4.4",
-    "@babel/register": "^7.4.4",
-    "@babel/runtime": "^7.4.4",
+    "@babel/core": "^7.5.5",
+    "@babel/plugin-transform-runtime": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "@babel/register": "^7.5.5",
+    "@babel/runtime": "^7.5.5",
     "backbone": "^1.4.0",
     "backbone.marionette": "^4.1.2",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "cross-env": "^5.2.0",
-    "eslint": "^5.16.0",
-    "jsdom": "^15.0.0",
-    "mocha": "^6.1.4",
+    "eslint": "^6.2.0",
+    "jsdom": "^15.1.1",
+    "mocha": "^6.2.0",
     "nyc": "^14.1.0",
-    "sinon": "^7.3.2",
+    "sinon": "^7.4.1",
     "sinon-chai": "^3.3.0",
     "underscore": "^1.9.1"
   },
   "peerDependencies": {
+    "asyncresult-js": "^1.0.0",
     "backbone": "^1.4.0",
     "backbone.marionette": "^4.1.2",
-    "underscore": "^1.9.1"	  
+    "underscore": "^1.9.1"
   },
   "dependencies": {}
 }

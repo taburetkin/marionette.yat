@@ -4,6 +4,13 @@ import Router from '../router';
 
 const routeToRegExp = Router.prototype._routeToRegExp;
 
+const extractParameterNames = function(route) {
+	let matches = route.match(/:\w+/gmi);
+	if (_.isArray(matches)) {
+		return _.map(matches, match => match.substring(1));
+	}
+}
+
 export default {
 	_initializeRoutesMixin() {
 		let onready = this.getOption('initializeRoutesOnReady');
@@ -51,12 +58,14 @@ export default {
 			arg.name = routeKey;
 		}
 		arg.routeRegExp = routeToRegExp(arg.route);
+		arg.routeParameters = extractParameterNames(arg.route);
 		arg.hasParameters = /:\w+/g.test(arg.route);
 		if (this.getOption('relativeRoutes')) {
 			let parent = this.getParent();
 			let parentRoute = parent && parent.getDefaultRoute && parent.getDefaultRoute();
 			if (parentRoute != null && parentRoute.route) {
-				arg.route = parentRoute.route + '/' + arg.route;
+				let proute = parentRoute.route.replace(/^(.*)\(\/\)$/, '$1');
+				arg.route = proute + '/' + arg.route;
 			}
 		}
 		return arg;
@@ -68,8 +77,8 @@ export default {
 	// arg should be a string, or predicate. if its null then defaultRoute returned
 	getRoute(arg) {
 		let predicate;
-		if (_.isObject(predicate)) {
-			arg = predicate;
+		if (_.isObject(arg)) {
+			predicate = arg;
 		} else if (_.isString(arg)) {
 			predicate = { name: arg }
 		} else {
@@ -85,6 +94,7 @@ export default {
 		_.each(routes, route => {
 			let rawroute = route.route;
 			let handler = this.createRouteHandler(route, router);
+			route.registeredRoute = router._routeToRegExp(rawroute);
 			router.route(rawroute, handler);
 		});
 	},
@@ -92,7 +102,8 @@ export default {
 	createRouteHandler(route, router) {
 		const handler = async(...args) => {
 			let request = this.createRequest(route, args);
-			return await request.calledMethod();
+			let callres = await request.calledMethod();
+			return callres;
 		}
 		return handler;
 	},
@@ -100,6 +111,7 @@ export default {
 	createRequest(route, args) {
 		let requestUrl = window.location.pathname + window.location.search + window.location.hash;
 		let request = _.extend({ page: this, requestUrl }, route);
+		request.locals = {};
 		if (args != null) {
 			request.rawQs = args.pop();
 			request.rawArgs = args;
@@ -113,9 +125,14 @@ export default {
 					return memo;
 				}, {});
 			}
+			// request.urlOptions = {
+			// 	data: request.args,
+			// 	search: request.qs,
+			// 	hash: window.location.hash,
+			// }
 		}
 
-		request.calledMethod = async() => await this.route(request);
+		request.calledMethod = () => this.route(request);
 		return request;
 	},
 
@@ -137,7 +154,7 @@ export default {
 		if (error) return error;
 
 		error = await this._routeCheckStart(request);
-		if (error) return error;
+		if (error.isError()) return error;
 
 		this.triggerMethod('route', request);
 		if (history) {
@@ -169,8 +186,9 @@ export default {
 		if (pageResult.isError()) {
 			let err = pageResult.err();
 			this._onRouteError(err, request);
-			return err;
+			//return err;
 		}
+		return pageResult;
 	},
 
 	getRouter() {

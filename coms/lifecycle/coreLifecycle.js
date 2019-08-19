@@ -1,7 +1,6 @@
 import _ from 'underscore';
 import { triggerMethodOn } from '../../utils/events-utils';
-import { awaiter } from '../../utils/async-utils';
-import AsyncAwaiter from '../asyncAwaiter';
+import { AsyncResult, toAsyncResult } from 'asyncresult-js';
 
 import YatObject from '../yatObject';
 
@@ -20,27 +19,27 @@ const Lifecycle = YatObject.extend({
 		await this.broadcast('begin', options);
 
 		let error = await this._isNotAwailable();
-		if (await this._tryCompleteWithError(error.err() || error.val(), options)) {
-			return;
+		let nwerror = error.err() || error.val();
+		if (await this._tryCompleteWithError(nwerror, options)) {
+			return AsyncResult.fail(nwerror);
 		}
 
 		let result = await this.broadcast('before', options);
-		if (await this._tryCompleteWithError(result, options)) {
-			return;
+		if (await this._tryCompleteWithError(result.err(), options)) {
+			return result;
 		}
 
 		this._complete();
 		await this.broadcast('', options);
-		return true;
 	},
 
 	async _tryCompleteWithError(err, options) {
-		let sendErr = err instanceof AsyncAwaiter ? err.err() : err;
+		let sendErr = err instanceof AsyncResult ? err.err() : err;
 		if (!sendErr) return;
 
 		await this.broadcast('error', sendErr, options);
 		await this._complete(options);
-		return true;
+		return sendErr;
 	},
 
 	async _complete(options) {
@@ -49,16 +48,16 @@ const Lifecycle = YatObject.extend({
 	},
 
 	_isNotAwailable() {
-		return awaiter(this.getOption('isNotAvailable'));
+		return toAsyncResult(this.getOption('isNotAvailable'));
 	},
 
 	async broadcast(prefix, ...args) {
 		let selfEvent = prefix || 'done';
-		let result = await awaiter(this.triggerMethod(selfEvent, ...args));
+		let result = await toAsyncResult(this.triggerMethod(selfEvent, ...args));
 		if (this.context) {
 			prefix && (prefix += ':');
 			let eventName = prefix + this.name;
-			return await awaiter(triggerMethodOn(this.context, eventName, ...args));
+			return await toAsyncResult(triggerMethodOn(this.context, eventName, ...args));
 		}
 		return result;
 	},

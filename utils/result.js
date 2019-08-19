@@ -1,8 +1,11 @@
-export default function result(instance, key, { shouldInvoke, args, context }) {
+import { getByPath } from './byPath-utils';
+import { isKnownCtor } from './is-utils';
 
-	if (!instance || key == null || !(key in instance)) return;
+export default function result(instance, key, { shouldInvoke = v => !isKnownCtor(v), args, context, byPath }) {
 
-	let value = instance[key];
+	if (!instance || key == null) return;
+
+	let value = byPath ? getByPath(instance, key) : instance[key];
 
 	if (typeof (value) !== 'function' || !shouldInvoke) {
 		return value;

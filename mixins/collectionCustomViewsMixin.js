@@ -57,5 +57,5 @@ export default Base => Base.extend({
 		view._index = options.index;
 		let res = this.addChildView(view, undefined, options);
 		return res;
-	}
+	},
 });

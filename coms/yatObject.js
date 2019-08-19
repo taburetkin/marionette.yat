@@ -1,5 +1,7 @@
 import { MnObject } from 'backbone.marionette';
-import mix from '../utils/mix';
+import { mixWith } from '../utils/mix';
 import commonMixin from '../mixins/commonMixin';
 
-export default mix(MnObject).with(commonMixin);
+MnObject.mixWith = mixWith;
+
+export default MnObject.mixWith(commonMixin);

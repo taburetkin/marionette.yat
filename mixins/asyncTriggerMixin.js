@@ -1,7 +1,7 @@
-import { awaiter } from '../utils/async-utils';
+import { toAsyncResult } from 'asyncresult-js';
 
 export default {
 	triggerMethodAsync() {
-		return awaiter(this.triggerMethod(...arguments));
+		return toAsyncResult(this.triggerMethod(...arguments));
 	}
 };

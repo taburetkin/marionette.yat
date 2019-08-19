@@ -1,4 +1,3 @@
-//import _ from 'underscore';
 import Lifecycle from './coreLifecycle';
 
 export default Lifecycle.extend({

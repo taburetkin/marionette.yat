@@ -67,3 +67,11 @@ export function isModelOrCollection(arg) {
 export function isModelOrCollectionClass(arg) {
 	return isModelClass(arg) || isCollectionClass(arg);
 }
+
+export function isSimpleValue(arg) {
+	if (arg == null) return true;
+	let typeofArg = typeof arg;
+	if (typeofArg === 'function') return false;
+	if (typeofArg !== 'object') return true;
+	return typeofArg === 'object' && typeof arg.valueOf() !== 'object';
+}
